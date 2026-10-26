@@ -166,6 +166,12 @@ rate alone does not show rendering headroom.
 The [visual documentation page](docs/index.html) can be opened directly or at `/docs/` on the
 dev server. AI coding agents should also read [the onboarding guide](docs/ai/AGENT_ONBOARDING.md).
 
+## Godot port
+
+A Godot 4 version lives in [`godot/`](godot/README.md). The JavaScript engine bakes the levels
+(`tools/godot-bake`), and the shaders, lighting, camera, movement, villagers and dialogue are
+ported to GDScript. Phase 1, the explorable diorama, is done. See [the port plan](docs/GODOT_PORT.md).
+
 ## Community
 
 Join the [Discord community](https://discord.gg/FeNXqtbqgy) for discussion. For local development,

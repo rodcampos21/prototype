@@ -1,0 +1,105 @@
+; Luminati — Godot 4 port (see docs/GODOT_PORT.md).
+; Open this folder in Godot 4.7+ (Project Manager › Import › godot/project.godot) and press F5.
+
+config_version=5
+
+[application]
+
+config/name="Luminati (Godot port)"
+config/description="The Luminati 2.5D pixel-art diorama engine and its demo levels, ported from three.js to Godot 4."
+run/main_scene="res://scenes/main.tscn"
+config/features=PackedStringArray("4.7", "Forward Plus")
+
+[autoload]
+
+Lum="*res://scripts/luminati/lum.gd"
+
+[display]
+
+window/size/viewport_width=1600
+window/size/viewport_height=900
+window/stretch/aspect="expand"
+
+[importer_defaults]
+
+texture={
+"compress/mode": 0,
+"detect_3d/compress_to": 0,
+"mipmaps/generate": true,
+"process/fix_alpha_border": false
+}
+
+[rendering]
+
+textures/canvas_textures/default_texture_filter=0
+anti_aliasing/quality/msaa_3d=2
+lights_and_shadows/directional_shadow/size=4096
+lights_and_shadows/directional_shadow/soft_shadow_filter_quality=3
+lights_and_shadows/positional_shadow/soft_shadow_filter_quality=2
+viewport/hdr_2d=true
+limits/opengl/max_lights_per_object=32
+limits/opengl/max_renderable_lights=64
+environment/defaults/default_clear_color=Color(0.043, 0.055, 0.102, 1)
+
+[shader_globals]
+
+lum_time={
+"type": "float",
+"value": 0.0
+}
+lum_wind={
+"type": "vec2",
+"value": Vector2(1, 0.35)
+}
+lum_wind_strength={
+"type": "float",
+"value": 1.0
+}
+lum_camera_yaw={
+"type": "float",
+"value": 0.0
+}
+lum_sun_dir={
+"type": "vec3",
+"value": Vector3(0.3, 0.6, -0.5)
+}
+lum_sun_color={
+"type": "vec3",
+"value": Vector3(1, 1, 1)
+}
+lum_night={
+"type": "float",
+"value": 0.0
+}
+lum_fog_color={
+"type": "vec3",
+"value": Vector3(0.6, 0.7, 0.8)
+}
+lum_fog_density={
+"type": "float",
+"value": 0.01
+}
+lum_fog_start={
+"type": "float",
+"value": 23.0
+}
+lum_hemi_sky={
+"type": "vec3",
+"value": Vector3(0.5, 0.6, 0.8)
+}
+lum_hemi_ground={
+"type": "vec3",
+"value": Vector3(0.3, 0.25, 0.2)
+}
+lum_light_scale={
+"type": "float",
+"value": 0.1013
+}
+lum_snow={
+"type": "float",
+"value": 0.0
+}
+lum_debug={
+"type": "float",
+"value": 0.0
+}

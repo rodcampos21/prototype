@@ -1,0 +1,44 @@
+[
+  {
+    "id": "brightwater-crossing",
+    "name": "Brightwater Crossing",
+    "subtitle": "A Riverside Hamlet",
+    "width": 36,
+    "depth": 28
+  },
+  {
+    "id": "cinderwatch-pass",
+    "name": "Cinderwatch Pass",
+    "subtitle": "Where the Old Fires Wake",
+    "width": 96,
+    "depth": 120
+  },
+  {
+    "id": "emberfall",
+    "name": "Emberfall",
+    "subtitle": "Riverside Village",
+    "width": 48,
+    "depth": 40
+  },
+  {
+    "id": "gildhaven",
+    "name": "Gildhaven",
+    "subtitle": "Market Day on the River Gild",
+    "width": 128,
+    "depth": 128
+  },
+  {
+    "id": "sample-hamlet",
+    "name": "Willowmere",
+    "subtitle": "A Hamlet by the Pond",
+    "width": 28,
+    "depth": 22
+  },
+  {
+    "id": "starfall-vale",
+    "name": "Starfall Vale",
+    "subtitle": "Where the Stars Come Home",
+    "width": 128,
+    "depth": 128
+  }
+]
