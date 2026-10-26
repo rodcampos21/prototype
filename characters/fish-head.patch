@@ -1,0 +1,105 @@
+--- src/engine/pixel/CharacterSprites.js	2026-10-21 22:13:33.000000000 -0300
++++ src/engine/pixel/CharacterSprites.fishtmp.js	2026-10-26 20:37:02.619183016 -0300
+@@ -389,6 +389,53 @@
+  * template row that follows the secondary-motion sway (long hair tips).
+  */
+ const HAIR = {
++
++  fin: {
++    down: { front: T([
++      '......5.....',
++      '......4.....',
++      '.....45.....',
++      '.....44.....',
++      '.....43.....',
++      '....3443....',
++      '...334433...',
++      '..33343332..',
++      '.2.3.33.3.2.',
++      '.2........2.',
++    ], HAIR_L, 0, -5) },
++    side: { front: T([
++      '.......5....',
++      '......45....',
++      '......445...',
++      '.....3445...',
++      '.....34442..',
++      '....3344432.',
++      '...33344332.',
++      '..333333332.',
++      '.2.333333332',
++      '.....3.33322',
++      '........3322',
++      '.........32.',
++    ], HAIR_L, 0, -5) },
++    up: { front: T([
++      '......5.....',
++      '......4.....',
++      '.....45.....',
++      '.....44.....',
++      '.....43.....',
++      '....3443....',
++      '...334433...',
++      '..33343332..',
++      '.3333433322.',
++      '.3334333322.',
++      '233333333222',
++      '233333333222',
++      '.2333333222.',
++      '..22333222..',
++      '...222221...',
++      '....2221....',
++    ], HAIR_L, 0, -5) },
++  },
+   short: {
+     down: {
+       front: T([
+@@ -663,6 +710,24 @@
+ 
+ /** Beards (drawn after hair; `BEARD` material defaults to the hair colour). */
+ const BEARDS = {
++
++  barbels: {
++    down: T([
++      '...44dddddddd44...',
++      '..4..LLLLLLLL..4..',
++      '.4....LLLLLL....4.',
++      '.4..............4.',
++      '4................4',
++      '3................3',
++    ], { ...BEARD_L, d: [M.EYE, 0], L: [M.SKIN, 4] }, -3, 8),
++    side: T([
++      '..4dddd.....',
++      '.4..LLL.....',
++      '4.....L.....',
++      '4...........',
++      '3...........',
++    ], { ...BEARD_L, d: [M.EYE, 0], L: [M.SKIN, 4] }, -2, 8),
++  },
+   full: {
+     down: T([
+       '.3........2.',
+@@ -1430,6 +1495,11 @@
+   const eL = hx + 3, eR = hx + 8;
+   if (pose && HURT_FACE.has(pose.act)) { hurtFaceDown(p, c, hx, hy); return; }
+   if (c.face === 'fierce') { fierceFaceDown(p, c, hx, hy); return; }
++  if (c.face === 'fish') {
++    for (const e of [hx + 3, hx + 8]) { p.set(e, eyeY, M.EYE, 0); p.set(e, eyeY + 1, M.EYE, 0); p.set(e + (e < hx + 6 ? -1 : 1), eyeY, M.WHITE, 3); }
++    p.set(hx + 1, hy + 8, M.SKIN, 0); p.set(hx + 10, hy + 8, M.SKIN, 0);
++    return;
++  }
+   // eyes: dark lash pixel over a coloured iris; lashes flick outward for feminine faces
+   p.set(eL, eyeY, M.EYE, 0); p.set(eL, eyeY + 1, M.EYE, 2);
+   p.set(eR, eyeY, M.EYE, 0); p.set(eR, eyeY + 1, M.EYE, 2);
+@@ -1453,6 +1523,11 @@
+   const eyeY = hy + 6;
+   if (pose && HURT_FACE.has(pose.act)) { hurtFaceSide(p, c, hx, hy); return; }
+   if (c.face === 'fierce') { fierceFaceSide(p, c, hx, hy); return; }
++  if (c.face === 'fish') {
++    p.set(hx + 2, eyeY, M.EYE, 0); p.set(hx + 2, eyeY + 1, M.EYE, 0);
++    p.set(hx + 7, eyeY, M.SKIN, 0); p.set(hx + 8, eyeY + 1, M.SKIN, 0); p.set(hx + 7, eyeY + 2, M.SKIN, 0); p.set(hx + 9, eyeY + 1, M.SKIN, 0);
++    return;
++  }
+   p.set(hx + 2, eyeY, M.EYE, 0); p.set(hx + 2, eyeY + 1, M.EYE, 2);
+   if (c.female) p.set(hx + 3, eyeY, M.EYE, 1);
+   if (!c.beard) p.set(hx + 1, hy + 9, M.SKIN, 1);

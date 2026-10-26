@@ -1,0 +1,34 @@
+{
+ "catfish": {
+  "preset": "cleric",
+  "skin": "#a7adb7",
+  "hair": "#5a606c",
+  "hairStyle": "fin",
+  "eyes": "#1c1c24",
+  "blush": false,
+  "beard": "barbels",
+  "beardColor": "#b8bdc6",
+  "hat": "none",
+  "outfit": {
+   "top": "#2f6f9a",
+   "bottom": "#c9ccd4",
+   "accent": "gold",
+   "style": "robe",
+   "shirt": "#c9ccd4"
+  },
+  "cape": {
+   "color": "#2a5f88",
+   "style": "cape",
+   "lining": "#c9a040"
+  },
+  "weapon": "staff",
+  "gear": {
+   "gloves": "black",
+   "boots": "#8a7a5a",
+   "sash": "brown",
+   "staffGem": "#7fd0ff",
+   "pauldrons": true
+  },
+  "face": "fish"
+ }
+}

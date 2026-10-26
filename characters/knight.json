@@ -1,0 +1,9 @@
+{
+ "knight": {
+  "preset": "swordsman", "skin": "skinLight", "hair": "hairWhite", "hairStyle": "spiky", "eyes": "blue",
+  "outfit": { "top": "white", "bottom": "#2a2c38", "accent": "gold", "style": "tabard", "shirt": "metal" },
+  "cape": { "color": "#2f6f9a", "style": "cape", "lining": "#c9a040" },
+  "weapon": "sword", "beard": false, "hat": "none",
+  "gear": { "pauldrons": true, "bracers": true, "gloves": "black", "boots": "white", "belt": "brown", "scarf": null }
+ }
+}
