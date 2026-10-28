@@ -44,8 +44,6 @@ export const DEFAULT_CONTROLS = [
   { id: 'rotate', keys: 'Q/E', label: 'Rotate camera' },
   { id: 'zoom', keys: 'Z/X', label: 'Zoom (or wheel)' },
   { id: 'map', keys: 'N/Tab', label: 'World map' },
-  { id: 'time', keys: 'T', label: 'Time of day' },
-  { id: 'weather', keys: 'R', label: 'Weather' },
   { id: 'photo', keys: 'P', label: 'Photo mode' },
   { id: 'music', keys: 'M', label: 'Music' },
   { id: 'debug', keys: '`', label: 'Debug panel' },

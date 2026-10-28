@@ -92,10 +92,8 @@ and listens on `window` by default.
 | `zoomIn` | `KeyZ`, `Equal` | `GamepadY` | Zoom in (hold) |
 | `zoomOut` | `KeyX`, `Minus` | `GamepadX` | Zoom out (hold) |
 | `debug` | `Backquote`, `F1` | — | Toggle the debug panel |
-| `time` | `KeyT` | — | Next time-of-day preset |
 | `photo` | `KeyP` | `GamepadRS` (right stick click) | Toggle photo mode |
 | `help` | `KeyH` | `GamepadStart` | Toggle the controls legend |
-| `weather` | `KeyR` | — | Next weather |
 | `music` | `KeyM` | — | Music on / off |
 | `map` | `KeyN`, `Tab` | `GamepadBack` | Open / close the world map |
 
@@ -207,9 +205,12 @@ Details:
   ("Clear skies", "Rain", "Snowfall").
 - **Music**: `M` toggles and toasts "♪ Music on" / "Music off".
 - **Debug panel**: a lil-gui panel with Time & Weather, Post FX, Lighting, Camera, Atmosphere and
-  Render folders ([`DebugControls.js`](../../src/game/DebugControls.js)).
+  Render folders ([`DebugControls.js`](../../src/game/DebugControls.js)). No key changes the time of
+  day or the weather (October 2026: the clock and the weather are the game's): the panel's Time &
+  Weather folder and the automation hooks (`__game.setTime`, `setWeather`, `cycleTime`,
+  `cycleWeather`) still do, for tests.
 - The on-screen controls legend lists: WASD Move, Shift Run, Space Talk / Examine, Q/E Rotate
-  camera, Z/X Zoom (or wheel), N/Tab World map, T Time of day, R Weather, P Photo mode, M Music,
+  camera, Z/X Zoom (or wheel), N/Tab World map, P Photo mode, M Music,
   \` Debug panel (`CONTROLS` in `Game.js`); H hides it.
 
 ## 5. Game focus and browser rules
@@ -432,7 +433,7 @@ Peaceful levels keep the single legend of §4.
 | Q/E | Rotate camera | LB/RB | Rotate camera |
 | Z/X | Zoom (or wheel) | R-Stick | Zoom |
 | N/Tab | World map | Back | World map |
-| T/R/P/M | Time / Weather / Photo / Music | LS-Click | Photo |
+| P/M | Photo / Music | LS-Click | Photo |
 
 (The legend's key labels come from `HUD`'s `KEY_LABELS`: `Mouse0` → LMB, `Mouse1` → MMB,
 `Mouse2` → RMB.)

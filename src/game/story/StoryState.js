@@ -246,14 +246,14 @@ export function storyReader(stateOf, ctx) {
           const v = ctx.game?.(ref.name);
           if (v !== undefined) return v;
           if (ref.name === 'gold') return s.gold;
-          return ref.name === 'chapter' || ref.name === 'weather' ? '' : 0;
+          return ref.name === 'chapter' || ref.name === 'weather' || ref.name === 'player' ? '' : 0;
         }
         default: return 0;
       }
     },
     word(ref, w) {
       if (ref.kind === 'stage') return stageIndex(ref.name, w);
-      if (ref.kind === 'quest' || (ref.kind === 'game' && (ref.name === 'chapter' || ref.name === 'level' || ref.name === 'weather'))) return w;
+      if (ref.kind === 'quest' || (ref.kind === 'game' && (ref.name === 'chapter' || ref.name === 'level' || ref.name === 'weather' || ref.name === 'player'))) return w;
       return stateOf().get(w);
     },
     // (`${stage:q}` shows the stage's id, `${quest:q}` its state)

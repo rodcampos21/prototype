@@ -57,7 +57,10 @@ export async function loadCampaignStart(requestedName, { params, progress, title
   // (a play-test or a `&level=` start never touches the real saved game)
   const test = !!levelParam;
   if (params.has('new') && params.get('new') !== '0') CampaignState.clear(name, { test });
-  const saved = levelParam ? null : CampaignState.load(campaign, name, { story });
+  // (a save from before the character was made — the page closed at the creation — is no journey
+  // yet: it begins afresh, its arrival with it)
+  const found = levelParam ? null : CampaignState.load(campaign, name, { story });
+  const saved = found && (!campaign.player.create || found.player) ? found : null;
   const state = saved ?? new CampaignState(campaign, name, { story, test });
   // (a new journey: its seed for `pick` — a save keeps its own)
   if (!saved) state.story.seed = journeySeed();

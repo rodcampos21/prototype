@@ -22,6 +22,7 @@ import { conversationFor } from './dialogue.js';
 import { installFogStart, setFogStart } from './AtmosphereFog.js';
 import { cameraFraming, isInterior } from './LevelLook.js';
 import { SHIPPED_LEVELS } from './levels.js';
+import { CharacterCreation } from '../engine/ui/CharacterCreation.js';
 // (the CombatSystem is imported dynamically in init, on combat levels only: peaceful levels never
 // download or parse the combat code; bindings.js is a tiny import-free table)
 import { PHOTO_PAD_DEFLECT, PHOTO_PAD_QUIET } from './combat/bindings.js';
@@ -55,8 +56,6 @@ const CONTROLS = [
   { keys: 'Q/E', label: 'Rotate camera', id: 'camera' },
   { keys: 'Z/X', label: 'Zoom (or wheel)', id: 'zoom' },
   { keys: 'N/Tab', label: 'World map', id: 'map' },
-  { keys: 'T', label: 'Time of day', id: 'time' },
-  { keys: 'R', label: 'Weather', id: 'weather' },
   { keys: 'P', label: 'Photo mode', id: 'photo' },
   { keys: 'M', label: 'Music', id: 'music' },
   { keys: '`', label: 'Debug panel', id: 'debug' },
@@ -1298,6 +1297,14 @@ export class Game {
         // (a new journey's party: none — the members a Continue brought go)
         await this.syncParty();
       }
+      // a campaign that makes the player's character: before the journey begins (a new one, or a
+      // save from before the creation)
+      if (this.campaign.needsCharacter) {
+        const creation = this.ui.useCharacterCreation(CharacterCreation);
+        const made = await creation.show(this.campaign.creationOptions());
+        if (this._disposed) return;
+        this.campaign.setPlayer(made);
+      }
       this.enterGameplay({ instant: false });
       return;
     }
@@ -2104,9 +2111,9 @@ export class Game {
     if (playing && !mapOpen) {
       if (input.actionPressed('help')) ui.hud.toggleHelp();
       if (!talking) {
+        // (the clock and the weather are the game's, never the player's: no keys change them —
+        // the debug panel and the automation hooks still do)
         if (input.actionPressed('photo') || photoPad || (this.photoMode && input.actionPressed('cancel'))) this.togglePhotoMode();
-        if (input.actionPressed('time')) this.cycleTime();
-        if (input.actionPressed('weather')) this.cycleWeather();
         if (input.actionPressed('music')) {
           const on = this.setMusic(!this.audio.musicPlaying);
           ui.hud.toast(t(on ? 'game.toast.musicOn' : 'game.toast.musicOff'), 1.4);

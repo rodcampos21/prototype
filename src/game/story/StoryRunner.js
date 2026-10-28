@@ -281,10 +281,19 @@ export class StoryRunner {
   // The story's values
   // ---------------------------------------------------------------------------------------------
 
-  /** A game value conditions read (`hour`, `gold`, `chapter`, `weather`, `visits`). @param {string} name */
+  /**
+   * The name of the player's character: the one given at the campaign's character creation (never
+   * translated), else the UI default (`story.player.default`).
+   */
+  get playerName() {
+    return this.game.campaign?.playerName || t('story.player.default');
+  }
+
+  /** A game value conditions read (`hour`, `gold`, `chapter`, `weather`, `visits`, `player`). @param {string} name */
   _gameValue(name) {
     const g = this.game;
     switch (name) {
+      case 'player': return this.playerName;
       case 'hour': return this._clock();
       case 'gold': return this.gold;
       case 'chapter': {
@@ -1321,6 +1330,11 @@ export class StoryRunner {
    * @returns {{ name: string, plate: string, color: string, sheet: HTMLCanvasElement|null, title?: string }|null}
    */
   _speaker(s) {
+    // the player's character: its name (never translated) and its own sprite as the portrait
+    if (s.toLowerCase() === 'player') {
+      const name = this.playerName;
+      return { name: 'player', plate: name, color: '', sheet: this._sheetOf(/** @type {any} */ (this.game.player)) };
+    }
     const npc = this._npc(s);
     if (npc) return { name: npc.name, plate: this._plateOf(npc), color: npc.def.portraitColor, sheet: this._sheetOf(npc), title: this._titleOf(npc) };
     const actors = this.story?.actors;

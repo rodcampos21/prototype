@@ -42,7 +42,7 @@ export const COMBAT_CONTROLS = Object.freeze([
   { keys: 'Q/E', label: 'Rotate camera', id: 'rotate' },
   { keys: 'Z/X', label: 'Zoom (or wheel)', id: 'zoom' },
   { keys: 'N/Tab', label: 'World map', id: 'map' },
-  { keys: 'T/R/P/M', label: 'Time / Weather / Photo / Music', id: 'toggles' },
+  { keys: 'P/M', label: 'Photo / Music', id: 'toggles' },
 ]);
 
 /** HUD legend while `input.lastDevice === 'gamepad'`, 12 rows (`id` as above). */
