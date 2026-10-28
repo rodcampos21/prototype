@@ -8,7 +8,7 @@
  * `sprite.setFrame(poses[name], row)`. `spriteOptions` holds only Sprite3D option keys; the game
  * spreads it into the sprite options (`{ ...CHARACTER_SPRITE_OPTS, ...sheet.spriteOptions, combatFx: true }`).
  *
- * Art: the monsters (slime, bat, boar, wolf, dummy, golem) are painted like the creatures of
+ * Art: the monsters (slime, bat, boar, wolf, iguana, dummy, golem) are painted like the creatures of
  * CharacterSprites.js — shaded parts in a (material, shade) label buffer, 5-tone ramps, the dark
  * plum silhouette outline, light from the upper left — through its `_painterKit`. The humanoids
  * (goblin, archer, shaman) are `createCharacterSheet(spec, { combat: true })` sheets. Glow texels
@@ -26,12 +26,13 @@ import { hash2 } from '../utils/math.js';
 const { Painter, resolvePainter, M, blob, quadGait, quadLeg, rampForKind, finishTexture, glowTexel, OUTLINE } = _painterKit;
 
 /**
- * Every enemy kind with a sheet (ObjectCatalog.ENEMY_KINDS, plus `wolf`: the Lobo-de-Capim of the
- * Ato I bestiary, whose sheet comes before its gameplay — no ENEMY_DEFS entry or brain yet; the
- * `kind` of createEnemySheet).
- * @type {readonly ('slime'|'goblin'|'archer'|'shaman'|'bat'|'boar'|'dummy'|'golem'|'wolf')[]}
+ * Every enemy kind with a sheet (ObjectCatalog.ENEMY_KINDS, plus `wolf` — the Lobo-de-Capim of the
+ * Ato I bestiary — and `iguana` — the giant iguana corrupted by the Baiacu Rei, a boss — whose
+ * sheets come before their gameplay: no ENEMY_DEFS entry or brain yet; the `kind` of
+ * createEnemySheet).
+ * @type {readonly ('slime'|'goblin'|'archer'|'shaman'|'bat'|'boar'|'dummy'|'golem'|'wolf'|'iguana')[]}
  */
-export const ENEMY_SHEET_KINDS = Object.freeze(['slime', 'goblin', 'archer', 'shaman', 'bat', 'boar', 'dummy', 'golem', 'wolf']);
+export const ENEMY_SHEET_KINDS = Object.freeze(['slime', 'goblin', 'archer', 'shaman', 'bat', 'boar', 'dummy', 'golem', 'wolf', 'iguana']);
 
 /** Columns 0–9 shared by the monster (non-humanoid) sheets. */
 const COMMON = ['idle0', 'idle1', 'move0', 'move1', 'move2', 'move3', 'windup', 'attack', 'hurt', 'dead'];
@@ -947,6 +948,347 @@ function drawWolf(p, view, key, f) {
 }
 
 // ---------------------------------------------------------------------------
+// Iguana (A Iguana Maculada) — a giant iguana corrupted by the Baiacu Rei (64 × 64, a boss):
+// dull olive scales with dark bands, the iguana's round cheek shield, a crest of the puffer's
+// bone-white spines with dark tips, a swollen dewlap studded with spines, salt crystals breaking
+// out of the back and toxin veins glowing sea-teal (glow texels), long clawed sprawling legs and a
+// banded tail curled up behind. `puff` is the puffer's power: every spine up, the body swollen.
+// ---------------------------------------------------------------------------
+
+/** Per pose: head offset, jaw opening, dewlap size, crest scale, body drop, swelling, glow, eyes, legs, tail. */
+function iguanaRig(key) {
+  const R = {
+    head: [0, 0], jaw: 0, dew: 1, crest: 1, body: 0, swell: 0, glow: 3, eye: 'open', tail: 'rest',
+    // feet: [dx, lift] for near front, far front, near hind, far hind
+    legs: { nf: [0, 0], ff: [0, 0], nh: [0, 0], fh: [0, 0] },
+  };
+  switch (key) {
+    case 'idle1': R.head = [0, 1]; R.dew = 1.3; R.glow = 2; break;
+    // a sprawling walk: the diagonal pairs swing together, the body swaying low
+    case 'move0': R.legs = { nf: [-3, 2], ff: [2, 0], nh: [2, 0], fh: [-3, 2] }; break;
+    case 'move1': R.body = 1; R.legs = { nf: [-1, 0], ff: [0, 1], nh: [0, 1], fh: [-1, 0] }; break;
+    case 'move2': R.legs = { nf: [2, 0], ff: [-3, 2], nh: [-3, 2], fh: [2, 0] }; break;
+    case 'move3': R.body = 1; R.legs = { nf: [0, 1], ff: [-1, 0], nh: [-1, 0], fh: [0, 1] }; break;
+    case 'windup': R.head = [3, -4]; R.jaw = 1; R.dew = 2; R.crest = 1.3; R.glow = 4; R.legs = { nf: [1, 0], ff: [1, 0], nh: [-1, 0], fh: [-1, 0] }; break;
+    case 'attack': R.head = [0, 3]; R.jaw = 4; R.dew = 1; R.crest = 1.2; R.glow = 4; R.body = 1; R.legs = { nf: [-3, 0], ff: [-2, 0], nh: [2, 0], fh: [2, 0] }; break;
+    case 'hurt': R.head = [3, -3]; R.jaw = 2; R.crest = 0.7; R.eye = 'shut'; R.glow = 2; break;
+    case 'dead': R.dead = true; R.glow = 1; R.eye = 'dead'; break;
+    case 'tailWind': R.tail = 'raised'; R.head = [1, -1]; R.crest = 1.2; R.glow = 4; R.legs = { nf: [-1, 0], ff: [0, 0], nh: [1, 0], fh: [0, 0] }; break;
+    case 'tailSwipe': R.tail = 'swipe'; R.head = [-1, 1]; R.glow = 4; R.body = 1; R.legs = { nf: [1, 0], ff: [0, 0], nh: [-2, 0], fh: [-1, 0] }; break;
+    case 'puff': R.swell = 2; R.crest = 1.7; R.dew = 2.6; R.jaw = 2; R.glow = 4; R.head = [1, -2]; break;
+    default: break;
+  }
+  return R;
+}
+
+/** One spine of the crest: bone-white, its dark tip leaning back (`lean` px over its height). */
+function iguanaSpine(p, x, y, h, lean, glowTip) {
+  // a puffer spine: a 2 px base tapering to a 1 px point, lit on its left, the tip dark
+  for (let i = 0; i < h; i++) {
+    const t = i / Math.max(1, h - 1);
+    const xx = Math.round(x + lean * t);
+    const tip = i >= h - 1;
+    if (tip && glowTip) p.set(xx, y - i, M.GLOW, 3);
+    else p.set(xx, y - i, tip ? M.FUR2 : M.BONE, tip ? 0 : 3);
+    if (i < h / 2 && !tip) p.set(xx + 1, y - i, M.BONE, 1);
+  }
+}
+
+/** A salt crystal cluster breaking out of the hide at (x, y): 2–3 pale shards, a toxin glow at the root. */
+function saltCrystals(p, x, y, size, glow) {
+  const shards = [[0, 0, size + 2, 0], [-2, 1, size, -1], [2, 1, size - 1, 1]];
+  for (const [dx, dy, h, lean] of shards) {
+    if (h < 2) continue;
+    for (let i = 0; i < h; i++) {
+      const xx = Math.round(x + dx + lean * i / h), yy = y + dy - i;
+      const w = i < h - 1 ? 1 : 0;
+      p.set(xx, yy, M.STONE, i === h - 1 ? 4 : 3);
+      if (w) p.set(xx + 1, yy, M.STONE, i < h / 2 ? 1 : 2);
+    }
+  }
+  if (glow >= 2) { p.set(x, y + 1, M.GLOW, Math.min(4, glow)); p.set(x + 1, y + 1, M.GLOW, Math.max(1, glow - 1)); }
+}
+
+/** Scales over what is painted in `mat`: a staggered lattice of lit and shadowed scale edges. */
+function iguanaScales(p, x0, y0, x1, y1) {
+  for (let y = y0; y <= y1; y++) {
+    for (let x = x0; x <= x1; x++) {
+      if (p.get(x, y) !== M.FUR) continue;
+      const k = (x + ((y >> 1) & 1) * 2) % 4;
+      const sh = p.getShade(x, y);
+      if ((y & 1) === 0 && k === 0) p.set(x, y, M.FUR, Math.min(4, sh + 1));
+      else if ((y & 1) === 1 && k === 2 && sh > 0) p.set(x, y, M.FUR2, Math.max(1, sh));
+    }
+  }
+}
+
+/**
+ * A sprawling lizard leg (side view, facing left): from the shoulder or hip out to the elbow or
+ * knee, down to the foot, long toes and bone claws pointing forward. Far legs are a step darker.
+ */
+function iguanaLegSide(p, sx, sy, ex, ey, fx, fy, far, hind) {
+  const d = far ? 1 : 0;
+  thickLine(p, sx, sy, ex, ey, hind ? 6 : 5, M.FUR, (t, x, y) => Math.max(0, (y < (sy + ey) / 2 ? 3 : 2) - d));
+  thickLine(p, ex, ey, fx, fy - 1, 4, M.FUR, (t, x) => Math.max(0, (x <= Math.min(ex, fx) + 1 ? 3 : 2) - d));
+  // the foot: three long toes splayed forward, a claw on each
+  for (const [tx, ty] of [[-4, 0], [-3, -1], [-1, 0]]) {
+    p.line2(fx, fy - 1, fx + tx, fy + ty, M.FUR2, Math.max(0, 2 - d));
+    p.set(fx + tx - 1, fy + ty, M.BONE, far ? 2 : 4);
+  }
+  p.set(fx + 2, fy, M.FUR2, Math.max(0, 1 - d)); p.set(fx + 3, fy, M.BONE, far ? 1 : 3); // the back toe
+}
+
+/** The tail's centre line (side view), from the hip to the tip, by pose. */
+function iguanaTailPath(tail, bx, by) {
+  if (tail === 'raised') return [[bx, by], [bx + 5, by - 3], [bx + 8, by - 9], [bx + 9, by - 16], [bx + 7, by - 22], [bx + 3, by - 25], [bx - 1, by - 24]];
+  if (tail === 'swipe') return [[bx, by], [bx + 5, by + 3], [bx + 9, by + 7], [bx + 12, by + 10], [bx + 13, by + 13]];
+  return [[bx, by], [bx + 5, by + 1], [bx + 9, by - 1], [bx + 12, by - 5], [bx + 12, by - 10], [bx + 10, by - 14], [bx + 7, by - 15]];
+}
+
+function drawIguanaSide(p, R) {
+  const G = 61;
+  const bd = R.body, sw = R.swell;
+  const [hdx, hdy] = R.head;
+  if (R.dead) {
+    // keeled over: the body flat, legs curled up, the crest laid along the ground, the glow out
+    p.begin(null);
+    thickLine(p, 46, G - 5, 60, G - 3, 4, M.FUR, 2);
+    blob(p, 31, G - 6, 17, 5, M.FUR, { hi: 0.35, lo: -0.3 });
+    for (let x = 16; x <= 46; x++) p.over(x, G - 2, M.FUR3, 1);
+    p.end();
+    p.begin(null);
+    iguanaScales(p, 12, G - 12, 60, G);
+    for (let x = 18; x <= 44; x += 3) iguanaSpine(p, x, G - 11, 3, 2, false);
+    saltCrystals(p, 30, G - 11, 2, 1); saltCrystals(p, 40, G - 10, 1, 1);
+    p.end();
+    p.begin('all', 0);
+    for (const [lx, ly] of [[20, G - 10], [27, G - 11], [37, G - 11], [44, G - 10]]) { p.line2(lx, ly, lx + 2, ly - 3, M.FUR, 2); p.set(lx + 3, ly - 4, M.BONE, 3); }
+    p.end();
+    p.begin(null);
+    blob(p, 11, G - 5, 7, 3.6, M.FUR, { hi: 0.35, lo: -0.3 });
+    for (let x = 3; x <= 11; x++) p.set(x, G - 3, M.FUR3, 1);
+    p.set(8, G - 7, M.FUR3, 2); p.set(9, G - 6, M.FUR3, 2); p.set(9, G - 8, M.FUR3, 2); p.set(7, G - 6, M.FUR3, 2); // the eye, crossed out
+    p.end();
+    return;
+  }
+  const by = 45 + bd;
+  // far legs, behind everything
+  p.begin(null);
+  const L = R.legs;
+  iguanaLegSide(p, 27, by + 2, 30 + L.ff[0] * 0.5, by + 8 - L.ff[1], 29 + L.ff[0], G - L.ff[1], true, false);
+  iguanaLegSide(p, 40, by + 2, 37 + L.fh[0] * 0.5, by + 9 - L.fh[1], 38 + L.fh[0], G - L.fh[1], true, true);
+  p.end();
+  // the tail: banded, tapering, curled up behind
+  p.begin(null);
+  const tp = iguanaTailPath(R.tail, 47, by - 1);
+  for (let i = 0; i + 1 < tp.length; i++) {
+    const w = Math.max(1.4, 6.5 - i * 1.0);
+    thickLine(p, tp[i][0], tp[i][1], tp[i + 1][0], tp[i + 1][1], w, M.FUR, (t) => ((i * 4 + Math.round(t * 4)) % 4 === 3 ? 1 : 2));
+  }
+  p.end();
+  p.begin(null);
+  for (let i = 1; i + 1 < tp.length; i++) iguanaSpine(p, tp[i][0], Math.round(tp[i][1] - Math.max(1, 3 - i * 0.5)), Math.max(2, Math.round((4 - i * 0.5) * R.crest)), 1, false);
+  p.end();
+  // the body: chest, swollen belly, hips; the pale underside
+  p.begin(null);
+  blob(p, 24, by, 8 + sw, 6.5 + sw, M.FUR, { hi: 0.45, lo: -0.2 });
+  blob(p, 34, by + 1, 10 + sw, 7 + sw, M.FUR, { hi: 0.45, lo: -0.2 });
+  blob(p, 44, by, 6.5 + sw, 6 + sw * 0.5, M.FUR, { hi: 0.45, lo: -0.2 });
+  for (let x = 18; x <= 47; x++) { p.over(x, by + 6 + sw, M.FUR3, 1); p.over(x, by + 5 + sw, M.FUR3, 2); }
+  p.end();
+  p.begin(null);
+  iguanaScales(p, 14, by - 9, 52, by + 8);
+  // the dark bands across the back
+  for (const bx of [28, 36, 43]) for (let y = by - 5; y <= by + 2; y++) if ((y & 1) === 0 || y > by - 2) p.over(bx + ((y >> 1) & 1), y, M.FUR2, 2);
+  // toxin veins glowing through the flank
+  crack(p, [[24, by + 1], [28, by + 3], [32, by + 2], [36, by + 4]], Math.min(4, R.glow));
+  crack(p, [[38, by + 1], [42, by + 3], [45, by + 2]], Math.max(1, R.glow - 1));
+  p.end();
+  // the crest along the neck and the back: puffer spines, longest at the shoulders
+  p.begin(null);
+  const crestTop = (x) => { let y = by - 12 - sw; while (y < by && !p.get(x, y)) y++; return y; };
+  for (let x = 23; x <= 48; x += 3) {
+    const h = Math.round((x < 30 ? 6 : x < 40 ? 5 : 3) * R.crest);
+    iguanaSpine(p, x, crestTop(x), h, R.crest > 1.4 ? 0 : 1, R.glow >= 4 && (x % 6 === 0));
+  }
+  saltCrystals(p, 31, crestTop(31) + 1, 3 + sw, R.glow);
+  saltCrystals(p, 41, crestTop(41) + 1, 2 + sw, R.glow);
+  saltCrystals(p, 24, by + 1, 1, R.glow - 1);
+  p.end();
+  // near legs
+  p.begin('sides', 1);
+  iguanaLegSide(p, 21, by + 3, 18 + L.nf[0] * 0.5, by + 9 - L.nf[1], 20 + L.nf[0], G - L.nf[1], false, false);
+  iguanaLegSide(p, 44, by + 3, 49 + L.nh[0] * 0.5, by + 9 - L.nh[1], 45 + L.nh[0], G - L.nh[1], false, true);
+  p.end();
+  // neck and head
+  const hx = 13 + hdx, hy = 39 + hdy + bd;
+  p.begin(null);
+  thickLine(p, 22, by - 2, hx + 4, hy + 2, 9 + sw, M.FUR, (t, x, y) => (y < hy ? 3 : 2));
+  p.end();
+  p.begin(null);
+  // the dewlap: a swollen throat fan, pale, spined along its edge (bigger as it inflates)
+  const dw = R.dew;
+  const dpts = [[hx - 4, hy + 3], [hx + 4, hy + 3], [hx + 6, hy + 5 + dw], [hx + 2, hy + 7 + dw * 3], [hx - 2, hy + 6 + dw * 2]];
+  fillPoly(p, dpts, M.FUR3, (x, y) => (x < hx ? 3 : 2));
+  for (const [x, y] of [[hx + 3, hy + 6 + dw * 2.5], [hx - 1, hy + 6 + dw * 2], [hx + 6, hy + 5 + dw]]) p.set(Math.round(x), Math.round(y + 1), M.BONE, 4);
+  if (dw >= 2) crack(p, [[hx - 1, hy + 5], [hx + 2, hy + 7], [hx + 4, hy + 6]], 3);
+  p.end();
+  p.begin(null);
+  blob(p, hx, hy, 7.5, 4.6, M.FUR, { hi: 0.4, lo: -0.25 });
+  // the snout: long and blunt, the nostril near its tip
+  fillPoly(p, [[hx - 5, hy - 3], [hx - 10, hy - 1], [hx - 10, hy + 2], [hx - 5, hy + 3]], M.FUR, (x, y) => (y < hy - 1 ? 3 : y > hy + 1 ? 1 : 2));
+  p.set(hx - 9, hy - 1, M.FUR2, 0);
+  // the jaw: shut (a dark line) or dropped open with teeth and a dark red mouth
+  const j = R.jaw;
+  if (j <= 0) for (let x = hx - 10; x <= hx + 2; x++) p.set(x, hy + 2, M.FUR2, x < hx - 2 ? 0 : 1);
+  else {
+    fillPoly(p, [[hx - 10, hy + 2], [hx + 2, hy + 2], [hx + 2, hy + 2 + j], [hx - 9, hy + 2 + j * 1.4]], M.NOSE, (x, y) => (y === Math.round(hy + 2) ? 0 : 1));
+    for (let x = hx - 9; x <= hx + 1; x++) p.set(x, Math.round(hy + 3 + j * 1.4 - (x - hx + 9) * 0.04 * j), M.FUR, 1);
+    for (let x = hx - 9; x <= hx; x += 2) { p.set(x, hy + 3, M.BONE, 4); p.set(x + 1, Math.round(hy + 2 + j * 1.3), M.BONE, 3); }
+  }
+  // the cheek shield: the iguana's big round scale behind the jaw
+  for (const [dx, dy, sh] of [[3, 1, 4], [4, 1, 3], [3, 2, 3], [4, 2, 2], [2, 1, 3], [3, 0, 3]]) p.set(hx + dx, hy + dy, M.FUR3, sh);
+  p.end();
+  p.begin(null);
+  iguanaScales(p, hx - 10, hy - 5, hx + 8, hy + 2);
+  // the eye: a toxin-teal glow with a dark slit, under a heavy brow
+  const ex = hx - 3, ey = hy - 2;
+  p.set(ex - 1, ey - 1, M.FUR2, 0); p.set(ex, ey - 1, M.FUR2, 0); p.set(ex + 1, ey - 1, M.FUR2, 1);
+  if (R.eye === 'shut') { p.set(ex - 1, ey, M.FUR3, 2); p.set(ex, ey, M.FUR3, 2); p.set(ex + 1, ey, M.FUR3, 1); }
+  else { p.set(ex - 1, ey, M.GLOW, Math.min(4, R.glow)); p.set(ex, ey, M.FUR2, 0); p.set(ex + 1, ey, M.GLOW, Math.max(1, R.glow - 1)); p.set(ex, ey + 1, M.GLOW, 2); }
+  // head spines: a short crest from the brow back onto the neck
+  for (const [dx, h] of [[1, 2], [3, 3], [5, 3]]) iguanaSpine(p, hx + dx, hy - 4, Math.round(h * R.crest), 1, false);
+  saltCrystals(p, hx + 1, hy - 4, 1, R.glow - 1);
+  p.end();
+}
+
+/** Facing the camera (front) or from behind (back). */
+function drawIguanaFront(p, R, back) {
+  const G = 61, cx = 32;
+  const bd = R.body, sw = R.swell;
+  if (R.dead) {
+    p.begin(null);
+    blob(p, cx, G - 6, 18, 5, M.FUR, { hi: 0.35, lo: -0.3 });
+    p.end();
+    p.begin(null);
+    iguanaScales(p, cx - 19, G - 12, cx + 19, G);
+    for (let x = cx - 12; x <= cx + 12; x += 3) iguanaSpine(p, x, G - 11, 3, 1, false);
+    saltCrystals(p, cx - 6, G - 11, 2, 1); saltCrystals(p, cx + 7, G - 10, 1, 1);
+    p.end();
+    p.begin('all', 0);
+    for (const [lx, d] of [[10, -1], [14, -1], [50, 1], [54, 1]]) { p.line2(lx, G - 7, lx + d * 3, G - 10, M.FUR, 2); p.set(lx + d * 4, G - 11, M.BONE, 3); }
+    if (!back) { p.set(cx - 4, G - 8, M.FUR3, 2); p.set(cx - 3, G - 7, M.FUR3, 2); p.set(cx + 4, G - 8, M.FUR3, 2); p.set(cx + 3, G - 7, M.FUR3, 2); }
+    p.end();
+    return;
+  }
+  const L = R.legs;
+  // legs: sprawled out to both sides, elbows and knees high, clawed feet planted wide
+  const leg = (sx, sy, out, foot, far) => {
+    const [dx, lift] = foot;
+    const ex = sx + out * 5, ey = sy + 3;
+    const fx = sx + out * 6 + dx, fy = G - lift;
+    thickLine(p, sx, sy, ex, ey, far ? 4 : 5, M.FUR, (t, x, y) => (y < ey ? 3 : 2) - (far ? 1 : 0));
+    thickLine(p, ex, ey, fx, fy - 1, far ? 3 : 4, M.FUR, (t) => (t < 0.5 ? 2 : 1) - (far ? 1 : 0));
+    for (const tx of [-2, 0, 2]) { p.set(fx + tx, fy, M.FUR2, 1); p.set(fx + tx + Math.sign(tx || out), fy, M.BONE, far ? 2 : 4); }
+  };
+  p.begin(null);
+  // (the far pair: the hind legs from the front, the forelegs from behind)
+  leg(cx - 10, 47 + bd, -1, back ? L.nf : L.nh, true);
+  leg(cx + 10, 47 + bd, 1, back ? L.ff : L.fh, true);
+  p.end();
+  if (back) {
+    // from behind: the tail comes toward the viewer down the middle, banded, tapering
+    p.begin(null);
+    const sway = R.tail === 'raised' ? -4 : R.tail === 'swipe' ? 6 : 0;
+    for (let i = 0; i < 6; i++) {
+      const y = 50 + bd + i * 2, x = cx + Math.round(sway * i / 5);
+      thickLine(p, x, y, cx + Math.round(sway * (i + 1) / 5), y + 2, Math.max(2, 7 - i), M.FUR, i % 2 ? 1 : 2);
+    }
+    p.end();
+  }
+  p.begin(null);
+  blob(p, cx, 47 + bd, 14 + sw, 6.5 + sw, M.FUR, { hi: 0.45, lo: -0.2 });
+  if (!back) for (let y = 49 + bd; y <= 53 + bd + sw; y++) for (let x = cx - 6; x <= cx + 6; x++) p.over(x, y, M.FUR3, x < cx ? 2 : 1); // the pale chest
+  p.end();
+  p.begin(null);
+  iguanaScales(p, cx - 16, 38 + bd, cx + 16, 55 + bd);
+  for (const x of [cx - 8, cx + 7]) for (let y = 42 + bd; y <= 50 + bd; y += 2) p.over(x, y, M.FUR2, 1);
+  crack(p, [[cx - 11, 48 + bd], [cx - 7, 50 + bd], [cx - 3, 49 + bd]], Math.min(4, R.glow));
+  crack(p, [[cx + 3, 50 + bd], [cx + 7, 48 + bd], [cx + 11, 50 + bd]], Math.max(1, R.glow - 1));
+  p.end();
+  // the crest: puffer spines down the spine (from behind), or rising behind the head (from the front)
+  p.begin(null);
+  const n = back ? 9 : 5;
+  for (let i = 0; i < n; i++) {
+    const y = (back ? 34 : 38) + bd + i * (back ? 2.2 : 1.4);
+    const h = Math.round((back ? 6 - i * 0.45 : 6 - i * 0.6) * R.crest);
+    iguanaSpine(p, cx + (i % 2 ? 1 : -1), Math.round(y), Math.max(2, h), 0, R.glow >= 4 && i % 3 === 0);
+  }
+  saltCrystals(p, cx - 9, 42 + bd - sw, 3 + sw, R.glow);
+  saltCrystals(p, cx + 9, 43 + bd - sw, 2 + sw, R.glow);
+  p.end();
+  // near legs
+  p.begin('sides', 1);
+  leg(cx - 8, 49 + bd, -1, back ? L.nh : L.nf, false);
+  leg(cx + 8, 49 + bd, 1, back ? L.fh : L.ff, false);
+  p.end();
+  const [hdx, hdy] = R.head;
+  if (back) {
+    // the back of the head, its crest of spines, the cheek shields at its sides
+    const hy = 36 + bd + Math.min(0, hdy);
+    p.begin('below', 1);
+    blob(p, cx, hy, 8, 5, M.FUR, { hi: 0.4, lo: -0.2 });
+    p.end();
+    p.begin(null);
+    iguanaScales(p, cx - 8, hy - 5, cx + 8, hy + 4);
+    for (const [dx, h] of [[-3, 3], [-1, 5], [1, 5], [3, 3]]) iguanaSpine(p, cx + dx, hy - 3, Math.round(h * R.crest), 0, false);
+    p.set(cx - 7, hy + 1, M.FUR3, 3); p.set(cx + 7, hy + 1, M.FUR3, 2);
+    p.end();
+    return;
+  }
+  // the head facing the camera: a broad blunt snout, eyes at the sides, the dewlap hanging below
+  const hx = cx + Math.sign(hdx), hy = 37 + bd + Math.round(hdy * 0.7);
+  p.begin(null);
+  const dw = R.dew;
+  fillPoly(p, [[hx - 4, hy + 4], [hx + 4, hy + 4], [hx + 3, hy + 7 + dw * 2.4], [hx, hy + 9 + dw * 3], [hx - 3, hy + 7 + dw * 2.4]], M.FUR3, (x) => (x < hx ? 3 : 2));
+  p.set(hx, Math.round(hy + 10 + dw * 3), M.BONE, 4); p.set(hx - 3, Math.round(hy + 7 + dw * 2.4), M.BONE, 3); p.set(hx + 3, Math.round(hy + 7 + dw * 2.4), M.BONE, 3);
+  if (dw >= 2) crack(p, [[hx - 2, hy + 6], [hx, hy + 8], [hx + 2, hy + 6]], 3);
+  p.end();
+  p.begin('all', 1);
+  blob(p, hx, hy, 8, 5.5, M.FUR, { hi: 0.35, lo: -0.3 });
+  p.end();
+  p.begin(null);
+  iguanaScales(p, hx - 8, hy - 6, hx + 8, hy + 3);
+  // the cheek shields
+  for (const sgn of [-1, 1]) { p.set(hx + sgn * 7, hy + 1, M.FUR3, sgn < 0 ? 4 : 3); p.set(hx + sgn * 7, hy + 2, M.FUR3, 2); p.set(hx + sgn * 6, hy + 1, M.FUR3, 3); p.set(hx + sgn * 6, hy + 2, M.FUR3, 3); }
+  // the snout and mouth
+  for (let x = hx - 3; x <= hx + 3; x++) p.set(x, hy + 2, M.FUR, x < hx ? 3 : 2);
+  p.set(hx - 2, hy + 1, M.FUR2, 0); p.set(hx + 2, hy + 1, M.FUR2, 0); // nostrils
+  const j = R.jaw;
+  if (j <= 0) for (let x = hx - 4; x <= hx + 4; x++) p.set(x, hy + 3, M.FUR2, 0);
+  else {
+    for (let y = hy + 3; y <= hy + 3 + Math.min(3, j); y++) for (let x = hx - 3; x <= hx + 3; x++) p.set(x, y, M.NOSE, y === hy + 3 ? 0 : 1);
+    for (const x of [hx - 3, hx - 1, hx + 1, hx + 3]) p.set(x, hy + 3, M.BONE, 4);
+  }
+  // the eyes at the sides of the head, toxin-teal
+  for (const sgn of [-1, 1]) {
+    const ex = hx + sgn * 5, ey = hy - 1;
+    p.set(ex, ey - 1, M.FUR2, 0); p.set(ex - sgn, ey - 1, M.FUR2, 0);
+    if (R.eye === 'shut') { p.set(ex, ey, M.FUR3, 2); p.set(ex - sgn, ey, M.FUR3, 2); }
+    else { p.set(ex, ey, M.GLOW, Math.min(4, R.glow)); p.set(ex - sgn, ey, M.FUR2, 0); }
+  }
+  // the head's own little crest, peeking over the brow
+  for (const [dx, h] of [[-2, 2], [0, 3], [2, 2]]) iguanaSpine(p, hx + dx, hy - 5, Math.round(h * R.crest), 0, false);
+  p.end();
+}
+
+function drawIguana(p, view, key) {
+  const R = iguanaRig(key);
+  if (view === 'side') drawIguanaSide(p, R);
+  else drawIguanaFront(p, R, view === 'up');
+}
+
+// ---------------------------------------------------------------------------
 // Straw dummy on a post with a painted target (16 × 24)
 // ---------------------------------------------------------------------------
 
@@ -1370,6 +1712,24 @@ const KINDS = {
       [M.EYE]: eyeRamp('#c88a1a', '#f2c04a'),
     }, M.FUR),
   },
+  iguana: {
+    fw: 64, fh: 64, columns: [...COMMON, 'tailWind', 'tailSwipe', 'puff'], aliases: {},
+    spriteOptions: { blobSize: /** @type {[number, number]} */ ([2.8, 1.1]) }, draw: drawIguana,
+    ramps: () => makeRamps({
+      // the hide: dull olive scales, the dark bands, the pale belly, dewlap and cheek shield
+      [M.FUR]: ramp5(['#151a14', '#253024', '#3c4a36', '#5c6c4e', '#8a9874']),
+      [M.FUR2]: ramp5(['#0a0d0a', '#141a12', '#1f281c', '#2e3a28', '#425038']),
+      [M.FUR3]: ramp5(['#6a6650', '#958e70', '#bdb592', '#d9d2b0', '#efe9cc']),
+      // the puffer's spines and the claws and teeth: bone
+      [M.BONE]: ramp5(['#6e6a5e', '#a09a88', '#cfc8b4', '#ebe6d6', '#ffffff']),
+      // salt crystals
+      [M.STONE]: ramp5(['#4e5e66', '#7e949e', '#b2c8ce', '#dcecee', '#ffffff']),
+      // the Baiacu Rei's toxin: sea-teal glow texels (eyes, veins, crystal roots)
+      [M.GLOW]: glowRamp(['#0e3a3a', '#16706a', '#2ab8a4', '#7af0d2', '#dcfff2']),
+      // the inside of the mouth
+      [M.NOSE]: ramp5(['#2a0c12', '#4a1620', '#6e2430', '#94404a', '#b8666a']),
+    }, M.FUR),
+  },
   dummy: {
     fw: 16, fh: 24, columns: [...COMMON, 'hurt2'], aliases: {},
     spriteOptions: { blobSize: /** @type {[number, number]} */ ([0.7, 0.35]) }, draw: drawDummy,
@@ -1392,7 +1752,7 @@ const KINDS = {
 
 /**
  * Create an enemy sprite sheet (callers cache it: one sheet per kind is shared by every sprite).
- * @param {'slime'|'goblin'|'archer'|'shaman'|'bat'|'boar'|'dummy'|'golem'|'wolf'} kind
+ * @param {'slime'|'goblin'|'archer'|'shaman'|'bat'|'boar'|'dummy'|'golem'|'wolf'|'iguana'} kind
  * @returns {{texture: THREE.Texture, canvas: HTMLCanvasElement, frameWidth: number, frameHeight: number,
  *   columns: number, rows: number, pixelsPerUnit: number, anchor: [number, number],
  *   animations: Record<string, {frames: {col:number,row:number}[], fps: number, loop: boolean}>,
