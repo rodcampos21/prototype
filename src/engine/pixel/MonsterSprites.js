@@ -638,7 +638,8 @@ function drawBoar(p, view, key, f) {
 /** Per pose: head offset, body drop, leg gait override, mouth, ears flat, eye, tail lift. */
 const WOLF_POSES = {
   idle0: { tail: 0 }, idle1: { head: [0, 1], tail: 1 },
-  move0: { walk: 0 }, move1: { walk: 1, body: -1, tail: 1 }, move2: { walk: 2 }, move3: { walk: 3, body: -1, tail: 1 },
+  // (the walk's bob dips: a rise would push the ear tips out of the frame's top)
+  move0: { walk: 0 }, move1: { walk: 1, body: 1, tail: 1 }, move2: { walk: 2 }, move3: { walk: 3, body: 1, tail: 1 },
   windup: { head: [1, 3], body: 1, ears: 'flat', mouth: 'snarl', eye: 'angry', tail: -1, legs: [[1, 0], [1, 0], [-1, 0], [-1, 0]] },
   attack: { head: [0, 1], body: 0, mouth: 'open', eye: 'angry', tail: 2, legs: [[-2, 1], [-1, 1], [2, 0], [1, 0]] },
   hurt: { head: [1, -1], ears: 'flat', eye: 'shut', tail: -1, legs: [[1, 0], [0, 0], [1, 0], [0, 0]] },
@@ -677,7 +678,8 @@ function wolfHeadSide(p, hx, hy, P) {
   const flat = P.ears === 'flat';
   // ears: two leaf-shaped points (laid back when flat)
   p.begin(null);
-  if (flat) { p.set(hx + 2, hy - 3, M.FUR2, 2); p.set(hx + 3, hy - 3, M.FUR, 3); p.set(hx + 4, hy - 3, M.FUR, 3); p.set(hx + 5, hy - 2, M.FUR2, 2); }
+  // laid back: the same leaf-shaped ears, lying along the skull with their tips toward the neck
+  if (flat) { p.set(hx + 1, hy - 3, M.FUR, 3); p.set(hx + 2, hy - 3, M.FUR, 3); p.set(hx + 3, hy - 3, M.FUR, 4); p.set(hx + 4, hy - 2, M.FUR, 3); p.set(hx + 2, hy - 2, M.FUR2, 1); }
   else {
     // two tall leaf-shaped points, the near one in front
     for (const [x0, lit] of [[hx + 2, 4], [hx, 3]]) {
@@ -776,10 +778,14 @@ function drawWolf(p, view, key, f) {
     p.end();
     p.begin(null);
     leafScales(p, 8, Math.round(bodyY - 5), 28, Math.round(bodyY + 3));
-    // the mane: leaves rising along the back of the neck and the spine, longest at the shoulders
-    const tops = [[11, 3], [13, 3], [15, 2], [17, 2], [19, 2], [21, 1], [23, 1]];
-    for (const [x, h] of tops) {
-      let y = Math.round(bodyY - 6);
+    // the mane: leaves along the back of the neck (placed on the neck line, so they follow the
+    // head in every pose and never climb onto it) and along the spine, longest at the shoulders
+    for (const [t, h] of [[0.35, 2], [0.65, 2]]) {
+      const nx = Math.round(13 + (hx + 3 - 13) * t), ny = Math.round(bodyY - 2 + (hy + 1 - (bodyY - 2)) * t);
+      maneLeaf(p, nx + 1, ny, h, 1, 2);
+    }
+    for (const [x, h] of [[13, 3], [15, 2], [17, 2], [19, 2], [21, 1], [23, 1]]) {
+      let y = Math.round(bodyY - 4);
       while (y < bodyY && !p.get(x, y)) y++;
       maneLeaf(p, x, y, h, 1, x < 15 ? 2 : 1);
     }
@@ -825,7 +831,7 @@ function drawWolf(p, view, key, f) {
     for (let y = 6 + bd; y <= 13 + bd; y += 2) maneLeaf(p, cx - 1 + ((y >> 1) & 1), y, 2, 0, 2);
     p.end();
     p.begin('all', 1);
-    const tl = P.tail ?? 0;
+    const tl = key === 'windup' || key === 'attack' || key === 'hurt' ? P.tail ?? 0 : 0;
     for (let i = 0; i < 6; i++) {
       const ty = 14 + bd + (tl < 0 ? i : tl >= 1 ? -i * 0.5 : i * 0.5);
       const tip = i >= 4;
@@ -837,7 +843,7 @@ function drawWolf(p, view, key, f) {
   // facing the camera: long forelegs, a narrow chest with a straw bib, the head above on its neck
   p.begin(null);
   // (the haunches peek out wider behind the shoulders)
-  blob(p, cx, 13 + bd, 7, 3.2, M.FUR, { hi: 0.3, lo: -0.4, maxShade: 2 });
+  blob(p, cx, 14 + bd, 6, 3, M.FUR, { hi: 0.3, lo: -0.4, maxShade: 2 });
   p.end();
   p.begin('sides', 1);
   quadLeg(p, 12 - spread, 14 + bd, G, lift[0], 0, false, M.FUR2, M.FUR, 2);
@@ -845,7 +851,6 @@ function drawWolf(p, view, key, f) {
   p.end();
   p.begin(null);
   blob(p, cx, 13 + bd, 5.4, 4, M.FUR, { hi: 0.45, lo: -0.2 });
-  for (let y = 11 + bd; y <= 12 + bd; y++) for (let x = cx - 2; x <= cx + 1; x++) p.over(x, y, M.FUR3, x < cx ? 3 : 2); // the straw throat
   p.end();
   p.begin(null); leafScales(p, cx - 8, 9 + bd, cx + 8, 17 + bd); p.end();
   const hy = 8 + hdy + bd;
@@ -859,7 +864,7 @@ function drawWolf(p, view, key, f) {
   const flat = P.ears === 'flat';
   for (const sgn of [-1, 1]) {
     const ex = hx + sgn * 2 - (sgn > 0 ? 1 : 0);
-    if (flat) { p.set(ex + sgn, hy - 2, M.FUR, 3); p.set(ex + sgn * 2, hy - 2, M.FUR2, 2); }
+    if (flat) { p.set(ex, hy - 3, M.FUR, sgn < 0 ? 3 : 2); p.set(ex + sgn, hy - 3, M.FUR, sgn < 0 ? 4 : 3); p.set(ex + sgn * 2, hy - 2, M.FUR, 2); }
     else { p.set(ex, hy - 3, M.FUR, sgn < 0 ? 3 : 2); p.set(ex, hy - 4, M.FUR, 3); p.set(ex, hy - 5, M.FUR, 4); p.set(ex + sgn, hy - 3, M.FUR2, 1); p.set(ex + sgn, hy - 2, M.FUR, 2); }
   }
   p.end();
