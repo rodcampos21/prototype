@@ -79,6 +79,7 @@ The shipped levels (all in [`public/levels/`](../../public/levels/)):
 | `sample-hamlet.json` | Willowmere — A Hamlet by the Pond | 28 × 22 | 38 (3 villagers) | **generated** by [`tools/make-sample-hamlet.mjs`](../../tools/make-sample-hamlet.mjs) | `game.html?level=sample-hamlet` |
 | `gildhaven.json` | Gildhaven — Market Day on the River Gild (a walled river town) | 128 × 128 | 518 (68 villagers, 53 houses, 86 light descriptors) | **generated** by [`tools/make-gildhaven.mjs`](../../tools/make-gildhaven.mjs) | `game.html?level=gildhaven` |
 | `cinderwatch-pass.json` | Cinderwatch Pass — Where the Old Fires Wake (the **combat** level) | 96 × 120 | 283 (7 villagers, 24 enemy groups = 58 enemies, 6 chests, 3 waystones, 4 story events) | **generated** by [`tools/make-cinderwatch-pass.mjs`](../../tools/make-cinderwatch-pass.mjs) | `game.html?level=cinderwatch-pass` |
+| `estrada-da-costa.json` | Estrada da Costa — Terra Selvagem (the Baiacu Rei prologue test, Portuguese text; [design note](../design/levels/estrada-da-costa.md)) | 40 × 30 | 56 (1 villager who joins the party, 1 enemy group, 1 chest, 5 story events) | **generated** by [`tools/make-estrada-da-costa.mjs`](../../tools/make-estrada-da-costa.mjs) | `game.html?level=estrada-da-costa` |
 
 Only Cinderwatch Pass has `enemy` objects, so it is the only level with combat
 ([contracts/COMBAT.md](../contracts/COMBAT.md)); the other five stay peaceful and must not notice

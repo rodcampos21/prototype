@@ -91,9 +91,9 @@ platforms and report verification limitations. See
 
 ## Content and verification
 
-The six level/campaign generators are `tools/make-starfall-vale.mjs`, `make-sample-hamlet.mjs`,
-`make-cinderwatch-pass.mjs`, `make-gildhaven.mjs`, `make-ferrymans-lantern.mjs`, and
-`make-emberfall-interiors.mjs`. Use `--check` to verify committed output or `--out=<scratch-path>`
+The seven level/campaign generators are `tools/make-starfall-vale.mjs`, `make-sample-hamlet.mjs`,
+`make-cinderwatch-pass.mjs`, `make-gildhaven.mjs`, `make-ferrymans-lantern.mjs`,
+`make-emberfall-interiors.mjs`, and `make-estrada-da-costa.mjs`. Use `--check` to verify committed output or `--out=<scratch-path>`
 to inspect changes. The interiors generator reads Emberfall, so an Emberfall edit may require
 regenerating that campaign too. Never hand-edit generated output.
 
