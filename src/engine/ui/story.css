@@ -245,3 +245,6 @@
 .lu-endcard.is-armed .lu-endcard__prompt { visibility: inherit; }
 .lu-endcard.is-armed .lu-endcard__blink { animation: lu-g-blink 1.1s infinite; }
 .lu-endcard.is-off .lu-endcard__prompt { visibility: hidden; }
+/* the Códex tab: a locked page's name stays dim, selected or not */
+.lu-root .lu-journal__entry.is-locked .lu-journal__name,
+.lu-root .lu-journal__entry.is-locked.is-sel .lu-journal__name { color: var(--g-tx3); }

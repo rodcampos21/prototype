@@ -164,6 +164,13 @@ function frozenCopy(v) {
 }
 
 /**
+ * Level scaling of non-boss enemies (COMBAT.md §7.2): the share of the level-1 value an enemy
+ * gains per level above 1 (HP ×(1 + 0.2(L−1)) …); stats not listed (DEF, poise, speeds) do not
+ * scale. `scaledDef` applies it; the Códex shows it (`codex.js`).
+ */
+export const ENEMY_SCALING = Object.freeze({ hp: 0.2, atk: 0.12, xp: 0.25, gold: 0.2 });
+
+/**
  * The stats of one enemy (COMBAT.md §7.2): a new frozen object. The level L (1–10) scales
  * non-boss enemies — HP ×(1 + 0.2(L−1)), ATK ×(1 + 0.12(L−1)), XP ×(1 + 0.25(L−1)), gold
  * ×(1 + 0.2(L−1)); DEF, poise and speeds unscaled. Elites: HP ×1.8, ATK ×1.25, poise ×1.5,
@@ -187,11 +194,11 @@ export function scaledDef(kind, level = 1, elite = false) {
   const def = {
     ...base,
     kind, level: L, elite: e,
-    hp: round(base.hp * (1 + 0.2 * n) * (e ? 1.8 : 1)),
-    atk: round(base.atk * (1 + 0.12 * n) * (e ? 1.25 : 1)),
+    hp: round(base.hp * (1 + ENEMY_SCALING.hp * n) * (e ? 1.8 : 1)),
+    atk: round(base.atk * (1 + ENEMY_SCALING.atk * n) * (e ? 1.25 : 1)),
     poise: e ? round(base.poise * 1.5) : base.poise,
-    xp: round(base.xp * (1 + 0.25 * n) * (e ? 2.5 : 1)),
-    gold: base.gold.map((g) => round(g * (1 + 0.2 * n) * (e ? 3 : 1))),
+    xp: round(base.xp * (1 + ENEMY_SCALING.xp * n) * (e ? 2.5 : 1)),
+    gold: base.gold.map((g) => round(g * (1 + ENEMY_SCALING.gold * n) * (e ? 3 : 1))),
     guaranteedHeart: e,
   };
   return frozenCopy(def);

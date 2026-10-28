@@ -29,7 +29,7 @@ import { PHOTO_PAD_DEFLECT, PHOTO_PAD_QUIET } from './combat/bindings.js';
 import {
   CAMERA, TIME_SPEED, SUN_PATH, MOON_PATH, KEYFRAME_OVERRIDES, SPRITE_FILL,
 } from './config.js';
-import { t, getLang, saveLang, isCJK, LANG_CODES } from '../engine/i18n/I18n.js';
+import { t, getLang, saveLang, isCJK, LANG_CODES, registerStrings } from '../engine/i18n/I18n.js';
 import { loc, term, quietly } from '../engine/i18n/ContentText.js';
 import { textKeyOf, builtinLabel } from '../engine/i18n/ContentKeys.js';
 import { coreStringsOf } from '../engine/i18n/strings/index.js';
@@ -292,6 +292,14 @@ export class Game {
     this._warmFrames = 0;
     /** @type {CombatSystem|null} */
     this.combat = null;
+    /**
+     * The Códex shown on a campaign's levels without combat (`journalData`): made on the first
+     * journal there (`_loadCodex`), with the enemy portraits, from the campaign save's unlocks.
+     * @type {import('./combat/codex.js').Codex|null}
+     */
+    this._codexBook = null;
+    /** @type {Promise<void>|null} */
+    this._codexJob = null;
     /**
      * The story runtime (docs/specs/STORY_SCRIPT.md): a campaign, or a level with events / talk
      * scripts (`levelHasStory`); null otherwise — such a level plays exactly as before.
@@ -1642,12 +1650,65 @@ export class Game {
     if (open === this.journalOpen) return this.journalOpen;
     // (the journal plays its own open / close sounds: `onSound`)
     if (open) {
-      j.setData(this.story.journalData());
+      j.setData(this.journalData());
       j.open('quests');
+      // a campaign's level without combat: its Códex (the save's unlocks) once its art is in
+      if (!this.combat && this.campaign?.state.combat && !this._codexBook) {
+        this._loadCodex().then(() => { if (this.journalOpen) j.setData(this.journalData()); });
+      }
       this.ui.prompt.hide();
       this.combat?.onMapOpen();
     } else j.close();
     return this.journalOpen;
+  }
+
+  /**
+   * What the journal shows: the story's quests, items and gold, and — on a level with combat — the
+   * Códex (combat/codex.js), its third tab.
+   * @returns {import('../engine/ui/types.js').JournalData}
+   */
+  journalData() {
+    const data = this.story ? this.story.journalData() : {};
+    const live = this.combat?.codex;
+    if (live) return { ...data, codex: live.entries() };
+    // a campaign's level without combat: the Códex as the save holds it, once a combat level was
+    // played (`state.combat`) and the book is made (`_loadCodex`)
+    const saved = this.campaign?.state.combat;
+    if (saved && this._codexBook) {
+      this._codexBook.importKills(saved.codex);
+      return { ...data, codex: this._codexBook.entries() };
+    }
+    return data;
+  }
+
+  /**
+   * Make the Códex of a campaign's levels without combat (once per game): the Códex module, the
+   * combat's words and the enemy sprite painter, fetched only now — a peaceful level loads none
+   * of it until its journal opens; each portrait is cut from a sheet made for it and let go.
+   * @returns {Promise<void>}
+   */
+  _loadCodex() {
+    this._codexJob ??= Promise.all([
+      import('./combat/codex.js'),
+      import('./combat/strings.js'),
+      import('../engine/pixel/MonsterSprites.js'),
+    ]).then(([{ Codex, portraitFrom }, strings, { createEnemySheet }]) => {
+      if (this._disposed) return;
+      // (CombatSystem registers them too; the same table)
+      registerStrings('combat', strings.default);
+      this._codexBook = new Codex({
+        picture: (kind) => {
+          const sheet = createEnemySheet(kind);
+          const pic = portraitFrom(sheet);
+          sheet.dispose();
+          return pic;
+        },
+      });
+    }, (err) => {
+      console.warn('[Luminati] the Códex could not load:', err);
+      this._codexJob = null;
+    });
+    return this._codexJob;
   }
 
   /** Is the story journal open? */

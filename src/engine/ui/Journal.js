@@ -12,7 +12,7 @@ import './ui.css';
 import './story.css';
 
 /**
- * @import { JournalData, JournalQuest, JournalItem, JournalTab } from './types.js'
+ * @import { JournalData, JournalQuest, JournalItem, JournalTab, JournalCodexEntry, JournalCodexRow } from './types.js'
  * @import { TextEl } from './layout/type.js'
  */
 
@@ -28,6 +28,13 @@ import './story.css';
  * cross per state, the count), the selected entry at the right (its name, its state, the text, the
  * objectives with pixel checkboxes, the log). z 7, the world map's layer: the game never opens
  * both.
+ *
+ * The **Códex** (a third tab, only when `setData` brings `codex` pages — the game's combat levels):
+ * the bestiary, one page per enemy kind in number order. The list shows the number (0001) and the
+ * name, "????" while locked; the page the picture in a small glass panel (a silhouette while
+ * locked), its state, the text, then the stats at level 1 with what each gains per level, the
+ * drops and the defeated count. A locked page shows only the number, "????", the silhouette and
+ * how to record it.
  *
  * An empty tab shows no columns: its empty state, centred under the header — the tab's icon (a
  * scroll, a chest) in engraved gold, its line ('story-ui' `empty.quests` / `empty.items`, class
@@ -53,7 +60,8 @@ import './story.css';
  * by the constructor.
  */
 
-const TABS = /** @type {const} */ (['quests', 'items']);
+/** The tabs in order; the Códex only when the data carries one (`JournalData.codex`). */
+const TABS = /** @type {const} */ (['quests', 'items', 'codex']);
 
 /** The window at G's size (A's L window at the tactics panel's place and size), the narrowest it reflows to, in art px. */
 const WW0 = 608, WH0 = 328, WW_MIN = 480;
@@ -418,7 +426,8 @@ const str = (v) => (v === undefined || v === null ? '' : String(v));
 /**
  * Normalise untrusted journal data (any shape) into clean arrays.
  * @param {JournalData} data
- * @returns {{ quests: Required<JournalQuest>[], items: Required<JournalItem>[], gold: number }}
+ * @returns {{ quests: Required<JournalQuest>[], items: Required<JournalItem>[], gold: number,
+ *   codex: Required<JournalCodexEntry>[] | null }}
  */
 function clean(data) {
   const d = data && typeof data === 'object' ? data : {};
@@ -442,7 +451,66 @@ function clean(data) {
     };
   });
   const g = Number(d.gold);
-  return { quests, items, gold: Number.isFinite(g) ? Math.max(0, Math.floor(g)) : 0 };
+  const rows = (/** @type {unknown} */ v) => (Array.isArray(v) ? v : []).filter((r) => r && typeof r === 'object')
+    .map((r) => ({ label: str(r.label), value: str(r.value), growth: str(r.growth) })).filter((r) => r.label);
+  /** @type {Required<JournalCodexEntry>[] | null} */
+  const codex = Array.isArray(d.codex) ? d.codex.filter((e) => e && typeof e === 'object').map((e, i) => {
+    const no = Math.floor(Number(e.no));
+    const kills = Math.floor(Number(e.kills));
+    const unlocked = !!e.unlocked;
+    return {
+      id: str(e.id) || `#${i}`,
+      no: Number.isFinite(no) && no >= 0 ? no : i + 1,
+      unlocked,
+      name: unlocked ? str(e.name) || str(e.id) : '',
+      image: typeof HTMLCanvasElement !== 'undefined' && e.image instanceof HTMLCanvasElement && e.image.width > 0 && e.image.height > 0 ? e.image : null,
+      text: unlocked ? str(e.text) : '',
+      stats: unlocked ? rows(e.stats) : [],
+      drops: unlocked ? rows(e.drops) : [],
+      kills: unlocked && Number.isFinite(kills) ? Math.max(0, kills) : 0,
+    };
+  }) : null;
+  return { quests, items, gold: Number.isFinite(g) ? Math.max(0, Math.floor(g)) : 0, codex };
+}
+
+/** A Códex number as shown: four digits at least (0001). @param {number} no */
+const codexNo = (no) => String(no).padStart(4, '0');
+
+/**
+ * A locked page's picture: the portrait's shape in the window's navy, its edge a lighter rim —
+ * the creature unseen. A new canvas, the portrait's size.
+ * @param {HTMLCanvasElement} src
+ */
+function silhouette(src) {
+  const k = pal();
+  const w = src.width, h = src.height;
+  const a = src.getContext('2d').getImageData(0, 0, w, h).data;
+  const on = (/** @type {number} */ x, /** @type {number} */ y) => x >= 0 && y >= 0 && x < w && y < h && a[(y * w + x) * 4 + 3] > 24;
+  return art(w, h, (p) => {
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        if (!on(x, y)) continue;
+        const edge = !on(x - 1, y) || !on(x + 1, y) || !on(x, y - 1) || !on(x, y + 1);
+        p.px(x, y, edge ? k.ink5 : k.ink3);
+      }
+    }
+  });
+}
+
+/**
+ * The picture's glass panel (w × h): an ink rim, a dim gilt line inside it, dark glass lit a step
+ * at the top.
+ * @param {number} w @param {number} h
+ */
+function portraitPanel(w, h) {
+  const k = pal();
+  return art(w, h, (p) => {
+    p.rect(1, 0, w - 2, h, k.ink0); p.rect(0, 1, w, h - 2, k.ink0);
+    p.rect(1, 1, w - 2, h - 2, k.dm2);
+    p.rect(2, 2, w - 4, h - 4, k.ink1);
+    p.rect(2, 2, w - 4, Math.floor((h - 4) / 3), k.ink2);
+    p.hline(3, 2, w - 6, k.dm1);
+  });
 }
 
 /**
@@ -472,7 +540,7 @@ export class Journal {
     this._tab = 'quests';
     this._data = clean({});
     /** selected entry id per tab (kept across setData while it still exists) */
-    this._sel = { quests: '', items: '' };
+    this._sel = { quests: '', items: '', codex: '' };
     /** @type {ListEntry[]} entries of the shown list, in order */
     this._entries = [];
     this._index = -1;
@@ -518,7 +586,9 @@ export class Journal {
 
   /** True between open() and close(). */
   get isOpen() { return this._open; }
-  /** The tab shown ('quests' | 'items'). */
+  /** The tabs the data has: Quests and Items, and the Códex when it carries one. @returns {JournalTab[]} */
+  get tabs() { return TABS.filter((tb) => tb !== 'codex' || !!this._data.codex); }
+  /** The tab shown ('quests' | 'items' | 'codex'). */
   get tab() { return this._tab; }
   /** The selected entry's id on the current tab ('' when the list is empty). */
   get selectedId() { return this._entries[this._index]?.id ?? ''; }
@@ -530,6 +600,7 @@ export class Journal {
    */
   setData(data) {
     this._data = clean(data);
+    if (!this.tabs.includes(this._tab)) this._tab = 'quests';
     this._dirty = true;
     if (this._open) this._render();
   }
@@ -540,7 +611,7 @@ export class Journal {
    * @returns {boolean} true
    */
   open(tab = 'quests') {
-    const tb = TABS.includes(tab) ? tab : 'quests';
+    const tb = this.tabs.includes(tab) ? tab : 'quests';
     this._closeQueued = false;
     if (!this._open) {
       this._open = true;
@@ -600,8 +671,9 @@ export class Journal {
 
   /** @param {number} dir */
   _cycleTab(dir) {
-    const i = TABS.indexOf(this._tab);
-    this._setTab(TABS[(i + dir + TABS.length) % TABS.length]);
+    const tabs = this.tabs;
+    const i = tabs.indexOf(this._tab);
+    this._setTab(tabs[(i + dir + tabs.length) % tabs.length]);
     this._sound('confirm');
   }
 
@@ -670,7 +742,7 @@ export class Journal {
     this._header(g);
     put(g, hairline(R - L, 'both', k.dm1), L, RULE);
     // (an empty tab: no columns — its empty state centred under the header: `_emptyState`)
-    const empty = this._tab === 'quests' ? !this._data.quests.length : !this._data.items.length;
+    const empty = !this._rowsOf(this._tab).length;
     g.classList.toggle('is-empty', empty);
     if (!empty) put(g, vRule(BOT - CY), DIV, CY, 1, 'lu-journal__divider');
 
@@ -706,8 +778,8 @@ export class Journal {
     const quests = this._tab === 'quests';
     const box0 = box(g, 'div', 'lu-journal__none', L, CY);
     const cx = Math.round((L + R) / 2);
-    const head = s(quests ? 'empty.quests' : 'empty.items');
-    const hint = s(quests ? 'empty.questsHint' : 'empty.itemsHint');
+    const head = s(`empty.${this._tab}`);
+    const hint = s(`empty.${this._tab}Hint`);
     const maxW = Math.min(R - L - 40, 320);
     // the hint's lines (it may wrap: each centred on whole pixels) and the stack's height: the
     // icon 32, 8, the line's ink, 7, the hint
@@ -716,7 +788,8 @@ export class Journal {
     const nameH = Math.max(8, inkNow('name'));
     const h = 32 + 8 + nameH + 7 + hints.length * lineP;
     let y = Math.round(CY + (BOT - CY - h) / 2) - 4;
-    put(box0, iconCanvas(CORE_ICONS[quests ? 'scroll' : 'chest'], { ...GOLD_ICON(), scale: 2 }), cx - 16, y, 1, 'lu-journal__none-icon');
+    const icon = quests ? 'scroll' : this._tab === 'codex' ? 'crown' : 'chest';
+    put(box0, iconCanvas(CORE_ICONS[icon], { ...GOLD_ICON(), scale: 2 }), cx - 16, y, 1, 'lu-journal__none-icon');
     y += 32 + 8;
     txc(box0, head, cx, y + nameH / 2, { font: 'name', color: k.tx1, drop: true, align: 'center', cls: 'lu-journal__empty' });
     y += nameH + 7;
@@ -742,7 +815,7 @@ export class Journal {
     x += key(tabs, 'Q', x, HY - 5.5, { cls: 'lu-journal__cap' }) + 7;
     const active = this._data.quests.filter((q) => q.state === 'active').length;
     const gs = Math.ceil(grow('small'));
-    for (const tb of TABS) {
+    for (const tb of this.tabs) {
       const on = tb === this._tab;
       const label = UP(s(`tab.${tb}`));
       const lw = measure(label, 'small', 1);
@@ -767,11 +840,21 @@ export class Journal {
       if (on) put(b, underline(lw + 4), x + 1, HY + 4 + gs / 2);
       x += w + 6;
     }
-    key(tabs, 'E', x + 1, HY - 5.5, { cls: 'lu-journal__cap' });
-    // the key hints at the right (G's tactics header), the gold before them on the Items tab
+    const tabsEnd = x + 1 + key(tabs, 'E', x + 1, HY - 5.5, { cls: 'lu-journal__cap' });
+    // the key hints at the right (G's tactics header), the gold before them on the Items tab; on a
+    // window too narrow for the tabs and both (three tabs at 1024 × 768) only Esc's, else none
+    const hintSets = [
+      [{ keys: ['↑', '↓'], label: s('hint.select') }, { keys: ['Esc'], label: s('hint.close') }],
+      [{ keys: ['Esc'], label: s('hint.close') }],
+      [],
+    ];
     const foot = box(head, 'div', 'lu-journal__foot', WX, WY);
-    const hw = keyHints(foot, [{ keys: ['↑', '↓'], label: s('hint.select') }, { keys: ['Esc'], label: s('hint.close') }],
-      R, HY - 5.5, { align: 'right', color: k.tx2, drop: true, cls: 'lu-journal__hint' });
+    let hw = 0;
+    for (const hints of hintSets) {
+      foot.textContent = '';
+      hw = hints.length ? keyHints(foot, hints, R, HY - 5.5, { align: 'right', color: k.tx2, drop: true, cls: 'lu-journal__hint' }) : 0;
+      if (R - hw >= tabsEnd + 12) break;
+    }
     const gold = box(head, 'div', `lu-journal__gold${this._tab === 'items' ? ' is-on' : ''}`, WX, WY);
     const gn = this._data.gold.toLocaleString('en-US');
     const unit = s('gold');
@@ -832,6 +915,7 @@ export class Journal {
     band.style.visibility = 'hidden';
     cursor.style.visibility = 'hidden';
     this._selArt = { band, cursor };
+    if (this._tab === 'codex') { this._buildCodexList(list); return; }
     const groups = this._tab === 'quests'
       ? [
         { label: s('group.active'), rows: quests.filter((q) => q.state === 'active') },
@@ -924,7 +1008,7 @@ export class Journal {
     d.textContent = '';
     d.scrollTop = 0;
     const x0 = DX0 + 2;
-    const found = this._tab === 'quests' ? this._data.quests.find((x) => x.id === id) : this._data.items.find((x) => x.id === id);
+    const found = this._rowsOf(this._tab).find((x) => x.id === id);
     d.classList.toggle('is-empty', !found);
     if (!found) {
       // (an empty tab shows its empty state instead: no detail at all)
@@ -933,7 +1017,9 @@ export class Journal {
     }
     const lh = (/** @type {TextEl} */ e) => e.lines * e.lh;
     let y = CY + 2;
-    if (this._tab === 'quests') {
+    if (this._tab === 'codex') {
+      y = this._codexPage(d, /** @type {Required<JournalCodexEntry>} */ (found), x0, y);
+    } else if (this._tab === 'quests') {
       const q = /** @type {Required<JournalQuest>} */ (found);
       const title = txt(d, UP(q.title), x0, y, { font: 'name', track: 1, color: k.g5, drop: true, maxW: DW, cls: 'lu-journal__title' });
       y += lh(title) + 3 + Math.ceil(grow('small') / 2);
@@ -990,6 +1076,124 @@ export class Journal {
       y += 30;
     }
     box(d, 'div', 'lu-journal__end', DX0, y + 6, 1, 1);
+  }
+
+  /** The shown tab's rows (quests, items or Códex pages). @param {JournalTab} tab @returns {{ id: string }[]} */
+  _rowsOf(tab) {
+    if (tab === 'codex') return this._data.codex ?? [];
+    return tab === 'quests' ? this._data.quests : this._data.items;
+  }
+
+  /**
+   * The Códex's list: one group (Creatures, recorded / listed), a row per page — the number and the
+   * name, "????" while locked; a gold gem when recorded, a dusk one when not.
+   * @param {HTMLElement} list
+   */
+  _buildCodexList(list) {
+    const { LX0, CY, LW, COUNT_R } = this._G;
+    const pages = this._data.codex ?? [];
+    const RP = this._rp;
+    const GH = 13 + Math.ceil(grow('small'));
+    const k = pal();
+    const head = box(list, 'li', 'lu-journal__group', LX0, CY);
+    section(head, UP(s('group.codex')), LX0 + MARK_X, LX0 + COUNT_R, CY + GH / 2, `${pages.filter((e) => e.unlocked).length}/${pages.length}`, 'num');
+    let y = GH;
+    pages.forEach((e, i) => {
+      const li = box(list, 'li', `lu-journal__entry lu-journal__codex${e.unlocked ? '' : ' is-locked'}`, LX0, CY + y, LW, RP);
+      const cy = CY + y + RP / 2;
+      const mark = box(li, 'span', 'lu-journal__mark', LX0 + MARK_X, CY + y);
+      const mc = e.unlocked ? gemGlyph(1, GEMS.gold()) : gemGlyph(1, GEMS.dusk(), { setting: [k.dm1, k.dm2, k.dm3] });
+      put(mark, mc, LX0 + MARK_X + Math.floor((9 - mc.width) / 2), Math.round(cy - mc.height / 2));
+      const no = codexNo(e.no);
+      const nw = measure(no, 'num');
+      txc(li, no, LX0 + NAME_X, cy, { font: 'num', color: e.unlocked ? k.g4 : k.dm1, drop: true, cls: 'lu-journal__no' });
+      const name = fit(e.unlocked ? e.name : s('codex.unknown'), 'body', COUNT_R - NAME_X - nw - 6);
+      txc(li, name, LX0 + NAME_X + nw + 6, cy, { font: 'body', drop: true, cls: 'lu-journal__name' });
+      this._entries.push({ id: e.id, el: li, y, top: i === 0 ? 0 : y });
+      y += RP;
+    });
+    box(list, 'li', 'lu-journal__end', LX0, CY + y + 4, 1, 1);
+  }
+
+  /**
+   * A Códex page in the detail box; returns the y under it.
+   * @param {HTMLElement} d @param {Required<JournalCodexEntry>} e @param {number} x0 @param {number} y
+   */
+  _codexPage(d, e, x0, y) {
+    const k = pal();
+    const { DW } = this._G;
+    const lh = (/** @type {TextEl} */ el) => el.lines * el.lh;
+    // the number (small tracked) and the name — "????" while locked
+    this._stateLabel(d, s('codex.no', { no: codexNo(e.no) }), x0, y, 'lu-journal__codex-no', e.unlocked ? k.g4 : k.dm1);
+    y += 9 + Math.ceil(grow('small')) + 2;
+    const title = txt(d, e.unlocked ? UP(e.name) : s('codex.unknown'), x0, y, { font: 'name', track: 1, color: e.unlocked ? k.g5 : k.tx3, drop: true, maxW: DW, cls: 'lu-journal__title' });
+    y += lh(title) + 6;
+    // the picture in its glass panel (a silhouette while locked), the state and the text beside it
+    const PW = 80, PH = 66;
+    put(d, portraitPanel(PW, PH), x0, y, 1, 'lu-journal__portrait-panel');
+    if (e.image) {
+      const pic = e.unlocked ? e.image : silhouette(e.image);
+      const sc = Math.max(1, Math.floor(Math.min((PW - 10) / pic.width, (PH - 10) / pic.height)));
+      // drawn sc× on its own canvas (whole art pixels, never smoothed), so it sits on the art grid
+      const big = art(pic.width * sc, pic.height * sc, (p) => { p.ctx.imageSmoothingEnabled = false; p.ctx.drawImage(pic, 0, 0, pic.width * sc, pic.height * sc); });
+      put(d, big, x0 + Math.round((PW - big.width) / 2), y + Math.round((PH - big.height) / 2), 1, `lu-journal__portrait${e.unlocked ? '' : ' is-locked'}`);
+    }
+    const tx = x0 + PW + 10, tw = DW - PW - 10;
+    let ty = y + 1;
+    const mc = e.unlocked ? glyph('check') : gemGlyph(2, GEMS.dusk(), { setting: [k.dm1, k.dm2, k.dm3] });
+    put(d, mc, tx + Math.floor((9 - mc.width) / 2), Math.round(ty + capMid('small') - mc.height / 2));
+    this._stateLabel(d, s(e.unlocked ? 'codex.seen' : 'codex.locked'), tx + 12, ty, e.unlocked ? 'is-done' : 'is-locked', e.unlocked ? k.heal : k.tx3);
+    ty += 9 + Math.ceil(grow('small')) + 5;
+    const body = e.unlocked
+      ? txt(d, e.text || s('unknownItem'), tx, ty, { font: 'body', color: e.text ? k.tx1 : k.tx3, drop: true, maxW: tw, cls: 'lu-journal__text' })
+      : txt(d, s('codex.lockedHint'), tx, ty, { font: 'line', color: k.tx3, drop: true, maxW: tw, cls: 'lu-journal__text is-none' });
+    ty += lh(body);
+    y = Math.max(y + PH, ty) + 8;
+    if (!e.unlocked) return y;
+    // the stats at level 1 and their growth per level
+    const VX = x0 + 118, GX = x0 + 128;
+    const RP = 12 + Math.ceil(grow('line'));
+    y = this._codexSection(d, s('codex.stats'), s('codex.statsHint'), x0, y);
+    for (const r of e.stats) y = this._codexRow(d, r, x0, VX, GX, y, RP);
+    y += 5;
+    y = this._codexSection(d, s('codex.drops'), '', x0, y);
+    if (e.drops.length) for (const r of e.drops) y = this._codexRow(d, r, x0, VX, GX, y, RP);
+    else {
+      const none = txt(d, s('codex.noDrops'), x0 + 4, y, { font: 'line', color: k.tx3, drop: true, maxW: DW - 4 });
+      y += lh(none) + 2;
+    }
+    y += 6;
+    txt(d, s('codex.kills', { n: e.kills }), x0 + 4, y, { font: 'line', color: k.tx2, drop: true, maxW: DW - 4, cls: 'lu-journal__kills' });
+    return y + 12;
+  }
+
+  /**
+   * A Códex section heading with a note at its right end ('' none); returns the y under it.
+   * @param {HTMLElement} d @param {string} label @param {string} note @param {number} x0 @param {number} y
+   */
+  _codexSection(d, label, note, x0, y) {
+    const { DX0, CY, DW } = this._G;
+    const gs = Math.ceil(grow('small'));
+    const h = box(d, 'div', 'lu-journal__sub', DX0, CY);
+    section(h, UP(label), x0, x0 + DW, y + 4 + gs / 2, note || null, 'line');
+    return y + 12 + gs;
+  }
+
+  /**
+   * One stat or drop row: the label, the value right-aligned at `vx`, the growth after it (gains in
+   * green, none as a dim dash for a stat that has a growth column).
+   * @param {HTMLElement} d @param {JournalCodexRow} r @param {number} x0 @param {number} vx @param {number} gx
+   * @param {number} y @param {number} rp the row pitch
+   */
+  _codexRow(d, r, x0, vx, gx, y, rp) {
+    const k = pal();
+    const { DX0, CY, DW } = this._G;
+    const row = box(d, 'div', 'lu-journal__codex-row', DX0, CY);
+    const cy = y + rp / 2;
+    txc(row, fit(r.label, 'line', vx - x0 - 34), x0 + 4, cy, { font: 'line', color: k.tx1, drop: true, cls: 'lu-journal__codex-label' });
+    txc(row, r.value, vx, cy, { font: 'num', color: k.kw, align: 'right', drop: true, cls: 'lu-journal__codex-value' });
+    if (r.growth) txc(row, fit(r.growth, 'line', x0 + DW - gx), gx, cy, { font: 'line', color: k.heal, drop: true, cls: 'lu-journal__codex-growth' });
+    return y + rp;
   }
 
   /**

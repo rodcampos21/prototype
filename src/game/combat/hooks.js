@@ -478,6 +478,15 @@ export function makeHooks(sys) {
     /** The story's `heal` for the companions: every one full and up; how many. */
     healAllies: () => sys.healAllies(),
 
+    /** The Códex's unlocks: defeated per kind (an unlocked kind has a count). */
+    codex: () => ({ ...sys.codex.kills }),
+
+    /** Forget every Códex unlock of the running game; the unlocks after (none). */
+    codexReset() {
+      sys.codex.reset();
+      return { ...sys.codex.kills };
+    },
+
     /** The CombatSystem itself (scripts that need more than the hooks). */
     system: sys,
   };

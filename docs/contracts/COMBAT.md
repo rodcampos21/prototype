@@ -948,6 +948,37 @@ draws in the order gold, heart, mana, draught.
 - `deathCount` (per enemy, input of the loot seed) counts that enemy's deaths this session; it is
   reset by the `reset()` hook only (§20.1).
 
+### 7.10 The Códex (`codex.js`)
+
+The bestiary: a third tab of the story journal (STORY_SCRIPT §9.4), shown on levels with combat
+and a story, and on every level of a campaign once it has played a combat level. `CombatSystem.load`
+creates the live `Codex`; the game passes `codex.entries()` to `Journal.setData` as
+`JournalData.codex` (`Game.journalData`). On a campaign's level without combat the journal shows
+the save's unlocks (`state.combat.codex`) through a `Codex` the game makes the first time the
+journal opens there (`Game._loadCodex`: the Códex module, the combat strings and the enemy sprite
+painter are fetched only then, so a peaceful level loads none of it before; the tab appears a
+moment after the journal opens).
+
+- **Entries:** `CODEX` lists the kinds in number order (`{ no, kind }`; `no` shown as four digits,
+  0001). Today: 0001 `slime`.
+- **Unlocking:** every `kill` event of a non-passive enemy (summoned adds excluded) counts for its
+  kind; the first one unlocks the page.
+- **Saving:** the unlocks are part of the game being played. A campaign carries them from level to
+  level and keeps them in its save with the rest of the combat progress (`CombatProgress.codex`:
+  defeated per kind; `exportProgress` / `importProgress`, CampaignState `combat.codex`), so each
+  campaign — and a new game of it — has its own Códex. A level played on its own starts with an
+  empty Códex every time. A save without `codex` loads with an empty one.
+- **A locked page:** the number, "????", the kind's portrait as a silhouette (its shape in navy
+  with a lighter rim) and how to record it.
+- **An unlocked page:** the number and name (`enemy.<kind>`), the portrait (the first idle frame of
+  the kind's sheet facing the camera, drawn whole-pixel in a glass panel), "Recorded", the
+  description (`codex.text.<kind>`), the stats at level 1 — HP, attack, defense, poise, speed, XP,
+  gold — with what each gains per level (`ENEMY_SCALING`, §7.2: HP, attack and XP as an amount,
+  gold as a share; none for a boss), the drop chances above 0 (§7.8) and the defeated count.
+- **Adding a mob:** a row in `CODEX` and its description (`codex.text.<kind>`, `pt` and `en`) in
+  combat/strings.js; stats, growth, drops, name and picture come from the existing data.
+- **Hooks:** `codex()` (defeated per kind), `codexReset()` (empties the running game's; §20).
+
 ---
 
 ## 8. Boss: Cinderheart (`ai/golem.js`, arena from `BossArena.js`)

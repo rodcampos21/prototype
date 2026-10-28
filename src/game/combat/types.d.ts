@@ -985,6 +985,10 @@ export interface CombatHooks {
   allyGod(on?: boolean): boolean;
   /** Every companion full and up (the story's `heal`) → how many. */
   healAllies(): number;
+  /** The Códex's unlocks (§7.10): defeated per kind; a kind listed is unlocked. */
+  codex(): Record<string, number>;
+  /** Forget every Códex unlock of the running game (its next save writes none) → the unlocks after (`{}`). */
+  codexReset(): Record<string, number>;
 }
 
 // -------------------------------------------------------------------------------------------------
