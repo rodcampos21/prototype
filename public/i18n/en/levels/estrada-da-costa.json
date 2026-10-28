@@ -1,0 +1,150 @@
+{
+  "format": "luminati-i18n",
+  "version": 3,
+  "lang": "en",
+  "source": "levels/estrada-da-costa",
+  "extends": [],
+  "terms": {
+    "Clareira": "Clearing",
+    "Criatura da mata": "Forest Creature",
+    "Estrada da Costa": "The Coast Road",
+    "O resgate": "The Rescue",
+    "Praia dos Destroços": "Wreckage Beach",
+    "Surubin": "Surubin",
+    "Uma voz": "A voice"
+  },
+  "units": {
+    "2E2FFB9DA250D0F49ADF4F470ECD726C": {
+      "source": "Estrada da Costa",
+      "target": "The Coast Road"
+    },
+    "2E2FFB9DA250D0F49ADF4F470ECD726C.2": {
+      "source": "Terra Selvagem",
+      "target": "The Wild Land"
+    },
+    "3C26CBF769F007BA2F16C0BC2813BFBD": {
+      "source": "Que as marés te recompensem!",
+      "target": "May the tides reward you!"
+    },
+    "4F5F4977629D6FA7E41A004158FC0EE6": {
+      "source": "Na Capital dizem que esta terra engole homens. Eu prefiro acreditar que ela só tem fome de fé.",
+      "target": "In the Capital they say this land swallows men. I'd rather believe it's only hungry for faith."
+    },
+    "6A9F91C3CBC5A0CD4D4176A3B46A5D55": {
+      "source": "E... obrigado a você também, cavaleiro.",
+      "target": "And... thank you too, knight."
+    },
+    "6DF48D42FBCA4133A221D93660D8659F": {
+      "source": "Dar de ombros e seguir pela estrada",
+      "target": "Shrug and walk on down the road"
+    },
+    "9E54FAAFCBAA19E1ED81F84B54052396": {
+      "source": "O mar daqui tem outro cheiro. Mais verde. Mais... selvagem.",
+      "target": "The sea smells different here. Greener. More... wild."
+    },
+    "13AA3BD02CF765A0558AD46BDA96605A": {
+      "source": "Que as marés nos guiem. E que guiem você também, cavaleiro, mesmo que você não acredite nelas.",
+      "target": "May the tides guide us. And may they guide you too, knight, even if you don't believe in them."
+    },
+    "39EC74D8682E04E9E90AC03381DBE530": {
+      "source": "O cavaleiro quase ri do nome do deus. Mas ninguém atravessa um oceano sozinho por um peixe sem acreditar muito em alguma coisa.",
+      "target": "The knight almost laughs at the god's name. But no one crosses an ocean alone for a fish without believing very hard in something."
+    },
+    "044EB878765353017E47173D1473A2DA": {
+      "source": "Ó Rei das Profundezas, me guarda! Socorro!",
+      "target": "O King of the Deep, protect me! Help!"
+    },
+    "55D8BCEE46823D841DA7F2B58BA7B55D": {
+      "source": "Fim do teste: a estrada da costa",
+      "target": "End of the test: the coast road"
+    },
+    "72AA98124379E961AA7324CEBA0ABD94": {
+      "source": "Amanhã eu te conto da missão. Hoje... hoje eu só quero agradecer ao Rei por estar vivo.",
+      "target": "Tomorrow I'll tell you about the mission. Today... today I just want to thank the King for being alive."
+    },
+    "89A20BBD9FCE138495B37C65B331B0F9": {
+      "source": "A Capital me mandou fundar uma casa para o Rei aqui. Sozinho, porém, eu... bem, você viu.",
+      "target": "The Capital sent me to found a house for the King here. Alone, though, I... well, you saw."
+    },
+    "98A7AF07A8CF41C4F7CA142C3D61AE9F": {
+      "source": "Ali adiante, junto ao riacho. Uma clareira. Podemos acampar esta noite.",
+      "target": "Up ahead, by the stream. A clearing. We can make camp tonight."
+    },
+    "411AE3954CBE0A6900FC875FB7D2649E": {
+      "source": "Acenar com a cabeça",
+      "target": "Nod"
+    },
+    "755A52A701B9A3606219374ECC0002E4": {
+      "source": "Atrás de você, na clareira, alguém ainda grita por socorro.",
+      "target": "Behind you, in the clearing, someone is still crying for help."
+    },
+    "931EB8DE5BD2880BFAB37884EACC1AC2": {
+      "source": "Adepto do Culto ao Baiacu Rei",
+      "target": "Adept of the Cult of the Pufferfish King"
+    },
+    "1567EA1DFEB896B6C1A84C552CB4278C": {
+      "source": "Ó Rei das Profundezas, obrigado! Obrigado!",
+      "target": "O King of the Deep, thank you! Thank you!"
+    },
+    "4094CBF2858B6A544BFAA1B1CB3FE2A0": {
+      "source": "Eu sei usar o cajado. Quer dizer... eu sei segurar o cajado.",
+      "target": "I know how to use the staff. I mean... I know how to hold the staff."
+    },
+    "7885E276F7A00B48D4B47C0AC1AF0D64": {
+      "source": "Então eu vou junto! A estrada é mais segura a dois.",
+      "target": "Then I'm coming along! The road is safer for two."
+    },
+    "163089DC247CC04A57D0EAF1B06749F1": {
+      "source": "Estrada da Costa",
+      "target": "The Coast Road"
+    },
+    "A00326075BFD2072B929BF0452BE0215": {
+      "source": "Terra Selvagem",
+      "target": "The Wild Land"
+    },
+    "AAC2D839EFF7BFDE720D2924E19DC227": {
+      "source": "A estrada de terra segue a costa. O vento traz sal, e algo mais.",
+      "target": "The dirt road follows the coast. The wind carries salt, and something else."
+    },
+    "B0B324088035FB6075C266BE1743AA24": {
+      "source": "Aqui! Por favor!",
+      "target": "Over here! Please!"
+    },
+    "C06C425C6577E20139837755B80D5F97": {
+      "source": "Cuidado! Elas estão por toda parte!",
+      "target": "Look out! They're everywhere!"
+    },
+    "CB365A11F94B7F7D6B16B59FEE9F9628": {
+      "source": "Terra Selvagem",
+      "target": "The Wild Land"
+    },
+    "D224C3328416DFA18C9E9573E1769720": {
+      "source": "O Rei das Profundezas mandou você. Tenho certeza.",
+      "target": "The King of the Deep sent you. I'm sure of it."
+    },
+    "DC1397EF027BA106B140A5B27DDE50A1": {
+      "source": "Estrada da Costa",
+      "target": "The Coast Road"
+    },
+    "DCD5FD69F36E120AC5CAD896BF4D60B8": {
+      "source": "Sou Surubin, adepto do Culto ao Baiacu Rei. Vim do Reino de Marina para trazer a fé a esta terra.",
+      "target": "I am Surubin, adept of the Cult of the Pufferfish King. I came from the Kingdom of Marina to bring the faith to this land."
+    },
+    "E3CDFB9AB9C67A9A2034E64231BFA30B": {
+      "source": "Um rapaz de vestes encharcadas, cercado por criaturas da mata, segura um cajado como quem nunca usou um.",
+      "target": "A young man in soaked robes, surrounded by forest creatures, holds a staff like someone who has never used one."
+    },
+    "E42BAE9BF4785DA548DCFF4F850D183F": {
+      "source": "Salve o forasteiro cercado na clareira.",
+      "target": "Save the stranger cornered in the clearing."
+    },
+    "F9B651B0DDA6383B50A9618D4FE0119F": {
+      "source": "Surubin espera uma resposta.",
+      "target": "Surubin waits for an answer."
+    },
+    "F353EAD949536F72C787C4180E19E47C": {
+      "source": "Siga com Surubin pela estrada ao norte.",
+      "target": "Follow the road north with Surubin."
+    }
+  }
+}

@@ -79,6 +79,7 @@ The shipped levels (all in [`public/levels/`](../../public/levels/)):
 | `sample-hamlet.json` | Willowmere — A Hamlet by the Pond | 28 × 22 | 38 (3 villagers) | **generated** by [`tools/make-sample-hamlet.mjs`](../../tools/make-sample-hamlet.mjs) | `game.html?level=sample-hamlet` |
 | `gildhaven.json` | Gildhaven — Market Day on the River Gild (a walled river town) | 128 × 128 | 518 (68 villagers, 53 houses, 86 light descriptors) | **generated** by [`tools/make-gildhaven.mjs`](../../tools/make-gildhaven.mjs) | `game.html?level=gildhaven` |
 | `cinderwatch-pass.json` | Cinderwatch Pass — Where the Old Fires Wake (the **combat** level) | 96 × 120 | 283 (7 villagers, 24 enemy groups = 58 enemies, 6 chests, 3 waystones, 4 story events) | **generated** by [`tools/make-cinderwatch-pass.mjs`](../../tools/make-cinderwatch-pass.mjs) | `game.html?level=cinderwatch-pass` |
+| `estrada-da-costa.json` | Estrada da Costa — Terra Selvagem (the Baiacu Rei prologue test, Portuguese text; [design note](../design/levels/estrada-da-costa.md)) | 40 × 30 | 56 (1 villager who joins the party, 1 enemy group, 1 chest, 5 story events) | **generated** by [`tools/make-estrada-da-costa.mjs`](../../tools/make-estrada-da-costa.mjs) | `game.html?level=estrada-da-costa` |
 
 Only Cinderwatch Pass has `enemy` objects, so it is the only level with combat
 ([contracts/COMBAT.md](../contracts/COMBAT.md)); the other five stay peaceful and must not notice
@@ -377,16 +378,17 @@ apply them step by step.
     ([CONVENTIONS.md §13](../development/CONVENTIONS.md#13-error-handling-and-logging),
     [KNOWN_ISSUES LVL-17](KNOWN_ISSUES.md#resolved-2026-10-01)). Check with
     `sandbox/game_levels.html?case=hostile` and its script `sandbox/game_levels.hostile.json`.
-17. **The UI is pixel art in whole art pixels, in three languages.** Size and place UI in art px
+17. **The UI is pixel art in whole art pixels, in two languages.** Size and place UI in art px
     of the pixel UI's 640 × 360 reference frame (`--px`; `group()`, `txt()`, the art kit — never `vw` /
     `clamp()` or a scale of your own), colours from G's palette only. Every word the player reads
-    is a string-table key (`t()`, with its `ja` and `zh` entries) or data translated **at display**
-    — prose by the key the data holds (`loc(key, english)`, the key read with `ContentKeys.js`'
-    readers, which the extractor reads the same way), names as terms (`term(name)`) — never
-    written into a level, campaign, story or save; names the code looks up stay English. After touching text or a
-    display site, run both i18n tours in ja and zh (0 misses). Load CJK glyphs with
-    `fonts.ensure` before measuring; never trust `document.fonts.check`. Check UI work at
-    1280 × 720, 1920 × 1080 and 1024 × 768 and with `--lang=ja` / `--lang=zh`
+    is a string-table key (`t()`, with its `pt` source and `en` translation) or data translated
+    **at display** — prose by the key the data holds (`loc(key, source)`, the key read with
+    `ContentKeys.js`' readers, which the extractor reads the same way), names as terms
+    (`term(name)`) — never written into a level, campaign, story or save; names the code looks up
+    stay as identities. Portuguese (`pt`, `SOURCE_LANG`) is the source and the default; English is
+    translated by the content tables. After touching text or a display site, check it in English
+    (`--lang=en`: 0 misses). Check UI work at 1280 × 720, 1920 × 1080 and 1024 × 768 and with
+    `--lang=en`
     ([PIXEL_UI.md](../specs/PIXEL_UI.md), [I18N.md](../specs/I18N.md),
     [KNOWN_ISSUES › UI and languages](KNOWN_ISSUES.md#ui-and-languages)).
 18. **Text keys live in the data; nobody types them.** Every translatable text carries a GUID

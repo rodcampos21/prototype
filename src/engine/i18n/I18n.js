@@ -3,47 +3,53 @@
  * here touches `location`, `localStorage` or `document` at import time, so the story runtime and the
  * level tools can import it in Node.
  *
- * Languages: 'en' (the source and the fallback), 'ja', 'zh' (Simplified Chinese). The language is
- * chosen once per page load (`resolveLang`: `?lang=` > the saved choice > 'en' — never the browser's
- * locale, so harness runs stay English) and changed by saving a new choice and reloading
- * (`saveLang`).
+ * Languages: 'pt' (Brazilian Portuguese: the source every text is written in, the fallback and the
+ * default) and 'en' (English, translated from it). The language is chosen once per page load
+ * (`resolveLang`: `?lang=` > the saved choice > 'pt' — never the browser's locale, so harness runs
+ * stay in the source language) and changed by saving a new choice and reloading (`saveLang`).
  *
- * UI strings live in namespaced tables registered with `registerStrings(ns, { en, ja, zh })` — the
- * core ones by the UI, a feature's own (combat, party, story …) by the feature when it starts, so a
+ * UI strings live in namespaced tables registered with `registerStrings(ns, { pt, en })` — the core
+ * ones by the UI, a feature's own (combat, party, story …) by the feature when it starts, so a
  * peaceful level never loads the combat table. `t('ns.key', vars)` looks the key up in the current
- * language, then in English, then returns the key itself. An entry is a string with `{var}` slots or
- * a function `(vars) => string` (English articles, plurals); `{word}` that is not a var stays as it
- * is (the dialogue's gold markup).
+ * language, then in the source language, then returns the key itself. An entry is a string with
+ * `{var}` slots or a function `(vars) => string` (articles, plurals); `{word}` that is not a var stays
+ * as it is (the dialogue's gold markup).
  */
+
+/** The language every text is written in (UI tables, level / campaign / story data): the fallback. */
+export const SOURCE_LANG = 'pt';
 
 /** The languages: code → the BCP 47 tag `<html lang>` takes and the language's own name. */
 export const LANGS = Object.freeze({
+  pt: Object.freeze({ tag: 'pt-BR', name: 'Português' }),
   en: Object.freeze({ tag: 'en', name: 'English' }),
-  ja: Object.freeze({ tag: 'ja', name: '日本語' }),
-  zh: Object.freeze({ tag: 'zh-Hans', name: '简体中文' }),
 });
-/** The language codes, in the title screen's order. */
-export const LANG_CODES = Object.freeze(['en', 'ja', 'zh']);
+/** The language codes, in the title screen's order (the source first). */
+export const LANG_CODES = Object.freeze(['pt', 'en']);
+/** The languages translated from the source (content tables exist only for these). */
+export const TRANSLATED_LANGS = Object.freeze(LANG_CODES.filter((l) => l !== SOURCE_LANG));
 /** localStorage key of the saved choice. */
 export const LANG_KEY = 'luminati.lang';
+
+/** @typedef {'pt'|'en'} LangCode */
 
 const hasOwn = (o, k) => o != null && Object.prototype.hasOwnProperty.call(o, k);
 
 /**
- * A language code from a loose value ('ja-JP' → 'ja', 'zh-CN' / 'zh-Hans' → 'zh'), or null.
+ * A language code from a loose value ('pt-BR' → 'pt', 'en-US' → 'en'), or null.
  * @param {unknown} v
- * @returns {'en'|'ja'|'zh'|null}
+ * @returns {LangCode|null}
  */
 export function normalizeLang(v) {
   if (typeof v !== 'string') return null;
   const p = v.trim().toLowerCase().split(/[-_]/)[0];
-  return p === 'en' || p === 'ja' || p === 'zh' ? p : null;
+  return p === 'pt' || p === 'en' ? p : null;
 }
 
 /**
- * The language for this page load: `?lang=` (not saved), else the saved choice, else 'en'.
+ * The language for this page load: `?lang=` (not saved), else the saved choice, else the source.
  * @param {{ search?: string, storage?: { getItem(k: string): string|null } | null }} [o] defaults: the page's
- * @returns {'en'|'ja'|'zh'}
+ * @returns {LangCode}
  */
 export function resolveLang({ search, storage } = {}) {
   const q = search ?? (typeof location !== 'undefined' ? location.search : '');
@@ -54,15 +60,21 @@ export function resolveLang({ search, storage } = {}) {
   let st = storage;
   if (st === undefined) { try { st = typeof localStorage !== 'undefined' ? localStorage : null; } catch { st = null; } }
   try { const saved = normalizeLang(st?.getItem(LANG_KEY)); if (saved) return saved; } catch { /* storage off */ }
-  return 'en';
+  return SOURCE_LANG;
 }
 
-let current = /** @type {'en'|'ja'|'zh'} */ ('en');
+let current = /** @type {LangCode} */ (SOURCE_LANG);
 
 /** The current language. */
 export const getLang = () => current;
 
-/** True for languages that break lines between characters and have no capitals (ja, zh). */
+/**
+ * True for languages that break lines between characters and have no capitals (Japanese,
+ * Chinese). No such language ships since the switch to Portuguese and English: the UI's CJK layout
+ * paths (fonts in slices, line breaks, ink heights) stay in the code, dormant, until they are
+ * removed (docs/design/baiacu/PLANO-DE-MECANICAS.md, stage A).
+ * @param {string} [lang]
+ */
 export const isCJK = (lang = current) => lang === 'ja' || lang === 'zh';
 
 /**
@@ -71,7 +83,7 @@ export const isCJK = (lang = current) => lang === 'ja' || lang === 'zh';
  * @param {string} lang
  */
 export function setLang(lang) {
-  current = normalizeLang(lang) ?? 'en';
+  current = normalizeLang(lang) ?? SOURCE_LANG;
   if (typeof document !== 'undefined' && document.documentElement) document.documentElement.lang = LANGS[current].tag;
   return current;
 }
@@ -81,13 +93,13 @@ export function setLang(lang) {
  * @param {string} lang
  */
 export function saveLang(lang) {
-  const l = normalizeLang(lang) ?? 'en';
+  const l = normalizeLang(lang) ?? SOURCE_LANG;
   try { localStorage.setItem(LANG_KEY, l); } catch { /* storage off: the choice lasts this load */ }
   return l;
 }
 
 /** @typedef {string | ((vars: Record<string, any>) => string)} StringEntry */
-/** @typedef {{ en: Record<string, StringEntry>, ja?: Record<string, StringEntry>, zh?: Record<string, StringEntry> }} StringTable */
+/** @typedef {{ pt: Record<string, StringEntry>, en?: Record<string, StringEntry> }} StringTable */
 
 /** ns → lang → key → entry (prototype-less maps: keys can be anything a level names). */
 const TABLES = new Map();
@@ -119,7 +131,7 @@ function lookup(key, lang) {
   if (!byLang) return undefined;
   const rest = key.slice(dot + 1);
   const hit = byLang.get(lang)?.get(rest);
-  return hit !== undefined ? hit : byLang.get('en')?.get(rest);
+  return hit !== undefined ? hit : byLang.get(SOURCE_LANG)?.get(rest);
 }
 
 /**
@@ -133,7 +145,7 @@ export function fill(s, vars) {
 }
 
 /**
- * A UI string in the current language (then English, then the key itself).
+ * A UI string in the current language (then the source language, then the key itself).
  * @param {string} key 'ns.key'
  * @param {Record<string, any>} [vars]
  * @returns {string}
@@ -148,8 +160,8 @@ export function t(key, vars) {
 }
 
 /**
- * A counted string: the entry is `{ one, other }` (English) or a plain string / function; `{n}` is
- * the count.
+ * A counted string: the entry is `{ one, other }` (the plural categories of `Intl.PluralRules`) or a
+ * plain string / function; `{n}` is the count.
  * @param {string} key
  * @param {number} n
  * @param {Record<string, any>} [vars]
@@ -169,7 +181,7 @@ export function tn(key, n, vars = {}) {
 }
 
 /**
- * A list joined the current language's way ('A, B and C' / 'A、B、C' / 'A、B和C').
+ * A list joined the current language's way ('A, B e C' / 'A, B, and C').
  * @param {string[]} items
  * @param {'conjunction'|'disjunction'} [type]
  */
@@ -177,5 +189,5 @@ export function tlist(items, type = 'conjunction') {
   try { return new Intl.ListFormat(LANGS[current].tag, { style: 'long', type }).format(items); } catch { return items.join(', '); }
 }
 
-/** The separator between items on one line (' · ' in English, '・' in Japanese, ' · ' in Chinese). */
-export const sep = () => (current === 'ja' ? '・' : ' · ');
+/** The separator between items on one line. */
+export const sep = () => ' · ';

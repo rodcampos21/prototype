@@ -5,8 +5,9 @@
  * | Set   | Faces                             | Loaded         |
  * |-------|-----------------------------------|----------------|
  * | latin | Jersey 10, Jersey 15, Tiny5       | always         |
- * | ja    | DotGothic16, Noto Sans JP 500/700 | Japanese only  |
- * | zh    | Noto Sans SC 500/700/900          | Chinese only   |
+ *
+ * (The Japanese and Chinese sets — DotGothic16, Noto Sans JP, Noto Sans SC — left with those
+ * languages; the CJK alias steps below stay in the code, dormant: `isCJK`.)
  *
  * Each set is loaded on its own (one can come from Google and another from dist/):
  * 1. Google: fetch the `css2` stylesheet (2.5 s timeout), insert it as a <style>, probe the set's
@@ -74,7 +75,7 @@ const LOCAL_PROBE_TIMEOUT = 8000;
  * @property {string} sample characters every face covers
  */
 
-/** @type {Readonly<Record<'latin'|'ja'|'zh', FontSet>>} */
+/** @type {Readonly<Record<'latin', FontSet>>} */
 export const FONT_SETS = Object.freeze({
   latin: {
     id: 'latin',
@@ -85,29 +86,8 @@ export const FONT_SETS = Object.freeze({
       import('@fontsource/tiny5/latin-400.css'),
     ]),
     faces: ['400 16px "Jersey 10"', '400 16px "Jersey 15"', '400 16px "Tiny5"'],
-    sample: 'Aa09',
-  },
-  ja: {
-    id: 'ja',
-    query: 'family=DotGothic16&family=Noto+Sans+JP:wght@500;700&display=block',
-    local: () => Promise.all([
-      import('@fontsource/dotgothic16/400.css'),
-      import('@fontsource/noto-sans-jp/500.css'),
-      import('@fontsource/noto-sans-jp/700.css'),
-    ]),
-    faces: ['400 16px "DotGothic16"', '500 16px "Noto Sans JP"', '700 16px "Noto Sans JP"'],
-    sample: '回あ',
-  },
-  zh: {
-    id: 'zh',
-    query: 'family=Noto+Sans+SC:wght@500;700;900&display=block',
-    local: () => Promise.all([
-      import('@fontsource/noto-sans-sc/500.css'),
-      import('@fontsource/noto-sans-sc/700.css'),
-      import('@fontsource/noto-sans-sc/900.css'),
-    ]),
-    faces: ['500 16px "Noto Sans SC"', '700 16px "Noto Sans SC"', '900 16px "Noto Sans SC"'],
-    sample: '回烬',
+    // (Portuguese: the accented letters are in the Latin-1 range every latin-400 file covers)
+    sample: 'Aa09ãç',
   },
 });
 
@@ -361,8 +341,8 @@ export class FontLoader {
     /** @type {FontMode} */
     this.mode = FONT_MODES.includes(mode) ? mode : 'auto';
     this._px = Math.max(1, Math.round(px));
-    /** The sets this language loads. @type {FontSet[]} */
-    this.sets = [FONT_SETS.latin, ...(this.lang === 'en' ? [] : [FONT_SETS[this.lang]])];
+    /** The sets this language loads (only the Latin set ships). @type {FontSet[]} */
+    this.sets = [FONT_SETS.latin];
     /** @type {FontReport} */
     this.report = {
       lang: this.lang, mode: this.mode, px: this._px,

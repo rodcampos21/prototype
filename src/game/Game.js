@@ -129,8 +129,8 @@ export function speakerTitle(npc) {
   return loc(typeof key === 'string' ? key : '', title, 'title');
 }
 
-/** The title screen's language row (PIXEL_UI.md §8.1): each language in its own script. */
-const LANGUAGE_LABELS = Object.freeze({ en: 'EN', ja: '日本語', zh: '中文' });
+/** The title screen's language row (PIXEL_UI.md §8.1): each language by its code. */
+const LANGUAGE_LABELS = Object.freeze({ pt: 'PT', en: 'EN' });
 
 const INTERACT_RANGE = 1.6;
 /** An interactable's `lookSpan` (a door's leaf) counts when the player faces it within 60°. */
@@ -1349,7 +1349,7 @@ export class Game {
    * (`localStorage['luminati.lang']`), `?lang=` leaves the address (it would override the choice) and
    * the page reloads — there is no hot switch (I18N.md §1). The page's own language with no `?lang=`
    * to drop changes nothing.
-   * @param {string} code 'en' | 'ja' | 'zh' (anything else: English)
+   * @param {string} code 'pt' | 'en' (anything else: Portuguese, the source)
    * @returns {string} the language saved
    */
   setLanguage(code) {
@@ -2452,8 +2452,8 @@ export class Game {
    * @property {(on?: boolean) => boolean} photo  enter / leave photo mode with the UI hidden at
    *   once (default: toggle) → photo mode
    * @property {(on?: boolean) => boolean} map  open / close the world map (default: toggle) → open
-   * @property {Game['setLanguage']} setLanguage  the title's language switch: save 'en' | 'ja' |
-   *   'zh' as the player's choice, drop `?lang=` and reload the page (unsaved play is lost; the
+   * @property {Game['setLanguage']} setLanguage  the title's language switch: save 'pt' | 'en' as
+   *   the player's choice, drop `?lang=` and reload the page (unsaved play is lost; the
    *   page's own language without `?lang=`: nothing) → the language saved
    * @property {() => GameState} state  the snapshot above
    * @property {CombatHooks} [combat]  combat levels only: the combat test hooks (§3.4, COMBAT.md

@@ -50,7 +50,7 @@ function fontsourceWoff2Only() {
       let out = code.replace(/,\s*url\([^)]*\.woff\)\s*format\(['"]woff['"]\)/g, '');
       // the pixel UI's faces block like Google's (`display=block`): a CJK slice that arrives late
       // shows nothing for a moment rather than a fallback face that then jumps (the old faces keep swap)
-      if (/[\\/]@fontsource[\\/](?:jersey-10|jersey-15|tiny5|dotgothic16|noto-sans-jp|noto-sans-sc)[\\/]/.test(id)) out = out.replace(/font-display:\s*swap/g, 'font-display: block');
+      if (/[\\/]@fontsource[\\/](?:jersey-10|jersey-15|tiny5)[\\/]/.test(id)) out = out.replace(/font-display:\s*swap/g, 'font-display: block');
       return { code: out, map: null };
     },
   };

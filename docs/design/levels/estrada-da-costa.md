@@ -1,0 +1,44 @@
+# Estrada da Costa — Terra Selvagem (`estrada-da-costa`)
+
+The design note of **Estrada da Costa**, the first lore test of the *Culto ao Baiacu Rei* game in
+`public/levels/estrada-da-costa.json`: the prologue rescue of the Ato I notebook (quest QP01, scene
+C01). A dirt road runs north along the coast; on a clearing beside it Surubin, a young catfish-folk
+adept of the cult, is cornered by forest creatures. The player — the wandering knight — clears them,
+Surubin thanks the Baiacu Rei first and the knight second, and joins the party. Its texts are
+Brazilian Portuguese, written as the level's source text.
+
+| | |
+| --- | --- |
+| **Audience** | The game's authors; anyone extending the Ato I prologue. |
+| **Source of truth** | [`tools/make-estrada-da-costa.mjs`](../../../tools/make-estrada-da-costa.mjs) (the generator), [`public/levels/estrada-da-costa.json`](../../../public/levels/estrada-da-costa.json) (its output) |
+| **Related docs** | [Story script](../../specs/STORY_SCRIPT.md) · [Party](../../specs/PARTY.md) · [Combat](../../contracts/COMBAT.md) · [Pixel module](../../architecture/modules/pixel.md) (the `head: 'catfish'` spec) · [Willowmere](sample-hamlet.md) (the generator it follows) |
+
+Play it: `game.html?level=estrada-da-costa`. Regenerate it: `node tools/make-estrada-da-costa.mjs`
+(`--check` compares without writing).
+
+---
+
+## Layout
+
+| Fact | Value |
+| --- | --- |
+| Size | 40 × 30 tiles, small-level build path |
+| Time | 16:24, clock running (golden hour falls during the scene) |
+| West | the sea (still water, level 0), a sand beach (level 1) with the wreckage of Surubin's boat (crates, a barrel), rocks and a chest (12 gold, 2 Healing Draughts) |
+| Middle | dune grass with pines, the coast road (two tiles wide, bending toward the sea) from the player start in the south to the map edge in the north |
+| East | the clearing (trampled dirt in flower grass) where Surubin waits, then a wooded rise (level 3) |
+| Kept clear | the road, the clearing and the strip south of it, so the north-looking camera always sees the rescue |
+
+## Story
+
+| Event | Trigger | What happens |
+| --- | --- | --- |
+| `event_1` | arrive, once | cutscene: banner, a cry for help, the camera shows Surubin among the creatures; quest `resgate` starts |
+| `event_2` | enter the clearing area, once, background | Surubin barks for help |
+| `event_3` | group `criaturas` cleared, once | scene C01: the knight beside Surubin, his thanks (the Rei first), his introduction, a mute choice for the knight, `party join surubin as mystic support` |
+| `event_4` | enter the north road before the rescue | the narrator turns the player back |
+| `event_5` | enter the north road after the rescue, once | Surubin points at a clearing by a stream (the next scene, C02); quest done; end card |
+
+Surubin's talk script cycles four lines while he is in the party. The knight is a silent
+protagonist (an open question of the Ato I notebook); the player still wears the engine's
+`traveler` look, which `Player.js` fixes for every level.

@@ -238,14 +238,13 @@ async function boot() {
 }
 
 /**
- * Japanese and Chinese: the font slices of every translated text this page can show — the content
- * tables' (each unit's translation, each term's) and the core UI tables' — loaded in the background
- * once the game plays (CJK faces come in unicode-range slices: a dialogue line opened later then lays
- * out with its glyphs in, docs/specs/I18N.md §5 `ensure`). Not awaited: the first load does not wait
- * for it. English loads nothing (the Latin set holds every glyph).
+ * A CJK language (none ships today: Portuguese and English load nothing, the Latin set holds every
+ * glyph): the font slices of every translated text this page can show — the content tables' (each
+ * unit's translation, each term's) and the core UI tables' — loaded in the background once the game
+ * plays (CJK faces come in unicode-range slices, docs/specs/I18N.md §5 `ensure`). Not awaited.
  * @param {import('./engine/ui/FontLoader.js').FontLoader} fonts
  * @param {import('./engine/i18n/ContentText.js').ContentTable[]} chain
- * @param {'en'|'ja'|'zh'} lang
+ * @param {string} lang
  */
 function prefetchGlyphs(fonts, chain, lang) {
   if (!isCJK(lang) || typeof fonts?.ensure !== 'function') return;

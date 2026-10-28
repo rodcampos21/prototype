@@ -2,30 +2,9 @@
   "format": "luminati-i18n-index",
   "version": 1,
   "languages": {
-    "ja": {
+    "en": {
       "tables": [
-        "common",
-        "levels/brightwater-crossing",
-        "levels/cinderwatch-pass",
-        "levels/emberfall",
-        "levels/gildhaven",
-        "levels/sample-hamlet",
-        "levels/starfall-vale",
-        "campaigns/emberfall-interiors",
-        "campaigns/ferrymans-lantern"
-      ]
-    },
-    "zh": {
-      "tables": [
-        "common",
-        "levels/brightwater-crossing",
-        "levels/cinderwatch-pass",
-        "levels/emberfall",
-        "levels/gildhaven",
-        "levels/sample-hamlet",
-        "levels/starfall-vale",
-        "campaigns/emberfall-interiors",
-        "campaigns/ferrymans-lantern"
+        "levels/estrada-da-costa"
       ]
     }
   }

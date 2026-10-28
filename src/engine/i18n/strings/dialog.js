@@ -4,8 +4,8 @@
  * the UI root (strings/index.js), so `t('dialog.<key>')` works on every page with a UI (DialogBox and
  * InteractPrompt register it themselves when they are made without a UI root).
  *
- * Keys are ids, not English; each language a table of key → string (`{var}` slots) or function.
- * The words follow the glossary (docs/specs/I18N_GLOSSARY.md §6: talk 話す / 交谈).
+ * Keys are ids, not words; `pt` is the source, `en` its translation — each a table of key → string
+ * (`{var}` slots) or function. The words follow the glossary (docs/specs/I18N_GLOSSARY.md §6).
  *
  * - `window`      the dialog window's accessible name (role="dialog")
  * - `choices`     the choice list's accessible name
@@ -17,6 +17,14 @@
  */
 /** @type {import('../I18n.js').StringTable} */
 const table = {
+  pt: {
+    window: 'Diálogo',
+    choices: 'Escolhas',
+    portrait: 'Retrato de {name}',
+    next: 'Continuar',
+    end: 'Fim',
+    'prompt.talk': 'Falar',
+  },
   en: {
     window: 'Dialogue',
     choices: 'Choices',
@@ -24,22 +32,6 @@ const table = {
     next: 'More',
     end: 'End',
     'prompt.talk': 'Talk',
-  },
-  ja: {
-    window: '会話',
-    choices: '選択肢',
-    portrait: '{name}の肖像',
-    next: '次へ',
-    end: '終わり',
-    'prompt.talk': '話す',
-  },
-  zh: {
-    window: '对话',
-    choices: '选项',
-    portrait: '{name}的肖像',
-    next: '继续',
-    end: '结束',
-    'prompt.talk': '交谈',
   },
 };
 export default table;
