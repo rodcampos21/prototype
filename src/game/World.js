@@ -988,6 +988,13 @@ export class World {
             this._interact(obj.id, b.anchor, { radius: 1.35, label: 'Read', kind: 'sign', text: { ...plate, ...pages } });
           }
           break;
+        case 'mapTable':
+          // (Surubin's map: its text for now; the map screen opens from here later)
+          if (lines.length) {
+            const pos = b.interact?.position ?? b.anchor;
+            this._interact(obj.id, pos, { radius: 1.2, label: 'Examine', kind: 'mapTable', prompt: new THREE.Vector3(obj.x, b.anchor.y + 1.9, obj.z), text: { speaker: '', ...pages } });
+          }
+          break;
         case 'well': {
           if (!lines.length) break;
           const y = b.anchor.y;

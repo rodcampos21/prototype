@@ -125,7 +125,12 @@ export class LevelObjectBuilder {
       case 'rug':
       case 'staircase':
       case 'wardrobe':
-      case 'sacks': {
+      case 'sacks':
+      // camp props (props/CampProps.js)
+      case 'tent':
+      case 'mapTable':
+      case 'banner':
+      case 'stake': {
         if (obj.type === 'house' && !opts.upperWall) delete opts.upperWall;
         // (each type calls its own method with its own opts — a correlation TS cannot follow)
         res = /** @type {(x: number, y: number, z: number, opts: object) => PropResult} */ (f[obj.type])(obj.x, h(obj.x, obj.z), obj.z, opts);

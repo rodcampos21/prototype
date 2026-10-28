@@ -11,6 +11,7 @@
     "Culto ao Baiacu Rei": "Cult of the Pufferfish King",
     "Estrada da Costa": "The Coast Road",
     "O resgate": "The Rescue",
+    "Os alicerces": "The Foundations",
     "Praia dos Destroços": "Wreckage Beach",
     "Surubin": "Surubin",
     "Uma voz": "A voice"
@@ -19,6 +20,10 @@
     "0D5D362E43CD5C26FA16E16559129DDE": {
       "source": "CULTO AO BAIACU REI",
       "target": "CULT OF THE PUFFERFISH KING"
+    },
+    "1B9E581671AFBC8396B75F69947A14A4": {
+      "source": "Passei a noite desenhando. Por enquanto é pouco: a costa, o riacho, a nossa clareira.",
+      "target": "I spent the night drawing. It's little for now: the coast, the stream, our clearing."
     },
     "2AE9DE18F7CF05A23E15B608DCD8B06A": {
       "source": "Faz tempo que eu não tenho para onde voltar.",
@@ -56,9 +61,17 @@
       "source": "A Capital espera uma colônia. Um abrigo para os fiéis que virão. Sozinho, eu não consigo.",
       "target": "The Capital expects a colony. A shelter for the faithful still to come. I can't do it alone."
     },
+    "5FAF2E7CF2073943DC911CA2EE884F0A": {
+      "source": "O que vai em cada um a gente decide juntos, quando tiver madeira e pedra para isso.",
+      "target": "What goes on each we'll decide together, once we have the wood and stone for it."
+    },
     "6A9F91C3CBC5A0CD4D4176A3B46A5D55": {
       "source": "E... obrigado a você também, cavaleiro.",
       "target": "And... thank you too, knight."
+    },
+    "6C2E4C62344BFDE54B668367F4D2BBD1": {
+      "source": "Madeira da mata, pedra da encosta, comida do riacho. Com isso a gente ergue a primeira obra.",
+      "target": "Wood from the forest, stone from the slope, food from the stream. With that we raise our first building."
     },
     "7E18399571CCDB6DD7F5C16B9F8996A2": {
       "source": "Por Ele eu atravessaria dois.",
@@ -75,6 +88,10 @@
     "9E54FAAFCBAA19E1ED81F84B54052396": {
       "source": "O mar daqui tem outro cheiro. Mais verde. Mais... selvagem.",
       "target": "The sea smells different here. Greener. More... wild."
+    },
+    "9ED5C1C6FACE6AAAC18B0F5A25B9B0E6": {
+      "source": "À noite eu ouço a mata. Não sei se é bicho ou vento. Prefiro achar que é vento.",
+      "target": "At night I hear the forest. I can't tell if it's beasts or the wind. I'd rather think it's the wind."
     },
     "13AA3BD02CF765A0558AD46BDA96605A": {
       "source": "Que as marés nos guiem. E que guiem você também, cavaleiro, mesmo que você não acredite nelas.",
@@ -128,9 +145,9 @@
       "source": "Adepto do Culto ao Baiacu Rei",
       "target": "Adept of the Cult of the Pufferfish King"
     },
-    "973A9BFFFCFFC0680E4CE731B5BB08A8": {
-      "source": "Fim do teste: a fogueira",
-      "target": "End of the test: the campfire"
+    "942F97722F809E6490C5112B1D01A1ED": {
+      "source": "Quando você sair, eu fico aqui desenhando. Cada trilha que você andar entra no mapa.",
+      "target": "When you head out, I'll stay here drawing. Every trail you walk goes on the map."
     },
     "1324E8EF9FFA2E48C0D9A1EC93F406AF": {
       "source": "Ajudou! Ele mandou você, não mandou?",
@@ -148,6 +165,14 @@
       "source": "Já dormi sob muitos tetos. Nenhum me ensinou nada.",
       "target": "I've slept under many roofs. None of them taught me anything."
     },
+    "8227E4C2C3C47E032BE6C61692A0A5C9": {
+      "source": "E ali, as primeiras estacas. Três lugares para as nossas primeiras obras.",
+      "target": "And there, the first stakes. Three places for our first buildings."
+    },
+    "9686A1668E1C10AD3F66BF7BE0E0607D": {
+      "source": "Bom dia, ${player}! Veja: o estandarte do Rei. A primeira coisa de pé nesta terra.",
+      "target": "Good morning, ${player}! Look: the King's banner. The first thing standing in this land."
+    },
     "31039B4CB3C235B2A7D322878D92C83A": {
       "source": "Você não precisa acreditar no Rei. Só precisa acreditar que um teto é melhor que a estrada.",
       "target": "You don't need to believe in the King. You only need to believe a roof is better than the road."
@@ -156,6 +181,10 @@
       "source": "Estrada da Costa",
       "target": "The Coast Road"
     },
+    "451441B6420204F624E7A7FA16708CCA": {
+      "source": "O mapa de Surubin: a costa, o riacho e a clareira marcada em vermelho. Três trilhas pontilhadas levam a nomes que ninguém daqui confirmou ainda.",
+      "target": "Surubin's map: the coast, the stream and the clearing marked in red. Three dotted trails lead to names nobody here has confirmed yet."
+    },
     "933937049E187531F5CCA8F13CAC48C1": {
       "source": "Faz tempo que eu não tenho para onde voltar.",
       "target": "It's been a long time since I had anywhere to go back to."
@@ -163,6 +192,10 @@
     "A6B2F0169F0E2DBEF6A6D12CDB221F28": {
       "source": "Cuidado com a língua, cavaleiro. O Rei provê, e proverá muito mais àqueles que o seguem.",
       "target": "Mind your tongue, knight. The King provides, and will provide far more to those who follow Him."
+    },
+    "A7B4007CE9E2164775B4D6AB419BFA7A": {
+      "source": "Adepto do Culto ao Baiacu Rei",
+      "target": "Adept of the Cult of the Pufferfish King"
     },
     "A7C6F1C6825BF7F4F17E35944180A740": {
       "source": "Se o seu Rei mandar o jantar, eu fico.",
@@ -192,6 +225,10 @@
       "source": "Que bom que o seu deus te ajudou.",
       "target": "Good thing your god helped you."
     },
+    "B6990787E25B6BB2A7B94ADD0756493D": {
+      "source": "O sol nasce sobre a clareira. Onde ontem havia só a fogueira, agora tremula um estandarte azul.",
+      "target": "The sun rises over the clearing. Where last night there was only the fire, a blue banner now flutters."
+    },
     "C06C425C6577E20139837755B80D5F97": {
       "source": "Cuidado! Elas estão por toda parte!",
       "target": "Look out! They're everywhere!"
@@ -215,6 +252,10 @@
     "D1970C2BC3C03F8586EF9C371BC79489": {
       "source": "Agora tem. O Rei acolhe aqueles que o seguem.",
       "target": "Now you do. The King shelters those who follow Him."
+    },
+    "DAE8253E918CDE9959D25FACB4219DA7": {
+      "source": "E os golpes riscados nas pedras?",
+      "target": "And the strokes carved in the stones?"
     },
     "DBCA6E00C2C4AD9B6662489E0122B9A0": {
       "source": "Precisamos sair dessa chuva. Vi uma clareira subindo o riacho. Você vem?",
@@ -244,6 +285,18 @@
       "source": "Salve o forasteiro cercado na clareira.",
       "target": "Save the stranger cornered in the clearing."
     },
+    "E727C4DA961E7A8A9646DCB5E21EE36C": {
+      "source": "O estandarte ficou bonito, não ficou? Azul como o mar de Marina.",
+      "target": "The banner turned out nice, didn't it? Blue as the sea of Marina."
+    },
+    "E896AED9F1E4867ED508290D53CE6AD5": {
+      "source": "Junte madeira, pedra e comida para a primeira obra do acampamento.",
+      "target": "Gather wood, stone and food for the camp's first building."
+    },
+    "E3116E49177C3871BB7B076E210B1E45": {
+      "source": "Quando eu ouvir falar deles, você vai ser o primeiro a saber. Prometido.",
+      "target": "When I hear of them, you'll be the first to know. I promise."
+    },
     "EF4AB603323B2D394B521845BF093BD1": {
       "source": "Até a chuva passar.",
       "target": "Until the rain stops."
@@ -259,6 +312,10 @@
     "F353EAD949536F72C787C4180E19E47C": {
       "source": "Siga com Surubin pela estrada ao norte.",
       "target": "Follow the road north with Surubin."
+    },
+    "FDECB95A7038F3908BA0C9307AE492A5": {
+      "source": "Mas os marinheiros falavam de uma mata a oeste, de juncos subindo o riacho e de uma pedreira na encosta. Madeira, comida e pedra. Tudo o que um começo precisa.",
+      "target": "But the sailors spoke of a forest to the west, of reeds up the stream and of a quarry on the slope. Wood, food and stone. Everything a beginning needs."
     }
   }
 }

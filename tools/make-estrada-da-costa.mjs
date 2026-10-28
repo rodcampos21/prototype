@@ -7,7 +7,9 @@
  * clearing beside it Surubin, a young catfish-folk adept of the Culto ao Baiacu Rei, is cornered by
  * forest creatures. The player (the wandering knight) clears the group; Surubin thanks the Baiacu
  * Rei first and the knight second, then joins the party (a mystic: weak with the staff, a healer).
- * Walking on north with him ends the test with an end card.
+ * Walking on north with him leads to the second level, `levels/clareira-do-riacho.json`: the
+ * campfire of the first night (C02) and, the morning after, the camp of Act I (buildClearing).
+ * Coverage: the camp types (`camp: true`, which Starfall Vale skips) must each be placed here.
  *
  *   node tools/make-estrada-da-costa.mjs [--out=public/campaigns/culto-ao-baiacu-rei] [--check]
  *     --out=<dir>   write the campaign folder somewhere else (relative to the repository root), e.g.
@@ -25,7 +27,7 @@ import { fileURLToPath } from 'node:url';
 import {
   createEmptyLevel, setTile, setHeightLevel, addObject, normalizeLevel, parseLevel, validateLevel, serializeLevel, levelStats,
 } from '../src/engine/level/LevelFormat.js';
-import { OBJECT_TYPES } from '../src/engine/level/ObjectCatalog.js';
+import { OBJECT_TYPES, isCampType } from '../src/engine/level/ObjectCatalog.js';
 import { RNG } from '../src/engine/utils/math.js';
 import { CAMPAIGN_FORMAT, normalizeCampaign, serializeCampaign, levelFile } from '../src/game/campaign/CampaignFormat.js';
 import { carryCampaignText, seededMint, fileKeyIssues } from '../src/engine/i18n/TextKeys.js';
@@ -138,14 +140,18 @@ addObject(level, 'rock', 16.8, 18.6, { opts: { size: 0.6, seed: 5 } });
 addObject(level, 'enemy', 21, 14.6, { kind: 'slime', count: 4, radius: 2.6, level: 1, name: 'Criatura da mata' });
 level.objects[level.objects.length - 1].id = 'criaturas';
 
-addObject(level, 'npc', 21, 15.2, {
-  name: 'Surubin', title: 'Adepto do Culto ao Baiacu Rei', preset: 'cleric', facing: 'down', behaviour: 'post', wander: 0,
+/** Surubin's look and name plate, the same on the coast road and in the camp. */
+const SURUBIN = {
+  name: 'Surubin', title: 'Adepto do Culto ao Baiacu Rei', preset: 'cleric',
   speed: 0.9, portraitColor: '#4fb3c9', dialogue: ['Que as marés nos guiem.'],
   spec: {
     head: 'catfish', skin: '#7f8f99', hair: '#4c5a66', hairStyle: 'bald', hat: 'none', eyes: 'gold', blush: false,
     outfit: { top: '#2e5d73', bottom: '#2e5d73', accent: 'cream', style: 'robe', shirt: '#e8dcc0' },
     weapon: 'staff', gear: { boots: '#5a4636', sash: '#c9b48a', staffGem: '#4fb3c9' },
   },
+};
+addObject(level, 'npc', 21, 15.2, {
+  ...SURUBIN, facing: 'down', behaviour: 'post', wander: 0,
   talk: [
     'if party:surubin',
     '  cycle surubin-estrada',
@@ -288,24 +294,29 @@ function canonicalObject(o) {
 }
 
 // =================================================================================================
-// The clearing up the stream (C02, the campfire): the first night, after the storm
+// The clearing up the stream: C02 (the campfire) on the first night, then the camp
 // =================================================================================================
 
 /**
- * "Clareira do Riacho": a small clearing in the woods with a stream down its east side, a campfire
- * in the middle and two logs to sit on. The player arrives from the south trail with Surubin (a
- * party member); the story clears the sky (held), moves the clock on to the night and plays C02 —
- * the colony, the knight's disdain, the map and the strokes carved in stones, and his answer (three
- * choices, each remembered by a flag for Act II: `c02.estacao`, `c02.lar`, `c02.jantar`) —, then
- * lets the weather roll again and ends the test.
+ * "Clareira do Riacho": a wide clearing in the woods with a stream down its east side — the camp of
+ * Act I (the Ato I notebook, "O acampamento, o mapa e as obras"). The player arrives from the south
+ * with Surubin (a party member); the story clears the sky (held), moves the clock on to the night and
+ * plays C02 — the colony, the knight's disdain, the map and the strokes carved in stones, and his
+ * answer (three choices, each remembered by a flag for Act II: `c02.estacao`, `c02.lar`,
+ * `c02.jantar`). Then the morning of day 2: the screen fades, the clock moves on to 6:30 and
+ * `acampamento` is set — the clear sky held until 11:00 — and the camp stands, laid out in areas: the fire in the middle, Surubin's tent
+ * and the map table north, the banner east (the altar's place beside it, C03), three roped plots
+ * south and west (forge, silo, lodging: the first building is chosen in C03) and the chapel's place
+ * north-east (phase 4). Surubin shows the banner, the plots and his first sketch of the map, and
+ * QP03 (the foundations) begins. No trail leaves the camp: travel is by Surubin's map (stage G1).
  */
 function buildClearing() {
-  const CW = 26;
-  const CD = 22;
+  const CW = 34;
+  const CD = 28;
   const lv = createEmptyLevel({ name: 'Clareira do Riacho', width: CW, depth: CD, fill: 'g', level: 2, border: 2 });
   lv.subtitle = 'Terra Selvagem';
   lv.author = 'Culto ao Baiacu Rei';
-  lv.description = 'Ato I, cena C02: a primeira noite, depois da tempestade. Surubin e o cavaleiro à fogueira, junto ao riacho.';
+  lv.description = 'Ato I: a clareira junto ao riacho. Na primeira noite, a fogueira (C02); na manhã seguinte, o acampamento.';
   // (the campaign's clock goes on from the coast road; the arrival moves it on to the night)
   lv.environment = { ...lv.environment, timeOfDay: 20.5, weatherPool: { clear: 70, rain: 30 } };
   const fillC = (i0, j0, i1, j1, ch, lvl) => {
@@ -316,25 +327,78 @@ function buildClearing() {
       }
     }
   };
+  /**
+   * Add an object with a fixed id (a place the story names: `camera lote-forja`).
+   * @param {import('../src/engine/level/types.js').ObjectType} type @param {number} x @param {number} z
+   * @param {Record<string, any>} props @param {string} [id]
+   */
+  const put = (type, x, z, props, id) => {
+    addObject(lv, type, x, z, props);
+    if (id) lv.objects[lv.objects.length - 1].id = id;
+  };
   // the stream down the east side (level 0) between grassy banks
-  fillC(18, 0, 20, CD, 'o', 0);
-  fillC(17, 2, 18, CD - 2, 'G');
+  fillC(27, 0, 29, CD, 'o', 0);
+  fillC(26, 2, 27, CD - 2, 'G');
   // (the far bank: the woods, no way across)
-  fillC(20, 0, CW, CD, 'T');
-  // the clearing: flower grass, the trampled ring around the fire, the trail from the south
-  fillC(5, 5, 16, 16, 'f');
-  fillC(8, 8, 14, 14, 'd');
-  for (let j = 14; j < CD; j++) { setTile(lv, 10, j, '.'); setTile(lv, 11, j, '.'); }
-  // the fire and two logs to sit on
-  addObject(lv, 'campfire', 11, 11, { rotation: 0.8, opts: { seat: false } });
-  addObject(lv, 'bench', 9.4, 11.2, { rotation: Math.PI / 2 });
-  addObject(lv, 'bench', 12.8, 10.6, { rotation: -Math.PI / 2 });
-  addObject(lv, 'crate', 13.6, 12.6, { rotation: 0.4, opts: { size: 0.6 } });
-  addObject(lv, 'rock', 16.2, 6.2, { opts: { size: 0.8, seed: 7 } });
-  addObject(lv, 'rock', 16.6, 15.4, { opts: { size: 0.6, seed: 12 } });
-  // the woods around (none on the trail, the clearing or the strip south of it: the camera looks north)
+  fillC(29, 0, CW, CD, 'T');
+  // the clearing: flower grass at its edge, the trampled ring around the fire, worn paths to the
+  // tent and the plots, and the old trail from the south (scenery: the camp has no way out on foot)
+  fillC(4, 4, 26, 26, 'f');
+  fillC(5, 5, 25, 25, 'g');
+  fillC(12, 12, 19, 19, 'd');
+  for (let j = 10; j < 12; j++) for (let i = 14; i < 17; i++) setTile(lv, i, j, '.');
+  for (let i = 9; i < 12; i++) { setTile(lv, i, 15, '.'); setTile(lv, i, 16, '.'); }
+  for (let j = 19; j < CD; j++) { setTile(lv, 15, j, '.'); setTile(lv, 16, j, '.'); }
+  // bare ground where the plots are staked (the tall grass would hide the ropes)
+  fillC(6, 9, 11, 13, 'd');
+  fillC(6, 17, 11, 21, 'd');
+  fillC(18, 19, 25, 24, 'd');
+  for (let i = 11; i < 15; i++) setTile(lv, i, 11, '.');
+  for (let j = 18; j < 20; j++) setTile(lv, 18, j, '.');
+  // the fire and two logs to sit on (C02)
+  put('campfire', 15.5, 15.5, { rotation: 0.8, opts: { seat: false } });
+  put('bench', 13.9, 15.7, { rotation: Math.PI / 2 });
+  put('bench', 17.3, 15.1, { rotation: -Math.PI / 2 });
+  put('crate', 18.1, 17.1, { rotation: 0.4, opts: { size: 0.6 } });
+  put('rock', 24.6, 6.4, { opts: { size: 0.8, seed: 7 } });
+  put('rock', 25.1, 21.4, { opts: { size: 0.6, seed: 12 } });
+  put('rock', 5.4, 23.6, { opts: { size: 0.9, seed: 31 } });
+
+  // ---- the camp (from the morning of day 2: `acampamento`) ----------------------------------------
+  const CAMP = 'acampamento';
+  // north: Surubin's tent, its door toward the fire, and the map table beside it; his crates
+  put('tent', 15.5, 7.6, { rotation: 0, when: CAMP, opts: { stage: 'worn', seed: 3 } }, 'tenda-surubin');
+  put('mapTable', 19.6, 9.6, {
+    rotation: 0, when: CAMP,
+    text: ['O mapa de Surubin: a costa, o riacho e a clareira marcada em vermelho. Três trilhas pontilhadas levam a nomes que ninguém daqui confirmou ainda.'],
+  }, 'mesa-do-mapa');
+  put('crate', 12.4, 8.2, { rotation: -0.3, when: CAMP, opts: { size: 0.7 } });
+  put('barrel', 12.2, 9.4, { rotation: 0.5, when: CAMP, opts: { height: 0.9 } });
+  // east: the banner of the Baiacu Rei; the altar rises beside it in C03
+  put('banner', 22.4, 13.2, { rotation: 0, when: CAMP, opts: { stage: 'pole', seed: 2 } }, 'estandarte');
+  put('marker', 22.4, 15.6, { name: 'altar', facing: 'down' });
+  // south and west: the three plots of the first buildings (C03 chooses which comes first)
+  put('stake', 8.2, 10.8, { rotation: 0, when: CAMP, opts: { kind: 'plot', width: 4, depth: 3.5, seed: 1 } }, 'lote-forja');
+  put('stake', 8.2, 18.6, { rotation: 0, when: CAMP, opts: { kind: 'plot', width: 3.5, depth: 3.5, seed: 2 } }, 'lote-silo');
+  put('stake', 21.4, 21.4, { rotation: 0, when: CAMP, opts: { kind: 'plot', width: 5, depth: 3.5, seed: 3 } }, 'lote-alojamento');
+  // Surubin at home in the camp: he leaves the party on the morning of day 2 and stays here, free,
+  // between his tent and the map table (hidden while the party holds him: the same id as on the
+  // coast road, so the scripts name him alike)
+  put('npc', 18.4, 11.2, {
+    ...SURUBIN, facing: 'down', behaviour: 'wander', wander: 2.2, when: CAMP, unless: 'party:surubin',
+    talk: [
+      'cycle surubin-acampamento',
+      '  * Surubin: Madeira da mata, pedra da encosta, comida do riacho. Com isso a gente ergue a primeira obra.',
+      '  * Surubin: Quando você sair, eu fico aqui desenhando. Cada trilha que você andar entra no mapa.',
+      '  * Surubin: O estandarte ficou bonito, não ficou? Azul como o mar de Marina.',
+      '  * Surubin: À noite eu ouço a mata. Não sei se é bicho ou vento. Prefiro achar que é vento.',
+    ],
+  }, 'surubin');
+  // north-east: the chapel's place (QP05, phase 4), left clear
+  put('marker', 22.6, 7.4, { name: 'capela', facing: 'down' });
+  // the woods around (none on the clearing, the trail or the strip south of it: the camera looks north)
   const rngC = new RNG(2207);
-  const keep = (i, j) => (i >= 4 && i < 17 && j >= 4 && j < CD - 1) || (Math.abs(i - 10.5) < 2 && j >= 13) || i >= 17;
+  const keep = (i, j) => (i >= 3 && i < 27 && j >= 3 && j < CD - 1) || (Math.abs(i - 15.5) < 2 && j >= 20) || i >= 26;
   /** @type {[number, number][]} */
   const trees = [];
   for (let j = 2; j < CD - 2; j += 2) {
@@ -350,14 +414,17 @@ function buildClearing() {
       addObject(lv, 'tree', x, z, { opts: { kind: rngC.pick(['oak', 'oak', 'birch', 'pine']), height: Math.round(rngC.range(3.8, 5.2) * 10) / 10, seed: rngC.int(1, 999) } });
     }
   }
-  // where the two sit at the fire (the knight west of it, Surubin east: the camera sees both)
-  addObject(lv, 'marker', 9.9, 11.9, { name: 'fogo-cavaleiro', facing: 'right' });
-  addObject(lv, 'marker', 12.2, 11.5, { name: 'fogo-surubin', facing: 'left' });
-  addObject(lv, 'emitter', 11, 10, { preset: 'fireflies', size: [12, 2, 10], count: 22, dy: 1 });
-  addObject(lv, 'emitter', 19, 11, { preset: 'mist', size: [3, 1.5, 20], count: 14, dy: 0.4 });
-  addObject(lv, 'region', 0, 0, { name: 'Clareira do Riacho', sub: 'Terra Selvagem', minX: 0, maxX: CW, minZ: 0, maxZ: CD });
-  // C02 on arriving with Surubin (the Ato I notebook): the colony, the map, the knight's answer
-  addObject(lv, 'event', 0, 0, {
+  // where the two sit at the fire (the knight west of it, Surubin east: the camera sees both), and
+  // where they stand on the morning after (the knight by the fire, Surubin at the banner)
+  put('marker', 14.4, 16.4, { name: 'fogo-cavaleiro', facing: 'right' });
+  put('marker', 16.7, 16.0, { name: 'fogo-surubin', facing: 'left' });
+  put('marker', 19.2, 13.8, { name: 'manha-cavaleiro', facing: 'right' });
+  put('marker', 21.2, 14.2, { name: 'manha-surubin', facing: 'left' });
+  put('emitter', 15.5, 14.5, { preset: 'fireflies', size: [16, 2, 12], count: 24, dy: 1 });
+  put('emitter', 28, 14, { preset: 'mist', size: [3, 1.5, 26], count: 16, dy: 0.4 });
+  put('region', 0, 0, { name: 'Clareira do Riacho', sub: 'Terra Selvagem', minX: 0, maxX: CW, minZ: 0, maxZ: CD });
+  // C02 on arriving with Surubin (the Ato I notebook), then the morning of day 2 and the camp
+  put('event', 0, 0, {
     on: 'arrive', once: true, if: 'party:surubin', minX: 0, maxX: CW, minZ: 0, maxZ: CD,
     run: [
       'cutscene',
@@ -395,12 +462,41 @@ function buildClearing() {
       '    emote surubin ! 1.2',
       '    Surubin: Cuidado com a língua, cavaleiro. O Rei provê, e proverá muito mais àqueles que o seguem.',
       'Surubin: Que as marés nos guiem.',
+      // the morning of day 2 (the notebook: the first stake and the banner of the fish)
+      'fade out 1.5',
+      'time 7:30',
+      `set ${CAMP}`,
+      // Surubin stays in the camp from now on: a villager of this level, no longer a companion
+      'party leave surubin',
+      'wait 0.3',
+      'teleport player manha-cavaleiro right',
+      'teleport surubin manha-surubin left',
+      'camera estandarte 0',
+      'wait 0.5',
+      'fade in 1.5',
+      ': O sol nasce sobre a clareira. Onde ontem havia só a fogueira, agora tremula um estandarte azul.',
+      'Surubin: Bom dia, ${player}! Veja: o estandarte do Rei. A primeira coisa de pé nesta terra.',
+      'camera lote-forja 1.2',
+      'Surubin: E ali, as primeiras estacas. Três lugares para as nossas primeiras obras.',
+      'Surubin: O que vai em cada um a gente decide juntos, quando tiver madeira e pedra para isso.',
+      'camera mesa-do-mapa 1.2',
+      'emote surubin note 1.2',
+      'Surubin: Passei a noite desenhando. Por enquanto é pouco: a costa, o riacho, a nossa clareira.',
+      'Surubin: Mas os marinheiros falavam de uma mata a oeste, de juncos subindo o riacho e de uma pedreira na encosta. Madeira, comida e pedra. Tudo o que um começo precisa.',
+      'player: E os golpes riscados nas pedras?',
+      'Surubin: Quando eu ouvir falar deles, você vai ser o primeiro a saber. Prometido.',
       'camera reset 1',
-      'weather auto',
-      'ending fogueira Fim do teste: a fogueira',
+      'quest alicerces start Os alicerces',
+      'quest alicerces stage coletar Junte madeira, pedra e comida para a primeira obra do acampamento.',
     ],
   });
-  lv.spawn = { x: 10.5, z: CD - 3.5, facing: 'up' };
+  // the first morning stays clear (the narration says the sun rises); the clearing's weather rolls
+  // again from late morning on
+  put('event', 0, 0, {
+    on: 'time', at: 11, once: true, if: CAMP, background: true, minX: 0, maxX: CW, minZ: 0, maxZ: CD,
+    run: ['weather auto'],
+  });
+  lv.spawn = { x: 15.5, z: CD - 3.5, facing: 'up' };
   return lv;
 }
 
@@ -426,7 +522,12 @@ function levelText(lv, file, errors) {
 const errors = [];
 const warnings = [];
 const { text, level: out } = levelText(level, FILE, errors);
-const { text: clearingText } = levelText(buildClearing(), `${DIR}/${levelFile(CLEARING_ID)}`, errors);
+const { text: clearingText, level: clearing } = levelText(buildClearing(), `${DIR}/${levelFile(CLEARING_ID)}`, errors);
+// coverage: the camp types (`camp: true`) are this campaign's — Starfall Vale skips them, so the
+// camp must place each one (TASK_PLAYBOOKS.md §0)
+for (const t of Object.keys(OBJECT_TYPES).filter(isCampType)) {
+  if (![out, clearing].some((l) => l.objects.some((o) => o.type === t))) errors.push(`coverage: no level of the campaign places the camp type "${t}"`);
+}
 
 // ---- the campaign ------------------------------------------------------------------------------
 // the prologue (the coast road, C01) and the first night (the clearing, C02); a new journey opens
@@ -441,6 +542,8 @@ const campaignRaw = {
   levels: [{ id: LEVEL_ID }, { id: CLEARING_ID }],
   chapters: [],
   player: { create: true },
+  // (Surubin only travels with the knight from the rescue to the camp: no tactics panel)
+  party: { menu: false },
 };
 const campaignKeyed = structuredClone(campaignRaw);
 carryCampaignText(previousOutput(root, `${DIR}/campaign.json`), campaignKeyed, seededMint(`${DIR}/campaign.json`));

@@ -69,12 +69,15 @@ const RESERVED = /^(con|prn|aux|nul|com[0-9]|lpt[0-9])$/;
  * @property {{ create: boolean }} player   the player character: `create` — a new journey opens with
  *   the character creation (a name and a class, kept in the save: CampaignState `player`); false
  *   (the default, absent from the file): the game's own traveller
+ * @property {{ menu: boolean }} party   the party: `menu` — the player may open the tactics panel
+ *   (G, a member's *Tactics…*); false: companions follow the story's rules only, no panel, no G in
+ *   the legend. True is the default (absent from the file)
  * @property {Record<string, any>} extra   top-level keys this engine does not know, kept as they are
  *   so a rewrite (serializeCampaign) does not drop what a newer engine wrote
  */
 
 /** The top-level keys of a campaign file this engine reads (the rest go to `extra`). */
-const KNOWN_KEYS = new Set(['format', 'version', 'name', 'subtitle', 'title', 'start', 'levels', 'chapters', 'flags', 'story', 'textKeys', 'player']);
+const KNOWN_KEYS = new Set(['format', 'version', 'name', 'subtitle', 'title', 'start', 'levels', 'chapters', 'flags', 'story', 'textKeys', 'player', 'party']);
 /** Keys never copied into `extra` (they would change its prototype, not add a field). */
 const UNSAFE_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
 
@@ -163,6 +166,10 @@ export function normalizeCampaign(raw) {
   const p = isPlain(r.player) ? r.player : {};
   if (p.create != null && typeof p.create !== 'boolean') warnings.push('player.create must be true or false — ignored');
   const player = { create: p.create === true };
+  if (r.party != null && !isPlain(r.party)) warnings.push('"party" must be an object — ignored');
+  const pa = isPlain(r.party) ? r.party : {};
+  if (pa.menu != null && typeof pa.menu !== 'boolean') warnings.push('party.menu must be true or false — ignored');
+  const party = { menu: pa.menu !== false };
   const rootKeys = cleanTextKeysOf('root', r.textKeys);
   if (rootKeys.dropped) warnings.push(`textKeys: ${rootKeys.dropped} malformed or unknown text key(s) dropped`);
   /** @type {Record<string, any>} */
@@ -184,6 +191,7 @@ export function normalizeCampaign(raw) {
     story,
     ...(rootKeys.keys ? { textKeys: rootKeys.keys } : {}),
     player,
+    party,
     extra,
   };
   return { campaign, warnings, errors };
@@ -224,6 +232,7 @@ export function serializeCampaign(c) {
     ...(c.story?.length ? { story: c.story } : {}),
     ...(c.textKeys ? { textKeys: c.textKeys } : {}),
     ...(c.player?.create ? { player: { create: true } } : {}),
+    ...(c.party?.menu === false ? { party: { menu: false } } : {}),
     ...(c.extra ?? {}),
   };
   // (an `at` pair on one line)

@@ -1378,6 +1378,14 @@ begin('the player\'s character: the save, ${player}, the player speaking');
   ok('PLAYER_CLASSES: the knight, a known class', PLAYER_CLASSES.length >= 1 && PLAYER_CLASSES[0].id === 'knight' && isPlayerClass('knight') && !isPlayerClass('constructor'));
   const errant = classLook('knight', 'errante');
   ok('classLook: the knight errant wears plate and a sword; an unknown stage or class gives the first look', errant.outfit.style === 'plate' && errant.weapon === 'sword' && classLook('knight', 'nope') === errant && classLook('wizard') === errant && classLook() === errant);
+  {
+    const off = normalizeCampaign({ format: 'luminati-campaign', levels: ['a'], party: { menu: false } });
+    const bad = normalizeCampaign({ format: 'luminati-campaign', levels: ['a'], party: { menu: 'no' } });
+    eq('CampaignFormat: party.menu read (default true), written only when false, a non-boolean warned',
+      [off.campaign.party, parseCampaign(serializeCampaign(off.campaign)).campaign.party, normalizeCampaign({ format: 'luminati-campaign', levels: ['a'] }).campaign.party,
+        serializeCampaign(normalizeCampaign({ format: 'luminati-campaign', levels: ['a'] }).campaign).includes('"party"'), bad.campaign.party, bad.warnings.length],
+      [{ menu: false }, { menu: false }, { menu: true }, false, { menu: true }, 1]);
+  }
   eq('CampaignFormat: player.create read, written only when true', [parseCampaign(serializeCampaign(normalizeCampaign({ format: 'luminati-campaign', levels: ['a'], player: { create: true } }).campaign)).campaign.player, normalizeCampaign({ format: 'luminati-campaign', levels: ['a'] }).campaign.player, serializeCampaign(normalizeCampaign({ format: 'luminati-campaign', levels: ['a'] }).campaign).includes('"player"')], [{ create: true }, { create: false }, false]);
   // ${player} and the player as a speaker
   const named = stubGame({ campaign: { playerName: 'Rodrigo', state: { visited: [], chapter: '' }, hour: () => 9, chapterId: () => '' } });

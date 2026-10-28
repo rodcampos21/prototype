@@ -17,6 +17,7 @@ import {
   buildHaystack, buildFlowerbox,
 } from './props/SmallProps.js';
 import { buildChest, buildWaystone } from './props/CombatProps.js';
+import { buildTent, buildMapTable, buildBanner, buildStake } from './props/CampProps.js';
 import {
   buildBed, buildTable, buildChair, buildShelf, buildHearth, buildCounter, buildRug, buildStaircase, buildWardrobe,
   buildWallWindow, buildSacks,
@@ -358,6 +359,41 @@ export class PropFactory {
    * @returns {PropResult}
    */
   sacks(x, y, z, opts = {}) { return buildSacks(this, x, y, z, opts); }
+
+  // camp props (props/CampProps.js): a prop that changes as the camp grows takes `stage`
+
+  /**
+   * Tent, door toward local +Z: `worn` (a patched A-frame) or `pavilion` (a wall tent with a pennant).
+   * @param {number} x @param {number} y @param {number} z
+   * @param {{ rotation?: number, stage?: string, seed?: number, id?: string }} [opts]
+   * @returns {PropResult}
+   */
+  tent(x, y, z, opts = {}) { return buildTent(this, x, y, z, opts); }
+
+  /**
+   * The map table (a trestle table with a map, an inkpot and a candle); interactive, read from local +Z.
+   * @param {number} x @param {number} y @param {number} z
+   * @param {{ rotation?: number, seed?: number, id?: string }} [opts]
+   * @returns {PropResult}
+   */
+  mapTable(x, y, z, opts = {}) { return buildMapTable(this, x, y, z, opts); }
+
+  /**
+   * The cult's banner, swaying in the wind: `pole` (a rough pole in a cairn) or `mast` (a tall mast on
+   * a plinth). The cloth faces local +Z.
+   * @param {number} x @param {number} y @param {number} z
+   * @param {{ rotation?: number, stage?: string, seed?: number, id?: string }} [opts]
+   * @returns {PropResult}
+   */
+  banner(x, y, z, opts = {}) { return buildBanner(this, x, y, z, opts); }
+
+  /**
+   * Stakes: `ribbon` (one stake with a ribbon) or `plot` (a roped building plot, width × depth).
+   * @param {number} x @param {number} y @param {number} z
+   * @param {{ rotation?: number, kind?: string, width?: number, depth?: number, seed?: number, id?: string }} [opts]
+   * @returns {PropResult}
+   */
+  stake(x, y, z, opts = {}) { return buildStake(this, x, y, z, opts); }
 
   /** Dispose every geometry, material and texture this factory created (not the TextureLibrary's). */
   dispose() {
@@ -722,6 +758,26 @@ export class PropFactory {
       const src = this._source(name);
       const m = new THREE.MeshLambertMaterial({ map: src.map, normalMap: src.normalMap, normalScale: src.normalScale.clone(), vertexColors: true });
       m.name = `luminati:wind:${name}`;
+      m.userData.units = src.units;
+      return applyWind(m, { foliage: false });
+    });
+  }
+
+  /**
+   * Double-sided cloth that sways in the wind (banners, pennants, ribbons): a TextureLibrary name or
+   * an extra prop texture; alpha-tested when that texture has alpha (a swallowtail cut). The sway
+   * weight comes from the builder's `sway` (0 where it is tied, more toward a free edge).
+   * @param {string} name
+   */
+  clothMaterial(name) {
+    return this._cachedMaterial(`cloth:${name}`, () => {
+      const src = this._source(name);
+      const alpha = !this.textures.has(name) && this.extra.textures(/** @type {any} */ (name)).alpha;
+      const m = new THREE.MeshLambertMaterial({
+        map: src.map, normalMap: src.normalMap, normalScale: src.normalScale.clone(), vertexColors: true,
+        side: THREE.DoubleSide, ...(alpha ? { alphaTest: 0.5 } : {}),
+      });
+      m.name = `luminati:cloth:${name}`;
       m.userData.units = src.units;
       return applyWind(m, { foliage: false });
     });

@@ -178,6 +178,7 @@ export const TEXT_KEY_FIELDS = Object.freeze({
   house: Object.freeze({ text: 'lines' }),
   well: Object.freeze({ text: 'lines' }),
   signpost: Object.freeze({ text: 'lines' }),
+  mapTable: Object.freeze({ text: 'lines' }),
   npc: Object.freeze({ title: 'text', dialogue: 'dialogue', talk: 'script' }),
   region: Object.freeze({ sub: 'text', banner: 'text' }),
   exit: Object.freeze({ label: 'text', locked: 'lines' }),

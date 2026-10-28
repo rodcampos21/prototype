@@ -44,17 +44,43 @@ Surubin's talk script cycles four lines while he is in the party. The knight is 
 protagonist (an open question of the Ato I notebook); the player still wears the engine's
 `traveler` look, which `Player.js` fixes for every level.
 
-## The next level: Clareira do Riacho (C02)
+## The next level: Clareira do Riacho (C02, then the camp)
 
-`levels/clareira-do-riacho.json` (26 × 22, built by the same generator): a clearing in the woods with
-a stream down its east side (the far bank is forest), a campfire with two logs in the middle, a
-dirt trail from the south. Its weather pool is clear 70, rain 30.
+`levels/clareira-do-riacho.json` (34 × 28, built by the same generator): a wide clearing in the woods
+with a stream down its east side (the far bank is forest) — the camp of Act I. Its weather pool is
+clear 70, rain 30. The old trail from the south is scenery: the camp has no exit, travel will be by
+Surubin's map (the mechanics plan, G1).
 
-On arriving with Surubin in the party (`arrive`, `if: party:surubin`) the story holds a clear sky
-(`weather clear`), moves the clock on to 21:00, seats the two at the fire (markers `fogo-cavaleiro`
-and `fogo-surubin`, after a short wait: the party takes its places after the arrival) and plays C02
-of the Ato I notebook: the colony, the knight's disdain, the map and the strokes carved in stones.
-The knight's answer is a choice of three, each remembered by a flag for Act II (`c02.estacao`,
-`c02.lar`, `c02.jantar`) with Surubin's reply. Then "Que as marés nos guiem.", `weather auto` (the
-pool rolls again) and the end card *Fim do teste: a fogueira*. The level has no exit yet: C03 and
-the first village come next.
+**The first night (C02).** On arriving with Surubin in the party (`arrive`, `if: party:surubin`)
+the story holds a clear sky (`weather clear`), moves the clock on to 21:00, seats the two at the
+fire (markers `fogo-cavaleiro` and `fogo-surubin`, after a short wait: the party takes its places
+after the arrival) and plays C02 of the Ato I notebook: the colony, the knight's disdain, the map
+and the strokes carved in stones. The knight's answer is a choice of three, each remembered by a
+flag for Act II (`c02.estacao`, `c02.lar`, `c02.jantar`) with Surubin's reply, then "Que as marés
+nos guiem.".
+
+**The morning of day 2.** The screen fades out, the clock moves on to 7:30 (day 2) and the flag
+`acampamento` is set: the camp props come (`when: acampamento`). Surubin leaves the party
+(`party leave surubin`): from now on he is the camp's villager (id `surubin`, the same as on the
+coast road; `when: acampamento`, `unless: party:surubin`), wandering between his tent and the map
+table, with a talk script of his own (four lines in turn). The campaign has no tactics panel
+(`party: { menu: false }`): Surubin only travels with the knight from the rescue to the camp. A
+companion who stays in the camp later is placed the same way — a villager of the camp's level with
+the same id —, so parting never makes anyone vanish. The two stand by the banner
+(markers `manha-cavaleiro`, `manha-surubin`); Surubin shows the banner, the three plots and his
+first sketch of the map (the camera on `estandarte`, `lote-forja`, `mesa-do-mapa`), names the
+forest, the reeds and the quarry the sailors spoke of, and promises the knight the strokes carved
+in stones. QP03 *Os alicerces* starts (stage `coletar`). The sky stays clear until 11:00 (a `time`
+event lets the pool roll again then).
+
+**The camp's layout** (the notebook, "O acampamento, o mapa e as obras"):
+
+| Area | What | Ids / names |
+| --- | --- | --- |
+| Middle | the fire with two logs, a crate | — |
+| North | Surubin's tent (`worn`), the map table (examined: the map's text), his crate and barrel | `tenda-surubin`, `mesa-do-mapa` |
+| East | the banner (`pole`); the altar's place beside it (C03) | `estandarte`, marker `altar` |
+| West and south | three roped plots on bare ground: forge 4 × 3.5, silo 3.5 × 3.5, lodging 5 × 3.5 | `lote-forja`, `lote-silo`, `lote-alojamento` |
+| North-east | the chapel's place (QP05, phase 4), left clear | marker `capela` |
+
+The generator fails unless the campaign places every `camp: true` type (Starfall Vale skips them).

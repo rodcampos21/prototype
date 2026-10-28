@@ -27,5 +27,8 @@
   },
   "player": {
     "create": true
+  },
+  "party": {
+    "menu": false
   }
 }

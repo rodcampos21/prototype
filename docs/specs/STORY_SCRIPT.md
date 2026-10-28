@@ -583,7 +583,7 @@ When the story changes, the game re-checks every `when` / `unless`:
   bench, barrel, crate, crate stack, flower box, signpost, fence, bridge, waterfall, lamppost, wall
   torch, campfire, point light, and the interior furniture (bed, table, chair, shelf, hearth,
   counter, rug, staircase, wardrobe, wall window, grain sacks — a hearth's fire and light come and
-  go with it). Props (and particle areas) with the same `when` / `unless` pair
+  go with it) and the camp props (tent, map table, banner, stake — their swaying cloth with them). Props (and particle areas) with the same `when` / `unless` pair
   are built as one **story group**, merged into the level's own batches like any other prop (the
   same draw calls as without the condition; on a big level its shadow proxies too), where the
   group owns vertex ranges; a group that comes or goes shows / hides its meshes — its ranges

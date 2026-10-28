@@ -57,7 +57,7 @@
 
 ## 1. Summary of all types
 
-`OBJECT_TYPES[type]` = `{ label, category, placement, kind, glyph, color, radius, rotatable?, snap?, help?, defaults, fields, combat?, campaign?, story?, interior? }`.
+`OBJECT_TYPES[type]` = `{ label, category, placement, kind, glyph, color, radius, rotatable?, snap?, help?, defaults, fields, combat?, campaign?, story?, interior?, camp? }`.
 `combat: true` marks the three combat-only types (`enemy`, `chest`, `waystone`,
 [COMBAT.md §14](../contracts/COMBAT.md#14-level-data)): an `enemy` object turns combat on for its
 level, and the combat demo [Cinderwatch Pass](../design/levels/cinderwatch-pass.md) covers them
@@ -71,6 +71,10 @@ campaign's generator covers them, Starfall Vale's coverage skips them.
 `counter`, `rug`, `staircase`, `wardrobe`, `wallWindow`, `sacks` — [Interior](#interior)), category
 **Interior**: ordinary props anywhere, made for the room levels (`environment.interior`); the
 interiors demo's generator covers them, Starfall Vale's coverage skips them (`isInteriorType`).
+`camp: true` marks the camp of the Baiacu campaign (`tent`, `mapTable`, `banner`, `stake` —
+[Camp](#camp)), category **Camp**: ordinary props anywhere; a prop that changes as the camp grows
+takes `opts.stage`. The campaign's generator places them, Starfall Vale's coverage skips them
+(`isCampType`).
 Every type's inspector ends with the story conditions `when` / `unless` (`STORY_FIELDS`: optional,
 no default, absent from files that do not use them; [STORY_SCRIPT.md §3](STORY_SCRIPT.md#3-conditions)).
 `kind` decides who builds the object: **prop** objects are built by `LevelObjectBuilder` (3D
@@ -101,6 +105,10 @@ toggle in the tool options places freely (`snapStep` in
 | `crateStack` | Crate stack | Props | point | prop | yes | box | — | — |
 | `flowerbox` | Flower box | Props | point | prop | yes | box | — | — |
 | `signpost` | Signpost | Props | point | prop | yes | circle | — | Read (only with `text`) |
+| `tent` | Tent | Camp | point | prop | yes | box | — | — |
+| `mapTable` | Map table | Camp | point | prop | yes | box | — | Examine (only with `text`) |
+| `banner` | Banner | Camp | point | prop | yes | circle | — | — |
+| `stake` | Stake | Camp | point | prop | yes | ribbon: circle r 0.12; plot: none | — | — |
 | `bed` | Bed | Interior | point | prop | yes | box | — | — |
 | `table` | Table | Interior | point | prop | yes | box (round: circle) | — (a candle flame) | — |
 | `chair` | Chair | Interior | point | prop | yes | circle | — | — |
@@ -128,7 +136,7 @@ toggle in the tool options places freely (`snapStep` in
 | `waystone` | Waystone (checkpoint) | Combat | point | prop | no | circle r 0.5 | — (it glows by bloom) | Examine; on a combat level attune by walking close, Rest |
 
 Palette categories, in display order (`OBJECT_CATEGORIES`): Buildings, Nature, Lights, Props,
-Interior, Structures, Water, Characters, Markers, Combat. The player start is **not** an object: it is
+Camp, Interior, Structures, Water, Characters, Markers, Combat. The player start is **not** an object: it is
 `level.spawn` ([LEVEL_FORMAT.md §10](LEVEL_FORMAT.md#10-spawn-player-start)); editors show it with
 `SPAWN_MARKER` (`★`, `#7fe3ff`).
 
@@ -155,6 +163,11 @@ Enumerations exported by the catalog:
 | `CHEST_UPGRADES` | `none`, `maxHp` (+20 max HP), `maxMp` (+10 max MP), `attack` (+3 ATK) |
 | `BLANKET_COLORS` | `red`, `blue`, `green`, `ochre`, `plum` (a bed's quilt) |
 | `RUG_COLORS` | `red`, `blue`, `green` |
+| `TENT_STAGES` | `worn`, `pavilion` (a tent's `opts.stage`) |
+| `BANNER_STAGES` | `pole`, `mast` (a banner's `opts.stage`) |
+| `STAKE_KINDS` | `ribbon`, `plot` (a stake's `opts.kind`) |
+
+Helper for the camp types: `isCampType(type)`.
 
 Helpers for the interior types: `isInteriorType(type)`, `interiorFootprint(obj)` (the local
 footprint rectangle, `solid`, `round`), `staircaseFoot(obj)` (where the player stands to use a
@@ -557,6 +570,73 @@ Builder extra: `wall` (wall-mounted, no legs and no collider). **In the game:** 
 | `text` | lines | `["↑ Somewhere nice"]` | | Sign text, one page per entry. Empty = not interactive. |
 
 **In the game:** circle collider (0.22); with text: interactable "Read" (radius 1.35).
+
+## Camp
+
+The camp of the Baiacu campaign (`camp: true`, category **Camp**; builders in
+[`props/CampProps.js`](../../src/engine/world/props/CampProps.js)), which grows from a clearing
+into a town ([the mechanics plan](../design/baiacu/PLANO-DE-MECANICAS.md), stages E and F1).
+
+- **Stages.** A prop that changes as the camp grows takes `opts.stage`, one of its list in the
+  catalog (`TENT_STAGES`, `BANNER_STAGES`); the first entry is the first camp's, and anything else
+  builds it. A new stage is a new branch in the builder and a new entry at the end of its list. A
+  level shows one stage at a time: two objects with `when` / `unless` on the story, or a chapter
+  variant of the level.
+- **Textures** (`PropTextureSet`, painted on first use): `canvas` (the tent's linen, 2×2 units),
+  `banner_fish` (the cult's banner, 1.25×2.25, alpha swallowtail), `map_parchment` (Surubin's map,
+  1.5×1).
+- **Cloth in the wind.** The banner's cloth, the pavilion's pennant and the stakes' ribbons are
+  separate meshes with `PropFactory.clothMaterial` (wind sway, double-sided): never merged, a draw
+  call each; the rest is static and merged.
+- The front of a tent, a table and a banner is local +Z (the rotation turns it).
+
+### tent
+
+| Field | Type | Default | Editor range / options | Notes |
+| --- | --- | --- | --- | --- |
+| `rotation` | angle | `0` | step 15° | The door's side. |
+| `opts.stage` | select | `worn` | `TENT_STAGES` | `worn`: a patched A-frame, 2.4 × 2.8, one flap tied back, a bedroll inside. `pavilion`: a wall tent, 3.2 × 3.6, the front flaps rolled up, a red pennant on the front pole. |
+| `opts.seed` | int | `1` | 0–9999 | Patches, the pegs. |
+
+**In the game:** box colliders over the canvas (not the guy ropes).
+
+### mapTable
+
+A rough trestle table with Surubin's map pinned by four stones, an inkpot with a quill and a candle
+stub.
+
+| Field | Type | Default | Editor range / options | Notes |
+| --- | --- | --- | --- | --- |
+| `rotation` | angle | `0` | step 15° | The side one reads it from. |
+| `text` | lines | `[]` | | Text when examined, one page per entry. Empty = not interactive. |
+| `opts.seed` | int | `1` | 0–9999 | |
+
+**In the game:** box collider 1.8 × 1.0; with text: interactable "Examine" (radius 1.2), in front of
+the table. The map screen will open from here (the plan's stage G1).
+
+### banner
+
+The pufferfish on sea blue, hanging from a crossbar and swaying in the wind.
+
+| Field | Type | Default | Editor range / options | Notes |
+| --- | --- | --- | --- | --- |
+| `rotation` | angle | `0` | step 15° | The cloth's face. |
+| `opts.stage` | select | `pole` | `BANNER_STAGES` | `pole`: a rough pole 3.5 high in a cairn. `mast`: a squared mast 4.6 high on a stone plinth, a spiked gilt finial. |
+| `opts.seed` | int | `1` | 0–9999 | The cairn's stones. |
+
+**In the game:** circle collider (0.42; mast 0.5).
+
+### stake
+
+| Field | Type | Default | Editor range / options | Notes |
+| --- | --- | --- | --- | --- |
+| `rotation` | angle | `0` | step 15° | |
+| `opts.kind` | select | `ribbon` | `STAKE_KINDS` | `ribbon`: one stake with a red ribbon (where an expedition arrives and walks back from). `plot`: a building plot — a stake at each corner, a sagging rope between them, a ribbon on the front-left one. |
+| `opts.width` | number | `4` | 1.5–10, step 0.5 | Plots only. |
+| `opts.depth` | number | `3` | 1.5–10, step 0.5 | Plots only. |
+| `opts.seed` | int | `1` | 0–9999 | The stakes' lean. |
+
+**In the game:** a ribbon stake has a small circle collider (0.12); a plot none (it is walkable).
 
 ## Interior
 

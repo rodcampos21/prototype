@@ -1120,6 +1120,11 @@ export class CampaignRuntime {
     return this.campaign.player?.create ? classLook(this.state.player?.cls) : null;
   }
 
+  /** May the player open the party's tactics panel? (`party.menu`, true unless the campaign says false.) */
+  get partyMenu() {
+    return this.campaign.party?.menu !== false;
+  }
+
   /** The name of the player's character ('' without one: no creation, or not made yet). */
   get playerName() {
     return this.state.player?.name ?? '';

@@ -1509,14 +1509,22 @@ export class Game {
    * once someone joined. Rows `{ keys, label, id, pad? }`, the labels in the page's language.
    */
   _controls() {
-    const party = this.party?.count ? [PARTY_CONTROL] : [];
+    const party = this.party?.count && this.partyMenuAllowed ? [PARTY_CONTROL] : [];
     if (this.story) return controlRows([...CONTROLS.slice(0, 6), JOURNAL_CONTROL, ...party, ...CONTROLS.slice(6)]);
     return controlRows(party.length ? [...CONTROLS.slice(0, 6), ...party, ...CONTROLS.slice(6)] : CONTROLS);
   }
 
   /** The lines the game adds to the combat legend (`combat.legendExtra`), the labels translated. */
   _legendExtra() {
-    return controlRows([...(this.story ? [JOURNAL_CONTROL] : []), ...(this.party?.count ? [PARTY_CONTROL] : [])]);
+    return controlRows([...(this.story ? [JOURNAL_CONTROL] : []), ...(this.party?.count && this.partyMenuAllowed ? [PARTY_CONTROL] : [])]);
+  }
+
+  /**
+   * May the player open the tactics panel? False in a campaign with `party.menu: false` (its
+   * companions follow the story's rules only: no panel, no G in the legend, no *Tactics…*).
+   */
+  get partyMenuAllowed() {
+    return this.campaign?.partyMenu ?? true;
   }
 
   /** The party changed (a join, a leave): the controls legend gains / loses *G — Party*. */
@@ -1553,7 +1561,7 @@ export class Game {
       return false;
     }
     if (this.partyMenuOpen) return true;
-    if (this.mode !== 'play') return false;
+    if (this.mode !== 'play' || !this.partyMenuAllowed) return false;
     if (!force && (this.busy || this.ui.dialog.isOpen || this.photoMode || this.mapOpen || this.journalOpen
       || this.combat?.locksPlayer || this.ui.cutscene || party.closedFrame === this.engine.time.frame)) return false;
     if (!party.count) {

@@ -75,7 +75,10 @@
   `interior: true` types — the furniture of rooms (`bed`, `table`, `chair`, `shelf`, `hearth`,
   `counter`, `rug`, `staircase`, `wardrobe`, `wallWindow`, `sacks`), which the interiors demo
   (`tools/make-emberfall-interiors.mjs`) covers; a new piece of furniture is flagged
-  `interior: true`, category `Interior`, and placed there.
+  `interior: true`, category `Interior`, and placed there. The `camp: true` types (`tent`,
+  `mapTable`, `banner`, `stake` — the Baiacu campaign's camp) are skipped as well: the campaign's
+  generator (`tools/make-estrada-da-costa.mjs`) places them, and a new camp prop is flagged
+  `camp: true`, category `Camp`, and shown in `sandbox/props.html?mode=camp`.
 - **New defaults change saved files.** A key added to an object type's `defaults`, to
   `DEFAULT_ENVIRONMENT` or `DEFAULT_WATER`, or a new built-in tile char, is materialised by
   `normalizeLevel` into every level on its next save (golden rule 5). Prefer optional fields that
