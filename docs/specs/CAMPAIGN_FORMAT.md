@@ -427,9 +427,10 @@ start, i.e. an editor play-test: `….test`), JSON, **version 2**:
 ```
 { version: 2, story: { vars, items, itemNames?, gold, quests, done, counters, visits, day, levels, ending?, pending?, seed?, party? },
   level, at: { x, z, facing }, via?: { from, entrance }, time, weather, combat, opened, cleared,
-  visited, chapter, savedAt, playTime, player?: { name, cls } }
+  visited, chapter, savedAt, playTime, player?: { name, cls }, weatherLock? }
 ```
 
+- **The held weather.** `weatherLock` (additive): the weather the story holds (`weather rain` in a script, until `weather auto`, STORY_SCRIPT.md): while set, arriving in a level keeps it and the maps' weather pools roll nothing. Absent: none.
 - **The character.** `player` (a campaign with `player.create`, once the creation is confirmed):
   the name given (control and formatting characters dropped, spaces made one, trimmed, at most 16
   characters; never translated) and the class id. Additive to version 2. On load a blank name or an

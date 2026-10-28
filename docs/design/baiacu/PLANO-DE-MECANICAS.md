@@ -1,14 +1,14 @@
 # Plano de mecânicas — Culto ao Baiacu Rei sobre o Luminati
 
 Planejamento para adaptar a engine Luminati ao jogo: espaços de construção fixos, a evolução visual
-do acampamento, o relógio por expedições, os recursos e a troca de idiomas (sai japonês e chinês,
+do acampamento, o relógio pelos dias do jogo, os recursos e a troca de idiomas (sai japonês e chinês,
 entram inglês e português). A lore vive nos documentos do Claude Docs (*Bíblia Narrativa* e *Ato I —
 Caderno de Lore, NPCs e Quests*). Aqui fica só o que muda no código.
 
 | | |
 | --- | --- |
 | **Público** | Rodrigo e o parceiro de projeto; agentes de IA que forem implementar cada etapa. |
-| **Estado** | **M1 (idioma) concluído em 2026-10-28** — veja a etapa A. **M2.1 (tela de criação de personagem) pronta em 2026-10-28**: `game.html` abre a campanha `culto-ao-baiacu-rei` (título → criação → [Estrada da Costa](../levels/estrada-da-costa.md)); nome e classe no save, `${player}` e `player:` nas falas (etapa J, itens 1, 2, 4 e 5). **M2.2 (visual do cavaleiro) pronta**: o Cavaleiro Errante de cabelo branco, armadura de placas clara com dourado, capa azul e espada (estilo de roupa ``plate`` novo no gerador de sprites); cada classe lista seus estágios de visual (``looks`` em ``PlayerClasses.js``), e uma especialização futura troca o visual inteiro. O resto é plano. |
+| **Estado** | **M1 (idioma) concluído em 2026-10-28** — veja a etapa A. **M2.1 (tela de criação de personagem) pronta em 2026-10-28**: `game.html` abre a campanha `culto-ao-baiacu-rei` (título → criação → [Estrada da Costa](../levels/estrada-da-costa.md)); nome e classe no save, `${player}` e `player:` nas falas (etapa J, itens 1, 2, 4 e 5). **M2.2 (visual do cavaleiro) pronta**: o Cavaleiro Errante de cabelo branco, armadura de placas clara com dourado, capa azul e espada (estilo de roupa ``plate`` novo no gerador de sprites); cada classe lista seus estágios de visual (``looks`` em ``PlayerClasses.js``), e uma especialização futura troca o visual inteiro. **Clima por mapa (etapa I) e C02 prontos**: ``environment.weatherPool`` sorteia o clima nas viradas de manhã, tarde e noite e nas chegadas; ``weather <x>`` trava e ``weather auto`` libera; a Estrada da Costa leva à Clareira do Riacho, onde acontece a fogueira (C02, marcas ``c02.estacao`` / ``c02.lar`` / ``c02.jantar``). O resto é plano. |
 | **Relacionado** | [Onboarding](../../ai/AGENT_ONBOARDING.md) · [Playbooks](../../ai/TASK_PLAYBOOKS.md) · [Formato de campanha](../../specs/CAMPAIGN_FORMAT.md) · [Linguagem de história](../../specs/STORY_SCRIPT.md) · [I18N](../../specs/I18N.md) · [Módulo pixel](../../architecture/modules/pixel.md) |
 
 ---
@@ -42,7 +42,7 @@ Consequências:
 | Construção aparecer na hora | `when` / `unless` em **qualquer** objeto, inclusive casas, avaliado ao vivo |
 | Recursos (madeira, pedra, comida) | **Itens** da história (`give madeira 3`, `item:madeira >= 5`) e ouro |
 | Quests QP/QS, fragmentos F01–F10 | Quests com etapas, diário (B), eventos `use` / `enter` / `cleared` |
-| Contadores (expedições, eventos EV01–EV08) | **Variáveis** da história (`var expedicoes + 1`, `if expedicoes >= 3`) |
+| Contadores (dias, eventos EV01–EV08) | O **dia** da história (`day`, +1 a cada meia-noite e a cada descanso) e **variáveis** (`var ev01-inicio = …`, `if day >= …`) |
 | NPC chegando ao acampamento | Villagers com `when`, cutscenes, `walk`, `bark` |
 | Surubin e companheiros na luta | **Party** (até 3), classes warden / ranger / mystic |
 | Hordas, chefe, defesa | Combate em tempo real, 8 tipos de inimigo, chefe com arena |
@@ -54,7 +54,7 @@ Consequências:
 | A | Idiomas: inglês + português, sem japonês e chinês | Médio (37 arquivos tocam ja/zh) |
 | B | Fundação da campanha do Ato I (acampamento hub + nós de expedição + visual do cavaleiro) | Médio |
 | C | Recursos: HUD de recursos, pontos de coleta, saque de inimigos | Médio |
-| D | Relógio por expedições (turno ao voltar ao acampamento, contagens, eventos que evoluem) | Médio |
+| D | Relógio pelos dias do jogo (obras e contagens avançam a cada manhã, eventos que evoluem) | Médio |
 | E | Construção em espaços fixos (o sistema central) | Grande |
 | F | Arte: estruturas novas com estágios, NPCs novos, Surubin por rank, cavaleiro, inimigos novos | Grande e contínuo |
 | G | Atlas (mapa de nós com estados) | Grande, depois do núcleo |
@@ -130,28 +130,36 @@ português e os checks de i18n passam sem japonês e chinês.
 2. **HUD de recursos** (novo componente no kit de UI pixel): uma faixa com ícone e quantidade dos
    recursos principais, visível no acampamento e nas expedições.
 3. **Pontos de coleta**: um novo tipo de objeto `resourceNode` (árvore cortável, veio de pedra, moita
-   de ervas), com Espaço para coletar, quantidade e reposição por expedição. Enquanto ele não existe,
+   de ervas), com Espaço para coletar, quantidade e reposição a cada manhã. Enquanto ele não existe,
    dá para usar um `event` `use` com `give madeira 3` e `once`.
 4. **Saque de inimigos**: hoje o loot é ouro e poções (`src/game/combat/Loot.js`). Adicionar itens
    de recurso à tabela de saque por tipo de inimigo (couro e osso das bestas).
 5. **Ícones** dos recursos pintados por código (novo `ItemIcons.js` em `src/engine/pixel/`).
 
-### D. Relógio por expedições
+### D. Relógio pelos dias do jogo
 
-Regra do caderno: *o tempo é contado em expedições, não em minutos*.
+Regra do caderno (revista em 2026-10-28): *o tempo é contado em dias do jogo, não em expedições*.
+Um dia dura cerca de 36 minutos reais (`TIME_SPEED`: 1 hora de jogo = 90 s).
 
-1. **Turno**: uma variável de campanha `expedicao`, incrementada **ao voltar ao acampamento vindo de
-   um nó** (evento de campanha `arrive` no nível `acampamento`, com uma flag "saiu em expedição").
-   No primeiro protótipo isso é só história (`var expedicao + 1`). Depois vira um sistema
-   (`ExpeditionClock`) com gancho de evento `on: turn`.
-2. **Contagens com prazo** (EV01 saqueadores, EV02 a fera marcha, EV03 comerciante…): uma tabela
-   `timers` em `story/main.json` (`id`, começa quando, duração em turnos, o que acontece ao
-   expirar). O sistema avança todas a cada turno e dispara os scripts. Regra do caderno: no máximo
-   **dois eventos com contagem ativa ao mesmo tempo**.
-3. **O relógio de horas** (dia e noite) continua só como clima visual. Dentro de uma expedição a hora
-   anda; no acampamento ela pode ficar fixa por ato (`clock: false`).
-4. **Exibição diegética**: a contagem aparece no atlas (G); até lá, no diário e em falas.
-5. Obras (E) e eventos usam o mesmo turno.
+1. **O dia já existe**: `StoryState.day` começa em 1, sobe a cada meia-noite e a cada descanso que
+   passa da meia-noite, vai no save e é lido nas condições (`if day >= 3`). Não há contador de
+   expedições.
+2. **A virada que conta é a manhã** (5:00), a mesma que o sorteio de clima já detecta
+   (`weatherPhase` em `src/game/WeatherRoll.js`). Primeiro protótipo: um evento de campanha
+   `on: morning` que roda a cada nova manhã em qualquer fase. Depois vira um sistema (`DayClock`)
+   que avança obras e contagens.
+3. **Contagens com prazo** (EV01 saqueadores, EV02 a fera marcha, EV03 comerciante…): uma tabela
+   `timers` em `story/main.json` (`id`, começa quando, duração em dias, o que acontece ao expirar).
+   Cada contagem guarda o dia em que começou e expira em `inicio + duracao`. Regra do caderno: no
+   máximo **dois eventos com contagem ativa ao mesmo tempo**. A Noite de névoa (EV06) dura uma
+   noite, de 18:30 até a manhã seguinte.
+4. **O relógio anda em todo lugar**, inclusive no acampamento: nada de `clock: false` por ato. Uma
+   cena pode segurar a hora (`time 21`), mas o dia continua contando depois dela.
+5. **Dormir** (Bíblia, *Dormir*): na tenda do acampamento, pula até a manhã seguinte e avança o
+   dia, as obras e as contagens; um prazo pode vencer durante a noite. Só no acampamento: fora dele
+   não se dorme.
+6. **Exibição diegética**: a contagem aparece no atlas (G); até lá, no diário e em falas.
+7. Obras (E) e eventos usam o mesmo dia.
 
 ### E. Construção em espaços fixos (o sistema central)
 
@@ -166,7 +174,7 @@ lista fechada de construções possíveis.
     "forja": {
       "nome": "Forja",
       "custo": { "madeira": 6, "pedra": 4 },
-      "turnos": 1,
+      "dias": 1,
       "estagios": ["fundacao", "andaime", "pronto"],
       "niveis": [ { "custo": { "minerio-raro": 2 }, "requer": "quest:aco-de-verdade = done" } ],
       "libera": "set forja-pronta"
@@ -185,15 +193,15 @@ E na fase do acampamento, um novo tipo de objeto:
 **Comportamento:**
 
 1. Espaço vazio: estacas, cordas e um marcador. Espaço aperta a escolha.
-2. **Menu de construção** (nova janela no kit de UI): opções, custo, turnos e o que libera.
+2. **Menu de construção** (nova janela no kit de UI): opções, custo, dias de obra e o que libera.
    Construções sem recursos ficam visíveis e desabilitadas.
-3. Ao escolher: os recursos são pagos, a obra começa no estágio `fundacao` e avança a cada **turno
-   de expedição** (D), passando por `andaime` até `pronto`.
+3. Ao escolher: os recursos são pagos, a obra começa no estágio `fundacao` e avança a cada **manhã**
+   (D), passando por `andaime` até `pronto`, esteja o jogador numa expedição ou no acampamento.
 4. Ao terminar: roda o script `libera` (abre um nó do atlas, traz um NPC, como a QS01) e o Surubin
    comenta (as "reações a construções" do caderno).
 5. **Níveis** (forja tier 2…) reabrem a obra num espaço já construído.
 6. O estado vive no save da campanha (`CampaignState` ou `StoryState`): por espaço, a construção,
-   o estágio e o turno em que começou.
+   o estágio e o dia em que começou.
 
 **Como os modelos aparecem:** cada espaço já monta **na carga** todas as variantes possíveis
 (construção × estágio) e mostra uma de cada vez. É o mesmo mecanismo do `when` / `unless`. Isso
@@ -281,7 +289,7 @@ mesa do acampamento, então ele abre por um objeto do acampamento. É a etapa ma
    (como `campaign: true` faz) e cobrir no gerador da campanha `ato-1`. A longo prazo, decidir se as
    fases de demonstração continuam no repositório.
 2. **Um teste jogado por bot** da campanha (no molde de `sandbox/campaign.travel.json` e
-   `combat_play.js`): prólogo, construir, sair, voltar, turno, obra pronta.
+   `combat_play.js`): prólogo, construir, sair, voltar, nova manhã, obra pronta.
 3. **Documentação**: cada sistema novo ganha sua especificação em `docs/specs/` e uma linha no
    onboarding, como pede o `AGENTS.md`.
 
@@ -332,7 +340,7 @@ Design na Bíblia, seção *O protagonista*.
 | --- | --- | --- |
 | 1 | Língua-fonte do conteúdo: escrever em português e traduzir para o inglês, ou o contrário? | **Decidido (2026-10-28):** tudo em português, idioma padrão português, inglês por tradução automática. |
 | 2 | Primeira construção: estágios visíveis (fundação, andaime, pronto) ou só "em obra / pronta"? | Os três estágios: é o que faz a cidade "crescer à vista". |
-| 3 | Duração das obras: sempre 1 turno no Ato I, ou variável? | 1 turno no Ato I (o caderno fala em "a construção leva tempo"); variável a partir do Ato II. |
+| 3 | Duração das obras: sempre 1 dia no Ato I, ou variável? | **Decidido (2026-10-28):** obras contam dias do jogo, não expedições. Recomendação: 1 dia no Ato I; variável a partir do Ato II. |
 | 4 | Espaços vazios aparecem desde o começo, ou vão sendo revelados? | Revelar por ato: o acampamento do Ato I tem 3 ou 4 espaços. |
 | 5 | Arte só procedural, ou abrir caminho para PNG (F6)? | Procedural por enquanto. Reavaliar quando houver um artista. |
 | 6 | Manter as fases de demonstração (Emberfall, Starfall…) no repositório? | Manter até o Ato I estar jogável: elas são os testes de regressão da engine. |
@@ -344,7 +352,7 @@ Design na Bíblia, seção *O protagonista*.
 | --- | --- | --- |
 | **M1, Idioma** | Jogo em português, sem japonês e chinês | A |
 | **M2, Acampamento jogável** | Campanha Ato I: criação de personagem → prólogo → acampamento → Mata da Clareira → volta; cavaleiro com visual próprio e falando; clima sorteado por mapa; C02 e C03 | B, I, J, F1 (tenda, estandarte, altar), F2 (cavaleiro) |
-| **M3, Primeira obra** | Recursos coletados, escolha forja / silo / alojamento, obra em estágios, turno por expedição (protótipo E1) | C, D, E1, F1 (forja, silo, alojamento, andaime) |
+| **M3, Primeira obra** | Recursos coletados, escolha forja / silo / alojamento, obra em estágios que avança a cada manhã (protótipo E1) | C, D, E1, F1 (forja, silo, alojamento, andaime) |
 | **M4, Sistema de construção** | `buildSlot` + `BuildingSystem` + menu + editor; contagens EV01/EV02 | E2, D completo, F4 |
 | **M5, Fase 1–3 do Ato I** | Odo, Fumaça na Serra, Pedras Riscadas, duelo do mestre | F2 (NPCs), F3 |
 | **M6, Atlas** | Atlas do Ato I com os 12 (13) nós | G |

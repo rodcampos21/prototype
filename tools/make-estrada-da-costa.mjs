@@ -45,6 +45,8 @@ if (args.out === true || args.out === '') {
 const DIR = 'public/campaigns/culto-ao-baiacu-rei';
 const LEVEL_ID = 'estrada-da-costa';
 const FILE = `${DIR}/${levelFile(LEVEL_ID)}`;
+/** The second level: the clearing up the stream, scene C02 (the campfire). */
+const CLEARING_ID = 'clareira-do-riacho';
 const OUT_DIR = path.resolve(root, String(args.out ?? DIR));
 
 const W = 40;
@@ -53,8 +55,9 @@ const level = createEmptyLevel({ name: 'Estrada da Costa', width: W, depth: D, f
 level.subtitle = 'Terra Selvagem';
 level.author = 'Culto ao Baiacu Rei';
 level.description = 'Prólogo do Ato I: o cavaleiro errante encontra Surubin, adepto do Culto ao Baiacu Rei, cercado por criaturas da mata na estrada da costa.';
-// (C01: a stormy afternoon — it rains from the arrival on; the clock and the weather are the game's)
-level.environment = { ...level.environment, timeOfDay: 16.4, weather: 'rain' };
+// (C01: a stormy afternoon — it rains from the arrival on, held by the story; on a later visit the
+// coast rolls its weather at each turn of the day: often rain)
+level.environment = { ...level.environment, timeOfDay: 16.4, weather: 'rain', weatherPool: { clear: 55, rain: 45 } };
 
 /** Fill a tile rectangle [i0, i1) × [j0, j1) with a tile char and / or a height level. */
 function fill(i0, j0, i1, j1, ch, lvl) {
@@ -228,16 +231,15 @@ addObject(level, 'event', 0, 0, {
   on: 'enter', if: 'not resgatado', minX: 12, maxX: 19, minZ: 0, maxZ: 3.5,
   run: [': Atrás de você, na clareira, alguém ainda grita por socorro.', 'walk player 15.5 6'],
 });
-// with Surubin, the road north: the end of the test (the campfire is the next scene, C02)
+// with Surubin, the road north: on to the clearing up the stream (the campfire, C02)
 addObject(level, 'event', 0, 0, {
   on: 'enter', once: true, if: 'resgatado', minX: 12, maxX: 19, minZ: 0, maxZ: 3.5,
   run: [
     'cutscene',
     'face player up',
     'Surubin: A clareira fica subindo o riacho. Lá a gente acende um fogo e espera a tempestade passar.',
-    'Surubin: Amanhã eu te conto da missão. Hoje... hoje eu só quero agradecer ao Rei por estar vivo.',
     'quest resgate done',
-    'ending prologo Fim do teste: a estrada da costa',
+    `travel ${CLEARING_ID}`,
   ],
 });
 
@@ -285,15 +287,150 @@ function canonicalObject(o) {
   return /** @type {LevelObject} */ (out);
 }
 
-const { level: out, warnings } = normalizeLevel(level);
-out.objects = out.objects.map(canonicalObject);
-keyLevel(out, { root, file: FILE });
-const errors = [...validateLevel(out), ...keyIssueLines(out)];
-const text = serializeLevel(out);
-if (serializeLevel(parseLevel(text).level) !== text) errors.push('the output does not re-serialise byte-identically (parseLevel → serializeLevel)');
+// =================================================================================================
+// The clearing up the stream (C02, the campfire): the first night, after the storm
+// =================================================================================================
+
+/**
+ * "Clareira do Riacho": a small clearing in the woods with a stream down its east side, a campfire
+ * in the middle and two logs to sit on. The player arrives from the south trail with Surubin (a
+ * party member); the story clears the sky (held), moves the clock on to the night and plays C02 —
+ * the colony, the knight's disdain, the map and the strokes carved in stones, and his answer (three
+ * choices, each remembered by a flag for Act II: `c02.estacao`, `c02.lar`, `c02.jantar`) —, then
+ * lets the weather roll again and ends the test.
+ */
+function buildClearing() {
+  const CW = 26;
+  const CD = 22;
+  const lv = createEmptyLevel({ name: 'Clareira do Riacho', width: CW, depth: CD, fill: 'g', level: 2, border: 2 });
+  lv.subtitle = 'Terra Selvagem';
+  lv.author = 'Culto ao Baiacu Rei';
+  lv.description = 'Ato I, cena C02: a primeira noite, depois da tempestade. Surubin e o cavaleiro à fogueira, junto ao riacho.';
+  // (the campaign's clock goes on from the coast road; the arrival moves it on to the night)
+  lv.environment = { ...lv.environment, timeOfDay: 20.5, weatherPool: { clear: 70, rain: 30 } };
+  const fillC = (i0, j0, i1, j1, ch, lvl) => {
+    for (let j = j0; j < j1; j++) {
+      for (let i = i0; i < i1; i++) {
+        if (ch != null) setTile(lv, i, j, ch);
+        if (lvl != null) setHeightLevel(lv, i, j, lvl);
+      }
+    }
+  };
+  // the stream down the east side (level 0) between grassy banks
+  fillC(18, 0, 20, CD, 'o', 0);
+  fillC(17, 2, 18, CD - 2, 'G');
+  // (the far bank: the woods, no way across)
+  fillC(20, 0, CW, CD, 'T');
+  // the clearing: flower grass, the trampled ring around the fire, the trail from the south
+  fillC(5, 5, 16, 16, 'f');
+  fillC(8, 8, 14, 14, 'd');
+  for (let j = 14; j < CD; j++) { setTile(lv, 10, j, '.'); setTile(lv, 11, j, '.'); }
+  // the fire and two logs to sit on
+  addObject(lv, 'campfire', 11, 11, { rotation: 0.8, opts: { seat: false } });
+  addObject(lv, 'bench', 9.4, 11.2, { rotation: Math.PI / 2 });
+  addObject(lv, 'bench', 12.8, 10.6, { rotation: -Math.PI / 2 });
+  addObject(lv, 'crate', 13.6, 12.6, { rotation: 0.4, opts: { size: 0.6 } });
+  addObject(lv, 'rock', 16.2, 6.2, { opts: { size: 0.8, seed: 7 } });
+  addObject(lv, 'rock', 16.6, 15.4, { opts: { size: 0.6, seed: 12 } });
+  // the woods around (none on the trail, the clearing or the strip south of it: the camera looks north)
+  const rngC = new RNG(2207);
+  const keep = (i, j) => (i >= 4 && i < 17 && j >= 4 && j < CD - 1) || (Math.abs(i - 10.5) < 2 && j >= 13) || i >= 17;
+  /** @type {[number, number][]} */
+  const trees = [];
+  for (let j = 2; j < CD - 2; j += 2) {
+    for (let i = 2; i < CW - 2; i += 2) {
+      const ti = i + rngC.int(0, 1);
+      const tj = j + rngC.int(0, 1);
+      if (keep(ti, tj)) { rngC.next(); continue; }
+      if (!rngC.chance(ti >= 21 ? 0.6 : 0.5)) continue;
+      const x = ti + rngC.range(0.3, 0.7);
+      const z = tj + rngC.range(0.3, 0.7);
+      if (trees.some(([px, pz]) => Math.hypot(px - x, pz - z) < 1.6)) continue;
+      trees.push([x, z]);
+      addObject(lv, 'tree', x, z, { opts: { kind: rngC.pick(['oak', 'oak', 'birch', 'pine']), height: Math.round(rngC.range(3.8, 5.2) * 10) / 10, seed: rngC.int(1, 999) } });
+    }
+  }
+  // where the two sit at the fire (the knight west of it, Surubin east: the camera sees both)
+  addObject(lv, 'marker', 9.9, 11.9, { name: 'fogo-cavaleiro', facing: 'right' });
+  addObject(lv, 'marker', 12.2, 11.5, { name: 'fogo-surubin', facing: 'left' });
+  addObject(lv, 'emitter', 11, 10, { preset: 'fireflies', size: [12, 2, 10], count: 22, dy: 1 });
+  addObject(lv, 'emitter', 19, 11, { preset: 'mist', size: [3, 1.5, 20], count: 14, dy: 0.4 });
+  addObject(lv, 'region', 0, 0, { name: 'Clareira do Riacho', sub: 'Terra Selvagem', minX: 0, maxX: CW, minZ: 0, maxZ: CD });
+  // C02 on arriving with Surubin (the Ato I notebook): the colony, the map, the knight's answer
+  addObject(lv, 'event', 0, 0, {
+    on: 'arrive', once: true, if: 'party:surubin', minX: 0, maxX: CW, minZ: 0, maxZ: CD,
+    run: [
+      'cutscene',
+      'weather clear',
+      'time 21',
+      'banner Clareira do Riacho | Terra Selvagem',
+      ': A tempestade passou. Sobre a clareira, o céu limpo se enche de estrelas.',
+      // (the party takes its places after the arrival: Surubin is seated once it has)
+      'wait 0.6',
+      'teleport player fogo-cavaleiro right',
+      'teleport surubin fogo-surubin left',
+      'camera player 1.2',
+      'wait 0.8',
+      'Surubin: A Capital espera uma colônia. Um abrigo para os fiéis que virão. Sozinho, eu não consigo.',
+      'player: Eu busco os segredos da espada. Não tenho tempo para os desejos de um deus que nem conheço.',
+      'Surubin: Você não precisa acreditar no Rei. Só precisa acreditar que um teto é melhor que a estrada.',
+      'player: Já dormi sob muitos tetos. Nenhum me ensinou nada.',
+      'Surubin: Então deixa eu te oferecer outra coisa. Vou desenhar um mapa desta terra: cada trilha, cada ruína.',
+      'Surubin: Os marinheiros dizem que os povos daqui riscam golpes de espada nas pedras. Se existir um segredo aqui, ele vai estar no meu mapa. E você vê primeiro.',
+      ': O cavaleiro olha a fogueira por um tempo, cansado da longa jornada e de não avançar na busca.',
+      'choice',
+      '  > Uma estação. Depois, sigo meu caminho.',
+      '    set c02.estacao',
+      '    player: Uma estação. Depois, sigo meu caminho.',
+      '    emote surubin ? 1.2',
+      '    Surubin: Uma estação... Então o tempo dirá o caminho a ser seguido.',
+      '  > Faz tempo que eu não tenho para onde voltar.',
+      '    set c02.lar',
+      '    player: Faz tempo que eu não tenho para onde voltar.',
+      '    emote surubin heart 1.2',
+      '    Surubin: Agora tem. O Rei acolhe aqueles que o seguem.',
+      '  > Se o seu Rei mandar o jantar, eu fico.',
+      '    set c02.jantar',
+      '    player: Se o seu Rei mandar o jantar, eu fico.',
+      '    emote surubin ! 1.2',
+      '    Surubin: Cuidado com a língua, cavaleiro. O Rei provê, e proverá muito mais àqueles que o seguem.',
+      'Surubin: Que as marés nos guiem.',
+      'camera reset 1',
+      'weather auto',
+      'ending fogueira Fim do teste: a fogueira',
+    ],
+  });
+  lv.spawn = { x: 10.5, z: CD - 3.5, facing: 'up' };
+  return lv;
+}
+
+/**
+ * A built level as its file text, keyed (`keyLevel`: the keys carried from its previous file),
+ * with its problems added to `errors`.
+ * @param {any} lv
+ * @param {string} file the default path
+ * @param {string[]} errors
+ */
+function levelText(lv, file, errors) {
+  const { level: o, warnings: w } = normalizeLevel(lv);
+  errors.push(...w.map((m) => `${file}: ${m}`));
+  o.objects = o.objects.map(canonicalObject);
+  keyLevel(o, { root, file });
+  errors.push(...validateLevel(o).map((m) => `${file}: ${m}`), ...keyIssueLines(o).map((m) => `${file}: ${m}`));
+  const t = serializeLevel(o);
+  if (serializeLevel(parseLevel(t).level) !== t) errors.push(`${file}: the output does not re-serialise byte-identically (parseLevel → serializeLevel)`);
+  return { text: t, level: o };
+}
+
+/** @type {string[]} */
+const errors = [];
+const warnings = [];
+const { text, level: out } = levelText(level, FILE, errors);
+const { text: clearingText } = levelText(buildClearing(), `${DIR}/${levelFile(CLEARING_ID)}`, errors);
 
 // ---- the campaign ------------------------------------------------------------------------------
-// one level for now (the prologue); a new journey opens with the character creation
+// the prologue (the coast road, C01) and the first night (the clearing, C02); a new journey opens
+// with the character creation
 const campaignRaw = {
   format: CAMPAIGN_FORMAT,
   version: 1,
@@ -301,7 +438,7 @@ const campaignRaw = {
   subtitle: 'Ato I: a Terra Selvagem',
   title: { title: 'CULTO AO BAIACU REI', subtitle: 'Ato I · A Terra Selvagem' },
   start: { level: LEVEL_ID, entrance: '' },
-  levels: [{ id: LEVEL_ID }],
+  levels: [{ id: LEVEL_ID }, { id: CLEARING_ID }],
   chapters: [],
   player: { create: true },
 };
@@ -316,7 +453,7 @@ if (warnings.length || errors.length) {
   process.exit(1);
 }
 /** Each file of the campaign folder (relative to it) → its text. */
-const files = new Map([['campaign.json', serializeCampaign(campaign)], [levelFile(LEVEL_ID), text]]);
+const files = new Map([['campaign.json', serializeCampaign(campaign)], [levelFile(LEVEL_ID), text], [levelFile(CLEARING_ID), clearingText]]);
 
 if (args.check) {
   let stale = 0;

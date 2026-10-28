@@ -23,6 +23,7 @@ import { installFogStart, setFogStart } from './AtmosphereFog.js';
 import { cameraFraming, isInterior } from './LevelLook.js';
 import { SHIPPED_LEVELS } from './levels.js';
 import { CharacterCreation } from '../engine/ui/CharacterCreation.js';
+import { weatherPhase, weatherPoolOf, rollWeather } from './WeatherRoll.js';
 // (the CombatSystem is imported dynamically in init, on combat levels only: peaceful levels never
 // download or parse the combat code; bindings.js is a tiny import-free table)
 import { PHOTO_PAD_DEFLECT, PHOTO_PAD_QUIET } from './combat/bindings.js';
@@ -275,6 +276,10 @@ export class Game {
     this.busy = false; // talking / fading: player frozen
     /** The player wants music (M toggles it; a campaign's next level starts it again unless off). */
     this.musicWanted = true;
+    /** The turn of the day the weather was last rolled for (`_updateWeatherPhase`; null: not yet). @type {string|null} */
+    this._weatherPhase = null;
+    /** A single level's weather held by its story (`weatherLock`; a campaign keeps it in its save). */
+    this._weatherLock = '';
     /** @type {Record<string, number>} count by item name (no prototype: shop items are level data) */
     this.inventory = Object.assign(Object.create(null), { apples: 0 });
     this.visits = new Map();
@@ -1794,6 +1799,63 @@ export class Game {
     return this.weather.setWeather(name);
   }
 
+  /**
+   * The weather the story holds ('' = none: the map's pool rolls it, WeatherRoll.js): a campaign's
+   * (kept in its save), else this page's.
+   */
+  get weatherLock() {
+    return this.campaign ? this.campaign.state.weatherLock : this._weatherLock ?? '';
+  }
+
+  set weatherLock(w) {
+    const v = typeof w === 'string' ? w : '';
+    if (this.campaign) this.campaign.state.weatherLock = v;
+    else this._weatherLock = v;
+  }
+
+  /**
+   * The story's `weather` command: `auto` lets the map's pool roll the weather again (now, for the
+   * turn of the day); any other weather is set and held until then.
+   * @param {string} name
+   */
+  storyWeather(name) {
+    if (name === 'auto') {
+      this.weatherLock = '';
+      this.rollWeather();
+      return;
+    }
+    this.weatherLock = name;
+    this.weather.setWeather(name);
+  }
+
+  /**
+   * Roll the map's weather for the turn of the day (`environment.weatherPool`, WeatherRoll.js):
+   * nothing while the story holds one, in a room, or on a map without a pool. `instant`: no blend
+   * (an arrival, behind the fade).
+   * @param {{ instant?: boolean }} [o]
+   */
+  rollWeather({ instant = false } = {}) {
+    const phase = weatherPhase(this.lighting.timeOfDay);
+    this._weatherPhase = phase;
+    if (this.weatherLock || this.weather.indoors) return;
+    const pool = weatherPoolOf(this.level?.environment);
+    if (!pool) return;
+    const s = this.story?.state ?? this.campaign?.state.story ?? null;
+    const w = rollWeather(pool, { phase, seed: s?.seed ?? 0, day: s?.day ?? 1, level: this.campaign?.levelId ?? this.level?.name ?? '' });
+    if (w) this.weather.setWeather(w, { instant });
+  }
+
+  /**
+   * Per frame: a new turn of the day (morning, afternoon, night) rolls the map's weather; the
+   * first call only notes the turn (the level's own weather, or a save's, stands until then).
+   */
+  _updateWeatherPhase() {
+    const phase = weatherPhase(this.lighting.timeOfDay);
+    if (this._weatherPhase === phase) return;
+    if (this._weatherPhase == null) { this._weatherPhase = phase; return; }
+    this.rollWeather();
+  }
+
   cycleWeather() {
     const w = this.weather.cycleWeather();
     // (in a room the weather changes outside: none shows in here — LevelLook.shownWeather; whole
@@ -2258,6 +2320,7 @@ export class Game {
     if (dust) dust.position.set(rig.focusPoint.x, rig.focusPoint.y + 1.2, rig.focusPoint.z - 2);
     // fog scales with zoom: the fog start is fixed, so far zoom would bury the focus band in haze
     this.weather.zoomFog = clamp(((this.camera.distance - 7) / Math.max(1, rig.distance - 7)) ** 2, 0.4, 1);
+    if (this.mode === 'play') this._updateWeatherPhase();
     this.weather.update(dt);
     // combat look: grade / DOF offsets on top of what Weather wrote this frame
     combat?.applyLook(dt);

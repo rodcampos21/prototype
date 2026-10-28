@@ -350,7 +350,8 @@ function commandArgs(op, rest) {
       return { hour: h };
     }
     case 'weather':
-      if (w.length !== 1 || !SCRIPT_WEATHERS.includes(/** @type {any} */ (w[0]))) throw new Error(`weather ${SCRIPT_WEATHERS.join(' | ')}`);
+      // (`auto`: the story lets go of the weather — the map's pool rolls it again)
+      if (w.length !== 1 || !(SCRIPT_WEATHERS.includes(/** @type {any} */ (w[0])) || w[0] === 'auto')) throw new Error(`weather ${SCRIPT_WEATHERS.join(' | ')} | auto`);
       return { weather: w[0] };
     case 'travel':
       if (w.length < 1 || w.length > 2) throw new Error('travel <level> [entrance]');

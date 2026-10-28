@@ -11,6 +11,7 @@ import { storyReader, journeySeed } from '../story/StoryState.js';
 import { renderLevelMap } from '../../engine/level/LevelMap.js';
 import { TIME_SPEED } from '../config.js';
 import { isInterior } from '../LevelLook.js';
+import { weatherPhase } from '../WeatherRoll.js';
 import { t, registerStrings } from '../../engine/i18n/I18n.js';
 import { loc, term } from '../../engine/i18n/ContentText.js';
 import { textKeyOf, pageKeyOf, textPages } from '../../engine/i18n/ContentKeys.js';
@@ -726,6 +727,8 @@ export class CampaignRuntime {
         keepText = await this.levels.text(fromFile).catch(() => null);
       }
       if (!fresh) this._leaveLevel();
+      // (before the build: building it marks it visited — its map joins the world map)
+      const firstVisit = !this.state.visited.includes(to);
       this.levelId = to;
       this.fileId = fileId;
       const tb = performance.now();
@@ -758,7 +761,7 @@ export class CampaignRuntime {
       const slot = fromRoom ? 'room' : 'parent';
       this.stats.lastAside = left ? slot : '';
       if (left) this._putAside(slot, { id: from, fileId: fromFile, text: keepText, raw: prevRaw, kept: left });
-      this._enterLevel(level);
+      this._enterLevel(level, { firstVisit });
       this._armed = false;
       this.state.level = to;
       this.state.via = { from, entrance };
@@ -851,10 +854,14 @@ export class CampaignRuntime {
    * the next level with a running clock goes on from where the player left them. An outdoor level
    * keeps the campaign's weather unless it sets one of its own. A room (`environment.interior`)
    * shows no weather at all — its own `weather` is ignored — while the campaign's goes on (it is
-   * `game.weather.weather`, which R cycles and saves keep; Weather shows clear skies indoors).
+   * `game.weather.weather`, which saves keep; Weather shows clear skies indoors). Then, outdoors with
+   * a running clock: a weather the story holds (`weather rain`, Game.weatherLock) stays; else a
+   * level with a weather pool (`environment.weatherPool`) rolls one on every arrival but the first
+   * (the first shows the level's own weather) — and from then on at each turn of the day.
    * @param {Level} level
+   * @param {{ firstVisit?: boolean }} [o] firstVisit: the player had never been in this level
    */
-  _enterLevel(level) {
+  _enterLevel(level, { firstVisit = false } = {}) {
     const g = this.game;
     const env = /** @type {Partial<LevelEnvironment>} */ (level.environment ?? {});
     const room = isInterior(env);
@@ -877,7 +884,11 @@ export class CampaignRuntime {
       const weather = !room && env.weather && env.weather !== 'clear' ? env.weather : this._outsideWeather ?? g.weather.weather;
       this._outsideWeather = null;
       g.weather.setWeather(weather, { instant: true });
+      if (!room && g.weatherLock) g.weather.setWeather(g.weatherLock, { instant: true });
+      else if (!room && !firstVisit) g.rollWeather({ instant: true });
     }
+    // (the turn of the day is noted: the next roll comes when it turns)
+    g._weatherPhase = weatherPhase(g.lighting.timeOfDay);
     if (env.music === false) g.audio.stopMusic();
     else if (g.musicWanted && g.audio.ready && (!g.audio.musicPlaying || g.audio.musicTrack !== 'emberfall')) g.audio.startMusic({ track: 'emberfall', fade: 2 });
     this._restoreCombat();
