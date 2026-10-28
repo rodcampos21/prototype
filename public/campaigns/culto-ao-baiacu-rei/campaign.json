@@ -1,0 +1,28 @@
+{
+  "format": "luminati-campaign",
+  "version": 1,
+  "name": "Culto ao Baiacu Rei",
+  "subtitle": "Ato I: a Terra Selvagem",
+  "title": {
+    "title": "CULTO AO BAIACU REI",
+    "subtitle": "Ato I · A Terra Selvagem"
+  },
+  "start": {
+    "level": "estrada-da-costa",
+    "entrance": ""
+  },
+  "levels": [
+    {
+      "id": "estrada-da-costa"
+    }
+  ],
+  "chapters": [],
+  "textKeys": {
+    "subtitle": "8D8994D15DC5441421A2C2C307E65EED",
+    "title.title": "0D5D362E43CD5C26FA16E16559129DDE",
+    "title.subtitle": "2E8388DF76BA69A0C115AF18AD2ABBE8"
+  },
+  "player": {
+    "create": true
+  }
+}

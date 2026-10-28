@@ -26,7 +26,7 @@ export function buildDebugControls(game) {
   // listen(): the game pauses the clock on the title screen and resumes it in play
   tw.add(lighting, 'paused').listen();
   tw.add(timeProxy, 'weather', WEATHERS).listen();
-  tw.add({ next: () => game.cycleTime() }, 'next').name('next preset (T)');
+  tw.add({ next: () => game.cycleTime() }, 'next').name('next preset');
 
   // ---- Post FX ----------------------------------------------------------------------------------
   const S = postfx.settings;

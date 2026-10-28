@@ -114,6 +114,7 @@ levels stay in `public/levels/`; a campaign cannot use them (copy one into its `
 | `flags` | string[] | `[]` | Story flags set when a new game begins. |
 | `story` | string[] | `[]` | The story files, in the campaign's `story/` folder (`main.json`, `dialogue.story`): items, quests, actors, shared scripts, campaign events, start presets — [STORY_SCRIPT.md §8](STORY_SCRIPT.md#8-story-files). |
 | `textKeys` | object | absent | *(Optional; additive, October 2026.)* The text keys of the campaign's own texts: `subtitle` and `title.title`, `title.subtitle`, `title.prompt`, `title.credit` for the `title` overrides. |
+| `player` | `{ create }` | absent (`create: false`) | *(Optional; additive, October 2026.)* The player's character. `create: true`: a new journey opens with the **character creation** after the title (a name of at most 16 characters, a class of `src/game/campaign/PlayerClasses.js`; the field left empty is the suggested name), kept in the save (`player`, [§7](#7-saved-games)); story text shows the name as `${player}` and `player:` lines speak as the character ([STORY_SCRIPT.md](STORY_SCRIPT.md), Speakers). A save with no character is not read (the page closed during the creation): the journey begins afresh. Written only when `create` is true. |
 
 Every text a player reads carries a **text key**, a GUID that keys its translation
 ([I18N.md §4.2](I18N.md#42-keys-and-lookup)): `campaign.json`'s own texts and each chapter's in
@@ -426,8 +427,13 @@ start, i.e. an editor play-test: `….test`), JSON, **version 2**:
 ```
 { version: 2, story: { vars, items, itemNames?, gold, quests, done, counters, visits, day, levels, ending?, pending?, seed?, party? },
   level, at: { x, z, facing }, via?: { from, entrance }, time, weather, combat, opened, cleared,
-  visited, chapter, savedAt, playTime }
+  visited, chapter, savedAt, playTime, player?: { name, cls } }
 ```
+
+- **The character.** `player` (a campaign with `player.create`, once the creation is confirmed):
+  the name given (control and formatting characters dropped, spaces made one, trimmed, at most 16
+  characters; never translated) and the class id. Additive to version 2. On load a blank name or an
+  unknown class drops it.
 
 - **Per level.** `opened` (base level id → the chests opened there) and `cleared` (base level id →
   the enemy groups defeated there, `CombatSystem.defeatedGroups`, taken whenever the game saves in

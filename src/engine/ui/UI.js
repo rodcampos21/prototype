@@ -34,6 +34,7 @@ import { Minimap, WorldMap } from './Minimap.js';
  * @import { Journal } from './Journal.js'
  * @import { Emotes } from './Emotes.js'
  * @import { EndCard } from './EndCard.js'
+ * @import { CharacterCreation } from './CharacterCreation.js'
  */
 
 /** The combat UI classes registered by `UI.useCombatUI()` (null: none yet). */
@@ -229,6 +230,12 @@ export class UI {
      * @type {{ panel: import('../../game/party/types.js').PartyPanelLike, frames: import('../../game/party/types.js').PartyFramesLike }|null}
      */
     this.party = null;
+    /**
+     * The character creation (`useCharacterCreation()`: a campaign whose new journey makes the
+     * player's character; null otherwise).
+     * @type {CharacterCreation|null}
+     */
+    this.creation = null;
     /**
      * The cutscene's letterbox and skip hint (`useStoryUI()`; null without the story UI): the bars,
      * their gilt hairlines, the skip hint's group (laid out per scale) and its ring.
@@ -481,6 +488,17 @@ export class UI {
    * @param {{ Journal: typeof Journal, Emotes: typeof Emotes, EndCard: typeof EndCard }} classes
    * @returns {{ journal: Journal, emotes: Emotes, endCard: EndCard }}
    */
+  /**
+   * The character creation (CharacterCreation.js), made on the first call (a campaign whose new
+   * journey makes the player's character); the class comes from the caller, like the story UI's.
+   * @param {typeof CharacterCreation} Cls
+   * @returns {CharacterCreation}
+   */
+  useCharacterCreation(Cls) {
+    this.creation ??= new Cls(this.root);
+    return this.creation;
+  }
+
   useStoryUI(classes) {
     if (this._story) return { journal: this.journal, emotes: this.emotes, endCard: this.endCard };
     const { Journal, Emotes, EndCard } = classes ?? {};
@@ -712,7 +730,8 @@ export class UI {
       this._talking = talking;
       this.root.classList.toggle('lu-root--dialog', talking);
     }
-    const titled = this.title.visible;
+    // (the character creation stands on the title's ground: the HUD stays away under it too)
+    const titled = this.title.visible || !!this.creation?.visible;
     if (titled !== this._titled) {
       this._titled = titled;
       this.root.classList.toggle('lu-root--title', titled);
@@ -739,6 +758,8 @@ export class UI {
       c.boss.dispose();
       c.hud.dispose();
     }
+    this.creation?.dispose();
+    this.creation = null;
     this.debug.dispose();
     this.worldMap.dispose();
     this.minimap.dispose();

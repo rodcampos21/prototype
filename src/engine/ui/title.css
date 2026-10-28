@@ -124,7 +124,43 @@
   86%, 100% { opacity: 0; }
 }
 
+/* ------------------------------------------------------------------------------------------ */
+/* The character creation (CharacterCreation.js): the title's overlay and fade, a framed window */
+/* ------------------------------------------------------------------------------------------ */
+
+.lu-create { outline: none; }
+.lu-create .lu-create__body { animation: none; }
+.lu-create.is-on .lu-create__body { animation: lu-title-in 0.6s steps(3, jump-none) 0.2s both; }
+.lu-create .lu-create__field,
+.lu-create .lu-create__class,
+.lu-create .lu-create__arrow,
+.lu-create .lu-create__go { pointer-events: auto; cursor: pointer; }
+.lu-create .lu-create__field { cursor: text; }
+/* the name field: the type role's text (styleText) centred on the plate, no box of its own */
+.lu-root .lu-create input.lu-create__name {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  text-align: center;
+  caret-color: var(--g-g4, #f2c45a);
+  outline: none;
+  pointer-events: auto;
+}
+.lu-root .lu-create input.lu-create__name::placeholder { color: var(--g-tx3, #6f6a80); opacity: 1; }
+/* the part that has the keys: lit a step brighter */
+.lu-create .lu-create__field:not(.is-focus) > canvas,
+.lu-create .lu-create__class:not(.is-focus) > canvas:first-child { filter: brightness(0.72); }
+.lu-create .lu-create__arrow--prev:hover canvas { transform: translateX(calc(var(--px) * -1)); }
+.lu-create .lu-create__arrow--next:hover canvas { transform: translateX(var(--px)); }
+.lu-create .lu-create__go:hover { filter: brightness(1.3); }
+
 @media (prefers-reduced-motion: reduce) {
+  .lu-create.is-on .lu-create__body { animation: none; }
   .lu-title .lu-mote, .lu-title .lu-mote > i { animation: none; }
   .lu-title .g.nudge, .lu-title .tx.lu-title__prompt-text.is-blink { animation: none; }
 }

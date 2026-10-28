@@ -3,7 +3,7 @@
  * story (`story`: flags and variables, items and gold, quests, the events done, visit counts, the
  * day, per-level memory — StoryState), where the player is and how they got there, the time of day
  * and the weather, the player's combat progress, the chests opened, the enemy groups defeated, the
- * levels visited, the chapter.
+ * levels visited, the chapter, the player's character (name and class).
  *
  * Saved in this browser (`localStorage` key `luminati.campaign.<name>`; a play-test of a campaign
  * level or a `&level=` start uses `…<name>.test`, so it never overwrites the real game) whenever the
@@ -15,6 +15,7 @@
  * over.
  */
 import { StoryState } from '../story/StoryState.js';
+import { isPlayerClass } from './PlayerClasses.js';
 
 /**
  * @import { Campaign } from './CampaignFormat.js'
@@ -27,7 +28,21 @@ const FACINGS = ['down', 'up', 'left', 'right'];
 const PREFIX = 'luminati.campaign.';
 export const SAVE_VERSION = 2;
 /** The top-level keys of a save this engine reads (the rest are kept in `extra`). */
-const KNOWN = new Set(['version', 'story', 'level', 'at', 'via', 'time', 'weather', 'combat', 'opened', 'cleared', 'visited', 'chapter', 'savedAt', 'playTime']);
+const KNOWN = new Set(['version', 'story', 'level', 'at', 'via', 'time', 'weather', 'combat', 'opened', 'cleared', 'visited', 'chapter', 'savedAt', 'playTime', 'player']);
+/** The longest name a player may give their character (characters, after trimming). */
+export const PLAYER_NAME_MAX = 16;
+
+/**
+ * A name typed for the player's character, made safe to keep and show (untrusted: a save, a field):
+ * control and formatting characters dropped, runs of spaces made one, trimmed, cut to
+ * `PLAYER_NAME_MAX` characters ('' when nothing is left).
+ * @param {unknown} v
+ * @returns {string}
+ */
+export function cleanPlayerName(v) {
+  if (typeof v !== 'string') return '';
+  return [...v.replace(/[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]/gu, '').replace(/\s+/g, ' ').trim()].slice(0, PLAYER_NAME_MAX).join('').trim();
+}
 /** At most this many group ids per level in `cleared` (a saved game is untrusted). */
 const MAX_IDS = 4096;
 /** Keys never copied into `extra` (they would change its prototype, not add a field). */
@@ -120,6 +135,13 @@ export class CampaignState {
      * (`formatPlayTime`). A save without it reads 0.
      */
     this.playTime = 0;
+    /**
+     * The player's character made at the character creation (a campaign with `player.create`): the
+     * name they gave it (`cleanPlayerName`; never translated) and its class (`PLAYER_CLASSES` id).
+     * null: not made yet (or a campaign without the creation).
+     * @type {{ name: string, cls: string }|null}
+     */
+    this.player = null;
     /** The save's version when read (`fromJSON`): a newer one is never written over. */
     this.readVersion = SAVE_VERSION;
     /** @type {Record<string, any>} save fields this engine does not know (written back as they are) */
@@ -164,6 +186,7 @@ export class CampaignState {
       chapter: this.chapter,
       savedAt: this.savedAt,
       playTime: Math.round(this.playTime),
+      ...(this.player ? { player: { ...this.player } } : {}),
     };
   }
 
@@ -222,6 +245,11 @@ export class CampaignState {
     s.chapter = text(d.chapter);
     s.savedAt = num(d.savedAt) ?? 0;
     s.playTime = Math.max(0, num(d.playTime) ?? 0);
+    if (isPlain(d.player)) {
+      const name = cleanPlayerName(d.player.name);
+      const cls = text(d.player.cls);
+      if (name && isPlayerClass(cls)) s.player = { name, cls };
+    }
     return s;
   }
 

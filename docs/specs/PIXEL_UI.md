@@ -598,7 +598,7 @@ shrink; the roles are `roles()`)
 | HUD | `HUD.js`, `Banner.js`, `Fader.js`, `DebugPanel.js`, `hud.css`, `strings/hud.js` |
 | Dialogue | `DialogBox.js`, `InteractPrompt.js`, `dialog.css`, `strings/dialog.js` |
 | Maps | `Minimap.js`, `map.css`, `strings/map.js` |
-| Title | `TitleScreen.js`, `title.css`, `game.html` (loading screen), `strings/title.js` |
+| Title | `TitleScreen.js`, `CharacterCreation.js`, `title.css`, `game.html` (loading screen), `strings/title.js` |
 | Combat UI | `CombatHUD.js`, `BossBar.js`, `Announcer.js`, `DeathScreen.js`, `combat.css`; the combat strings in `CombatSystem.js`, `PlayerCombat.js`, `Waystones.js`, `Chests.js`, `bindings.js`; `src/game/combat/strings.js` |
 | World labels | `WorldLabels.js`, `worldfx.css`, `strings/worldfx.js` |
 | Party UI | `PartyFrames.js`, `PartyPanel.js`, `party.css`, `src/game/party/Party.js` (strings, localised rules, portraits), `party/types.d.ts`, `src/game/party/strings.js`, `sandbox/party_ui.*` |
@@ -650,6 +650,22 @@ All additions are additive. Components and their callers share the following int
 - The Continue entry gets `detail`: the place, `Lv n` and the play time.
   - Play time is an additive field in the campaign save, counted while playing.
   - Without it, the detail is the place alone.
+
+**Character creation: CampaignRuntime provides its content.**
+- `CharacterCreation.js` (in `title.css`), made by `UI.useCharacterCreation(CharacterCreation)`
+  only for a campaign with `player.create` ([CAMPAIGN_FORMAT.md §2](CAMPAIGN_FORMAT.md#2-campaignjson)).
+  It is shown after the title, before the journey; the HUD stays hidden under it (`lu-root--title`).
+- `show(o)` takes translated texts (`CampaignRuntime.creationOptions()`): `title`, `nameLabel`,
+  `suggested`, `classLabel`, `classes: { id, label, detail? }[]`, `confirm`, `choose`, the arrows'
+  aria labels, `maxLength`, the starting `name` and `cls`. It resolves `{ name, cls }`; an empty
+  field gives the suggested name. The name is never translated.
+- G's family: a framed window (`win` size M, gold corners) 300 × 172 in the middle of the frame; the
+  heading in the head role; the name section with a real text field (`input.lu-create__name`, the
+  name role, centred on a plate); the class section with ◀ label ▶ on a plate and the class's line
+  under it; the key hints (↑ ↓ Choose · Enter confirm, which also confirms on a click).
+- Keys: typing goes to the field; ↑ ↓ / Tab move between the name and the class; ← → choose the
+  class while it has the focus; Enter confirms. Gamepad: d-pad ← → class, A / Start confirm. The
+  window stops every key from reaching the game.
 
 **Controls legend.**
 - `HUD.setControls(rows)` rows are `{ keys, label, pad?, id? }`. Callers pass translated labels.

@@ -43,10 +43,8 @@ export const DEFAULT_BINDINGS = Object.freeze({
   zoomIn: ['KeyZ', 'Equal'],
   zoomOut: ['KeyX', 'Minus'],
   debug: ['Backquote', 'F1'],
-  time: ['KeyT'],
   photo: ['KeyP'],
   help: ['KeyH'],
-  weather: ['KeyR'],
   music: ['KeyM'],
   map: ['KeyN', 'Tab'],
 });

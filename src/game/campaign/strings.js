@@ -1,7 +1,7 @@
 /**
  * UI strings, namespace 'campaign' (docs/specs/I18N.md §2): the campaign runtime's own messages —
- * the loading line, the refusals and failures of a travel, the save error and the title screen's
- * Continue / New journey menu. Owner: G-story (docs/specs/PIXEL_UI.md §8). A feature namespace:
+ * the loading line, the refusals and failures of a travel, the save error, the title screen's
+ * Continue / New journey menu and the character creation (its texts and the classes' names). Owner: G-story (docs/specs/PIXEL_UI.md §8). A feature namespace:
  * registered when a campaign starts (CampaignStart, CampaignRuntime), so a single level never loads
  * it. Import-free and Node-safe (the i18n checker reads it). `pt` is the source, `en` its
  * translation.
@@ -27,6 +27,19 @@ const table = {
     /** the Continue entry's second line: where the save is, the combat level, the time played */
     'title.save': '{place} · Nv {level} · {time}',
     'title.saveNoLevel': '{place} · {time}',
+    /** the character creation (a campaign with `player.create`) */
+    'create.title': 'Quem é você?',
+    'create.name': 'Nome',
+    /** the name a creation confirmed with an empty field gets (shown greyed in the field) */
+    'create.suggested': 'Errante',
+    'create.class': 'Classe',
+    'create.confirm': 'Começar a jornada',
+    'create.type': 'Digite',
+    'create.prevClass': 'Classe anterior',
+    'create.nextClass': 'Próxima classe',
+    /** the classes (src/game/campaign/PlayerClasses.js): name and one line */
+    'class.knight': 'Cavaleiro',
+    'class.knight.detail': 'Um cavaleiro errante em busca dos segredos da espada.',
   },
   en: {
     loading: 'Opening the campaign',
@@ -39,6 +52,16 @@ const table = {
     'title.newJourney': 'New journey',
     'title.save': '{place} · Lv {level} · {time}',
     'title.saveNoLevel': '{place} · {time}',
+    'create.title': 'Who are you?',
+    'create.name': 'Name',
+    'create.suggested': 'Wanderer',
+    'create.class': 'Class',
+    'create.confirm': 'Begin the journey',
+    'create.type': 'Type',
+    'create.prevClass': 'Previous class',
+    'create.nextClass': 'Next class',
+    'class.knight': 'Knight',
+    'class.knight.detail': 'A wandering knight seeking the secrets of the sword.',
   },
 };
 export default table;

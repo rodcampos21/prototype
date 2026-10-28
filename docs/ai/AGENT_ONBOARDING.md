@@ -73,13 +73,12 @@ The shipped levels (all in [`public/levels/`](../../public/levels/)):
 
 | File | Level | Size | Objects | Made by | Play |
 | --- | --- | --- | --- | --- | --- |
-| `emberfall.json` | Emberfall — Riverside Village (default level) | 48 × 40 | 137 (8 villagers) | edited as JSON / in the editor | `game.html` |
+| `emberfall.json` | Emberfall — Riverside Village (the engine's demo village) | 48 × 40 | 137 (8 villagers) | edited as JSON / in the editor | `game.html?level=emberfall` |
 | `starfall-vale.json` | Starfall Vale — Where the Stars Come Home | 128 × 128 | 875 (29 villagers, 95 light descriptors) | **generated** by [`tools/make-starfall-vale.mjs`](../../tools/make-starfall-vale.mjs) | `game.html?level=starfall-vale` |
 | `brightwater-crossing.json` | Brightwater Crossing — A Riverside Hamlet | 36 × 28 | 68 (4 villagers) | built by hand in the editor UI | `game.html?level=brightwater-crossing` |
 | `sample-hamlet.json` | Willowmere — A Hamlet by the Pond | 28 × 22 | 38 (3 villagers) | **generated** by [`tools/make-sample-hamlet.mjs`](../../tools/make-sample-hamlet.mjs) | `game.html?level=sample-hamlet` |
 | `gildhaven.json` | Gildhaven — Market Day on the River Gild (a walled river town) | 128 × 128 | 518 (68 villagers, 53 houses, 86 light descriptors) | **generated** by [`tools/make-gildhaven.mjs`](../../tools/make-gildhaven.mjs) | `game.html?level=gildhaven` |
 | `cinderwatch-pass.json` | Cinderwatch Pass — Where the Old Fires Wake (the **combat** level) | 96 × 120 | 283 (7 villagers, 24 enemy groups = 58 enemies, 6 chests, 3 waystones, 4 story events) | **generated** by [`tools/make-cinderwatch-pass.mjs`](../../tools/make-cinderwatch-pass.mjs) | `game.html?level=cinderwatch-pass` |
-| `estrada-da-costa.json` | Estrada da Costa — Terra Selvagem (the Baiacu Rei prologue test, Portuguese text; [design note](../design/levels/estrada-da-costa.md)) | 40 × 30 | 56 (1 villager who joins the party, 1 enemy group, 1 chest, 5 story events) | **generated** by [`tools/make-estrada-da-costa.mjs`](../../tools/make-estrada-da-costa.mjs) | `game.html?level=estrada-da-costa` |
 
 Only Cinderwatch Pass has `enemy` objects, so it is the only level with combat
 ([contracts/COMBAT.md](../contracts/COMBAT.md)); the other five stay peaceful and must not notice
@@ -90,7 +89,17 @@ ranger) at the Waystone Camp, Sela (a warden) at the Crossroads Waystone
 play is hard by design ([COMBAT.md](../contracts/COMBAT.md));
 the play-through bot recruits them (`sandbox/combat_play.js`, `party: false` plays alone).
 
-Two **campaigns** ship — stories of several levels played in one page
+**The game** this repository now builds is the campaign *Culto ao Baiacu Rei*,
+`public/campaigns/culto-ao-baiacu-rei/`, what `game.html` plays without a query (Portuguese source
+text, English by its content table). It opens with the **character creation** (`player.create`:
+a name and a class) and so far holds one level, *Estrada da Costa* (the Ato I prologue, 40 × 30,
+1 villager who joins the party, 1 enemy group, 1 chest, 5 story events;
+[design note](../design/levels/estrada-da-costa.md)), **generated** with `campaign.json` by
+[`tools/make-estrada-da-costa.mjs`](../../tools/make-estrada-da-costa.mjs). Its plans are in
+[design/baiacu/](../design/baiacu/PLANO-DE-MECANICAS.md). The levels above and the campaigns below
+are the engine's demos and regression tests: keep them working.
+
+Two demo **campaigns** ship — stories of several levels played in one page
 ([specs/CAMPAIGN_FORMAT.md](../specs/CAMPAIGN_FORMAT.md)). The first is *The Ferryman's Lantern*,
 `public/campaigns/ferrymans-lantern/` (`campaign.json` and five level files: Millbrook, Mill Road,
 the Old Quarry with combat, the mill cellar, chapter two's Millbrook at dusk), **generated** by

@@ -391,7 +391,7 @@ to the example, then inspect the results on your revision.
   { "wait": 500 },
   { "key": "KeyW", "hold": 1000 },
   { "eval": "JSON.stringify(__game.state().player)" },
-  { "press": "KeyT" },
+  { "eval": "__game.cycleTime()" },
   { "wait": 2500 },
   { "eval": "JSON.stringify({ time: __game.state().time, phase: __game.state().phase })" },
   { "eval": "__game.talkTo('elder')" },

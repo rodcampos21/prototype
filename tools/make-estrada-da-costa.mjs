@@ -1,20 +1,23 @@
 #!/usr/bin/env node
 /**
- * Builds `public/levels/estrada-da-costa.json` ("Estrada da Costa"), the first lore test of the
- * Baiacu Rei game: the prologue rescue (QP01 / scene C01 of the Ato I notebook). A dirt road runs
- * north along the coast of the Terra Selvagem; on a clearing beside it Surubin, a young catfish-folk
- * adept of the Culto ao Baiacu Rei, is cornered by forest creatures. The player (the wandering knight)
- * clears the group; Surubin thanks the Baiacu Rei first and the knight second, then joins the party
- * (a mystic: weak with the staff, a healer). Walking on north with him ends the test with an end card.
+ * Builds the game's campaign `public/campaigns/culto-ao-baiacu-rei/` ("Culto ao Baiacu Rei"):
+ * `campaign.json` (the title, a new journey's character creation: `player.create`) and its first
+ * level `levels/estrada-da-costa.json` ("Estrada da Costa"), the prologue rescue (QP01 / scene C01
+ * of the Ato I notebook). A dirt road runs north along the coast of the Terra Selvagem; on a
+ * clearing beside it Surubin, a young catfish-folk adept of the Culto ao Baiacu Rei, is cornered by
+ * forest creatures. The player (the wandering knight) clears the group; Surubin thanks the Baiacu
+ * Rei first and the knight second, then joins the party (a mystic: weak with the staff, a healer).
+ * Walking on north with him ends the test with an end card.
  *
- *   node tools/make-estrada-da-costa.mjs [--out=public/levels/estrada-da-costa.json] [--check]
- *     --out=<path>  write somewhere else (relative to the repository root), e.g. a scratch file
- *     --check       write nothing; exit 1 if the generated text differs from the --out file
- *   then play it at game.html?level=estrada-da-costa
+ *   node tools/make-estrada-da-costa.mjs [--out=public/campaigns/culto-ao-baiacu-rei] [--check]
+ *     --out=<dir>   write the campaign folder somewhere else (relative to the repository root), e.g.
+ *                   a scratch folder
+ *     --check       write nothing; exit 1 if a generated file differs from the one in the --out folder
+ *   then play it at game.html (the game's default) or game.html?campaign=culto-ao-baiacu-rei
  *
- * The texts are Brazilian Portuguese, written as the level's source text (the engine ships English,
- * Japanese and Chinese; no Portuguese UI yet). The output is deterministic: a second run is
- * byte-identical.
+ * The texts are Brazilian Portuguese, the game's source language (English comes from the content
+ * table `public/i18n/en/campaigns/culto-ao-baiacu-rei.json`). The output is deterministic: a second
+ * run is byte-identical.
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -24,7 +27,9 @@ import {
 } from '../src/engine/level/LevelFormat.js';
 import { OBJECT_TYPES } from '../src/engine/level/ObjectCatalog.js';
 import { RNG } from '../src/engine/utils/math.js';
-import { keyLevel, keyIssueLines } from './lib/levelgen.mjs';
+import { CAMPAIGN_FORMAT, normalizeCampaign, serializeCampaign, levelFile } from '../src/game/campaign/CampaignFormat.js';
+import { carryCampaignText, seededMint, fileKeyIssues } from '../src/engine/i18n/TextKeys.js';
+import { keyLevel, keyIssueLines, previousOutput } from './lib/levelgen.mjs';
 
 /** @import { LevelObject } from '../src/engine/level/types.js' */
 
@@ -34,11 +39,13 @@ const args = Object.fromEntries(process.argv.slice(2).map((a) => {
   return m ? [m[1], m[2] ?? true] : [a, true];
 }));
 if (args.out === true || args.out === '') {
-  console.error('--out needs a path, e.g. --out=.check/estrada-da-costa.json');
+  console.error('--out needs a folder, e.g. --out=.check/culto-ao-baiacu-rei');
   process.exit(2);
 }
-const FILE = 'public/levels/estrada-da-costa.json';
-const OUT = path.resolve(root, String(args.out ?? FILE));
+const DIR = 'public/campaigns/culto-ao-baiacu-rei';
+const LEVEL_ID = 'estrada-da-costa';
+const FILE = `${DIR}/${levelFile(LEVEL_ID)}`;
+const OUT_DIR = path.resolve(root, String(args.out ?? DIR));
 
 const W = 40;
 const D = 30;
@@ -46,7 +53,8 @@ const level = createEmptyLevel({ name: 'Estrada da Costa', width: W, depth: D, f
 level.subtitle = 'Terra Selvagem';
 level.author = 'Culto ao Baiacu Rei';
 level.description = 'Prólogo do Ato I: o cavaleiro errante encontra Surubin, adepto do Culto ao Baiacu Rei, cercado por criaturas da mata na estrada da costa.';
-level.environment = { ...level.environment, timeOfDay: 16.4 };
+// (C01: a stormy afternoon — it rains from the arrival on; the clock and the weather are the game's)
+level.environment = { ...level.environment, timeOfDay: 16.4, weather: 'rain' };
 
 /** Fill a tile rectangle [i0, i1) × [j0, j1) with a tile char and / or a height level. */
 function fill(i0, j0, i1, j1, ch, lvl) {
@@ -144,7 +152,7 @@ addObject(level, 'npc', 21, 15.2, {
     '    * Surubin: Eu sei usar o cajado. Quer dizer... eu sei segurar o cajado.',
     '  stop',
     'if resgatado',
-    '  Surubin: O Rei das Profundezas mandou você. Tenho certeza.',
+    '  Surubin: O Rei das Profundezas mandou você, ${player}. Tenho certeza.',
     '  stop',
     'Surubin: Cuidado! Elas estão por toda parte!',
   ],
@@ -161,8 +169,9 @@ addObject(level, 'event', 0, 0, {
   on: 'arrive', once: true, minX: 0, maxX: W, minZ: 0, maxZ: D,
   run: [
     'cutscene',
+    'weather rain',
     'banner Estrada da Costa | Terra Selvagem',
-    ': A estrada de terra segue a costa. O vento traz sal, e algo mais.',
+    ': A estrada de terra segue a costa sob a tempestade. O vento traz sal, chuva e algo mais.',
     '"Uma voz": Ó Rei das Profundezas, me guarda! Socorro!',
     'camera surubin 1.5',
     'emote surubin ! 1.2',
@@ -188,21 +197,27 @@ addObject(level, 'event', 0, 0, {
     'teleport player diante-de-surubin right',
     'face surubin left',
     'camera surubin 1',
+    // C01 (the Ato I notebook): the King thanked first, the knight second; the knight's answer,
+    // ironic, dry or curious, and his name said for the first time
     'Surubin: Ó Rei das Profundezas, obrigado! Obrigado!',
     'emote surubin ... 1.2',
     'wait 1',
     'Surubin: E... obrigado a você também, cavaleiro.',
-    'Surubin: Sou Surubin, adepto do Culto ao Baiacu Rei. Vim do Reino de Marina para trazer a fé a esta terra.',
-    ': O cavaleiro quase ri do nome do deus. Mas ninguém atravessa um oceano sozinho por um peixe sem acreditar muito em alguma coisa.',
-    'Surubin: A Capital me mandou fundar uma casa para o Rei aqui. Sozinho, porém, eu... bem, você viu.',
-    ': Surubin espera uma resposta.',
+    'Surubin: Sou Surubin, adepto do Culto ao Baiacu Rei. Vim de Marina para trazer a fé a esta terra.',
     'choice',
-    '  > Acenar com a cabeça',
+    '  > Que bom que o seu deus te ajudou.',
+    '    player: Prazer, Surubin. Sou ${player}. Que bom que o seu deus te ajudou.',
     '    emote surubin heart 1.2',
-    '    Surubin: Que as marés te recompensem!',
-    '  > Dar de ombros e seguir pela estrada',
-    '    emote surubin note 1.2',
-    '    Surubin: Então eu vou junto! A estrada é mais segura a dois.',
+    '    Surubin: Ajudou! Ele mandou você, não mandou?',
+    '  > Você segura esse cajado de cabeça para baixo.',
+    '    player: ${player}. Você está segurando esse cajado de cabeça para baixo.',
+    '    emote surubin sweat 1.2',
+    '    Surubin: Ah. O Rei também manda lições, ${player}.',
+    '  > Um deus peixe? Você atravessou o mar por isso?',
+    '    player: ${player}. Um deus peixe? Você atravessou o mar por isso?',
+    '    Surubin: Por Ele eu atravessaria dois.',
+    'Surubin: Precisamos sair dessa chuva. Vi uma clareira subindo o riacho. Você vem?',
+    'player: Até a chuva passar.',
     'party join surubin as mystic support',
     'quest resgate stage juntos Siga com Surubin pela estrada ao norte.',
     'camera reset 1',
@@ -219,7 +234,7 @@ addObject(level, 'event', 0, 0, {
   run: [
     'cutscene',
     'face player up',
-    'Surubin: Ali adiante, junto ao riacho. Uma clareira. Podemos acampar esta noite.',
+    'Surubin: A clareira fica subindo o riacho. Lá a gente acende um fogo e espera a tempestade passar.',
     'Surubin: Amanhã eu te conto da missão. Hoje... hoje eu só quero agradecer ao Rei por estar vivo.',
     'quest resgate done',
     'ending prologo Fim do teste: a estrada da costa',
@@ -276,23 +291,52 @@ keyLevel(out, { root, file: FILE });
 const errors = [...validateLevel(out), ...keyIssueLines(out)];
 const text = serializeLevel(out);
 if (serializeLevel(parseLevel(text).level) !== text) errors.push('the output does not re-serialise byte-identically (parseLevel → serializeLevel)');
+
+// ---- the campaign ------------------------------------------------------------------------------
+// one level for now (the prologue); a new journey opens with the character creation
+const campaignRaw = {
+  format: CAMPAIGN_FORMAT,
+  version: 1,
+  name: 'Culto ao Baiacu Rei',
+  subtitle: 'Ato I: a Terra Selvagem',
+  title: { title: 'CULTO AO BAIACU REI', subtitle: 'Ato I · A Terra Selvagem' },
+  start: { level: LEVEL_ID, entrance: '' },
+  levels: [{ id: LEVEL_ID }],
+  chapters: [],
+  player: { create: true },
+};
+const campaignKeyed = structuredClone(campaignRaw);
+carryCampaignText(previousOutput(root, `${DIR}/campaign.json`), campaignKeyed, seededMint(`${DIR}/campaign.json`));
+for (const i of fileKeyIssues('campaign', campaignKeyed)) errors.push(`campaign.json: text keys: ${i.where}: ${i.msg}`);
+const { campaign, warnings: cw, errors: ce } = normalizeCampaign(campaignKeyed);
+errors.push(...cw.map((m) => `campaign.json: ${m}`), ...ce.map((m) => `campaign.json: ${m}`));
+
 if (warnings.length || errors.length) {
   console.error([...warnings, ...errors].join('\n'));
   process.exit(1);
 }
-const rel = path.relative(root, OUT);
+/** Each file of the campaign folder (relative to it) → its text. */
+const files = new Map([['campaign.json', serializeCampaign(campaign)], [levelFile(LEVEL_ID), text]]);
 
 if (args.check) {
-  const old = fs.existsSync(OUT) ? fs.readFileSync(OUT, 'utf8').replace(/\r\n/g, '\n') : null;
-  if (old === text) {
-    console.log(`${rel} is up to date.`);
-    process.exit(0);
+  let stale = 0;
+  for (const [f, t] of files) {
+    const p = path.join(OUT_DIR, f);
+    const rel = path.relative(root, p);
+    const old = fs.existsSync(p) ? fs.readFileSync(p, 'utf8').replace(/\r\n/g, '\n') : null;
+    if (old === t) console.log(`${rel} is up to date.`);
+    else {
+      stale++;
+      console.error(old == null ? `${rel} does not exist.` : `${rel} differs from the generator output. Re-run without --check to rewrite it.`);
+    }
   }
-  console.error(old == null ? `${rel} does not exist.` : `${rel} differs from the generator output. Re-run without --check to rewrite it.`);
-  process.exit(1);
+  process.exit(stale ? 1 : 0);
 }
 
-fs.mkdirSync(path.dirname(OUT), { recursive: true });
-fs.writeFileSync(OUT, text);
+for (const [f, t] of files) {
+  const p = path.join(OUT_DIR, f);
+  fs.mkdirSync(path.dirname(p), { recursive: true });
+  fs.writeFileSync(p, t);
+}
 const s = levelStats(out);
-console.log(`Estrada da Costa → ${rel}: ${s.width}×${s.depth}, ${s.objects} objects, ${s.water} water tiles`, s.counts);
+console.log(`Culto ao Baiacu Rei → ${path.relative(root, OUT_DIR)}: campaign.json, ${levelFile(LEVEL_ID)} ${s.width}×${s.depth}, ${s.objects} objects, ${s.water} water tiles`, s.counts);

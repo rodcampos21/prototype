@@ -1308,7 +1308,7 @@ begin('the real data');
   const ws = await loadWorkspace();
   const ui = await uiGlossary();
   eq('the index lists the translated languages', [...ws.index.languages.keys()].sort(), [...TRANSLATED_LANGS].sort());
-  eq('… and the game\'s translated tables for each', TRANSLATED_LANGS.map((l) => [...(ws.index.languages.get(l) ?? [])].sort()), TRANSLATED_LANGS.map(() => ['levels/estrada-da-costa']));
+  eq('… and the game\'s translated tables for each', TRANSLATED_LANGS.map((l) => [...(ws.index.languages.get(l) ?? [])].sort()), TRANSLATED_LANGS.map(() => ['campaigns/culto-ao-baiacu-rei']));
   ok('the source errors: none (no key with two Englishes in a table\'s own sources)', [...ws.sources.values()].every((s) => s.errors.length === 0), [...ws.sources].map(([id, s]) => [id, s.errors]));
   ok('the source warnings (quest texts saved filled in): none', sourceWarnings(ws.sources).length === 0, sourceWarnings(ws.sources));
   /** @type {string[]} */

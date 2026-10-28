@@ -378,9 +378,11 @@ export function scriptStrings(source, o) {
     const mine = slots.get(n) ?? [];
     const key = slotKey;
     if (n.t === 'say') {
-      const who = plate(n.speaker);
+      // (`player:` is the player's character: the name the player gave it, never translated — no term)
+      const isPlayer = typeof n.speaker === 'string' && n.speaker.toLowerCase() === 'player';
+      const who = isPlayer ? '(player)' : plate(n.speaker);
       // a speaker written by id ("npc_wren:") shows the villager's name: that name is the term
-      if (n.speaker) c.term(who, 'speaker', `${field}.speaker`, where);
+      if (n.speaker && !isPlayer) c.term(who, 'speaker', `${field}.speaker`, where);
       for (const s of mine) c.unit(key(s), s.text, s.kind, `${field}.say`, where, who ? { speaker: who } : {}, true);
     } else if (n.t === 'choice') {
       let q = null;

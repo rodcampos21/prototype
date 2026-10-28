@@ -1,7 +1,8 @@
 /**
  * Luminati 2.5D pixel-art engine — game entry point. Plays a Luminati level (docs/contracts/LEVEL_EDITOR.md):
- *   (no query)              Emberfall, from public/levels/emberfall.json
- *   ?level=<name>           public/levels/<name>.json
+ *   (no query)              the game: the campaign Culto ao Baiacu Rei
+ *                           (public/campaigns/culto-ao-baiacu-rei/, as `?campaign=` below)
+ *   ?level=<name>           public/levels/<name>.json (the engine's demo levels: Emberfall …)
  *   ?level=local:<slot>     a level saved in this browser (the editor's play-test uses
  *                           local:__playtest__)
  *   ?autostart=1            skips the title screen (play-tests, the headless check harness)
@@ -13,8 +14,8 @@
  *                             names the entrance, else its player start)
  *     &level=local:<slot>&as=<id>   play a level from browser storage as level <id> of the
  *                             campaign (the editor's play-test of a campaign level)
- *   ?lang=en|ja|zh          the language of this page load (not saved; docs/specs/I18N.md §1) —
- *                           else the player's saved choice, else English
+ *   ?lang=pt|en             the language of this page load (not saved; docs/specs/I18N.md §1) —
+ *                           else the player's saved choice, else Portuguese
  *   &i18n=<table>           a content table to look the level's text up in besides its own
  *                           (`levels/<name>`: a play-test of a shipped level from browser storage;
  *                           its texts carry the shipped level's keys in the data, docs/specs/I18N.md §4.2)
@@ -33,20 +34,24 @@ import { artScale } from './engine/ui/UiScale.js';
 
 /** @import { Level } from './engine/level/types.js' */
 
+/** The level a page that names a level but no file falls back to (`loadLevel`). */
 const DEFAULT_LEVEL = 'emberfall';
+/** The game a page without a query plays. */
+const DEFAULT_CAMPAIGN = 'culto-ao-baiacu-rei';
 
 const params = new URLSearchParams(window.location.search);
 const autostart = params.has('autostart') && params.get('autostart') !== '0';
 const requested = params.get('level');
-const campaignName = params.get('campaign');
+// (no level and no campaign named: the game)
+const campaignName = params.get('campaign') || (requested ? null : DEFAULT_CAMPAIGN);
 
 const loading = document.getElementById('loading');
 const bar = /** @type {HTMLElement|null} */ (loading?.querySelector('.bar > i'));
 const label = loading?.querySelector('.label');
 const title = loading?.querySelector('.title');
 
-// another level than the default: don't flash the demo's name while its file loads
-if (requested || campaignName) {
+// another level or campaign than the game: don't flash the game's name while its file loads
+if (requested || campaignName !== DEFAULT_CAMPAIGN) {
   if (title) title.textContent = 'Luminati';
   document.title = 'Luminati 2.5D Pixel-Art Engine';
 }
@@ -149,14 +154,8 @@ async function boot() {
   // (its source names the table)
   const extra = params.get('i18n');
   const tables = extra ? [extra] : null;
-  const early = campaignName ? { campaign: campaignName } : requested ? null : { level: DEFAULT_LEVEL };
+  const early = campaignName ? { campaign: campaignName } : null;
   const contentEarly = early ? loadContentTables(lang, { ...early, tables }) : null;
-  // (the default level: its name on the loading screen, translated as soon as the tables are in)
-  if (!early?.campaign && contentEarly && lang !== 'en') {
-    contentEarly.then(() => {
-      if (title?.textContent === 'Emberfall') title.textContent = term('Emberfall');
-    });
-  }
   let loaded;
   try {
     // (a campaign's code is loaded only for a campaign: src/game/campaign/CampaignStart.js)
@@ -261,16 +260,14 @@ function prefetchGlyphs(fonts, chain, lang) {
 }
 
 /**
- * Ways out of the error screen: the demo village (unless it is what failed), the combat demo
- * (unless it is what failed) and the editor — in the page's language (the levels' names through
- * the content tables when they are in).
+ * Ways out of the error screen: the game (unless it is what failed) and the editor — in the page's
+ * language.
  */
 function showErrorActions() {
   const box = loading?.querySelector('.actions');
   if (!box) return;
   const links = [];
-  if (requested) links.push([t('game.error.play', { name: term('Emberfall') }), 'game.html']);
-  if (requested !== 'cinderwatch-pass') links.push([t('game.error.play', { name: term('Cinderwatch Pass') }), 'game.html?level=cinderwatch-pass']);
+  if (campaignName !== DEFAULT_CAMPAIGN) links.push([t('game.error.play', { name: 'Culto ao Baiacu Rei' }), 'game.html']);
   links.push([t('game.error.editor'), 'editor.html']);
   box.replaceChildren(...links.map(([text, href]) => {
     const a = document.createElement('a');

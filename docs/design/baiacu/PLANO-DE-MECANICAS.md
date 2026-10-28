@@ -8,7 +8,7 @@ Caderno de Lore, NPCs e Quests*). Aqui fica só o que muda no código.
 | | |
 | --- | --- |
 | **Público** | Rodrigo e o parceiro de projeto; agentes de IA que forem implementar cada etapa. |
-| **Estado** | **M1 (idioma) concluído em 2026-10-28** — veja a etapa A. O resto é plano. Primeiro teste de lore pronto: [Estrada da Costa](../levels/estrada-da-costa.md). |
+| **Estado** | **M1 (idioma) concluído em 2026-10-28** — veja a etapa A. **M2.1 (tela de criação de personagem) pronta em 2026-10-28**: `game.html` abre a campanha `culto-ao-baiacu-rei` (título → criação → [Estrada da Costa](../levels/estrada-da-costa.md)); nome e classe no save, `${player}` e `player:` nas falas (etapa J, itens 1, 2, 4 e 5; o visual do cavaleiro, item 3, fica para M2.2). O resto é plano. |
 | **Relacionado** | [Onboarding](../../ai/AGENT_ONBOARDING.md) · [Playbooks](../../ai/TASK_PLAYBOOKS.md) · [Formato de campanha](../../specs/CAMPAIGN_FORMAT.md) · [Linguagem de história](../../specs/STORY_SCRIPT.md) · [I18N](../../specs/I18N.md) · [Módulo pixel](../../architecture/modules/pixel.md) |
 
 ---
