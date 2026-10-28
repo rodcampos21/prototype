@@ -840,11 +840,21 @@ export class Journal {
       if (on) put(b, underline(lw + 4), x + 1, HY + 4 + gs / 2);
       x += w + 6;
     }
-    key(tabs, 'E', x + 1, HY - 5.5, { cls: 'lu-journal__cap' });
-    // the key hints at the right (G's tactics header), the gold before them on the Items tab
+    const tabsEnd = x + 1 + key(tabs, 'E', x + 1, HY - 5.5, { cls: 'lu-journal__cap' });
+    // the key hints at the right (G's tactics header), the gold before them on the Items tab; on a
+    // window too narrow for the tabs and both (three tabs at 1024 × 768) only Esc's, else none
+    const hintSets = [
+      [{ keys: ['↑', '↓'], label: s('hint.select') }, { keys: ['Esc'], label: s('hint.close') }],
+      [{ keys: ['Esc'], label: s('hint.close') }],
+      [],
+    ];
     const foot = box(head, 'div', 'lu-journal__foot', WX, WY);
-    const hw = keyHints(foot, [{ keys: ['↑', '↓'], label: s('hint.select') }, { keys: ['Esc'], label: s('hint.close') }],
-      R, HY - 5.5, { align: 'right', color: k.tx2, drop: true, cls: 'lu-journal__hint' });
+    let hw = 0;
+    for (const hints of hintSets) {
+      foot.textContent = '';
+      hw = hints.length ? keyHints(foot, hints, R, HY - 5.5, { align: 'right', color: k.tx2, drop: true, cls: 'lu-journal__hint' }) : 0;
+      if (R - hw >= tabsEnd + 12) break;
+    }
     const gold = box(head, 'div', `lu-journal__gold${this._tab === 'items' ? ' is-on' : ''}`, WX, WY);
     const gn = this._data.gold.toLocaleString('en-US');
     const unit = s('gold');
@@ -1141,8 +1151,8 @@ export class Journal {
     y = Math.max(y + PH, ty) + 8;
     if (!e.unlocked) return y;
     // the stats at level 1 and their growth per level
-    const VX = x0 + 112, GX = x0 + 122;
-    const RP = 12 + Math.ceil(grow('body'));
+    const VX = x0 + 118, GX = x0 + 128;
+    const RP = 12 + Math.ceil(grow('line'));
     y = this._codexSection(d, s('codex.stats'), s('codex.statsHint'), x0, y);
     for (const r of e.stats) y = this._codexRow(d, r, x0, VX, GX, y, RP);
     y += 5;
@@ -1180,7 +1190,7 @@ export class Journal {
     const { DX0, CY, DW } = this._G;
     const row = box(d, 'div', 'lu-journal__codex-row', DX0, CY);
     const cy = y + rp / 2;
-    txc(row, fit(r.label, 'body', vx - x0 - 40), x0 + 4, cy, { font: 'body', color: k.tx2, drop: true, cls: 'lu-journal__codex-label' });
+    txc(row, fit(r.label, 'line', vx - x0 - 34), x0 + 4, cy, { font: 'line', color: k.tx1, drop: true, cls: 'lu-journal__codex-label' });
     txc(row, r.value, vx, cy, { font: 'num', color: k.kw, align: 'right', drop: true, cls: 'lu-journal__codex-value' });
     if (r.growth) txc(row, fit(r.growth, 'line', x0 + DW - gx), gx, cy, { font: 'line', color: k.heal, drop: true, cls: 'lu-journal__codex-growth' });
     return y + rp;

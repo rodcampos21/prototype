@@ -42,12 +42,12 @@ const FORMAT = 'luminati-codex';
 const c = (k, v) => t(`combat.${k}`, v);
 
 /**
- * A number as the page's language writes it (one decimal at most: 5,2 · 1,5 · 8).
- * @param {number} n
+ * A number as the page's language writes it (`digits` decimals at most: 5,2 · 0,96 · 8).
+ * @param {number} n @param {number} [digits]
  */
-function num(n) {
+function num(n, digits = 1) {
   const lang = c('codex.locale');
-  return n.toLocaleString(lang, { maximumFractionDigits: 1 });
+  return n.toLocaleString(lang, { maximumFractionDigits: digits });
 }
 
 export class Codex {
@@ -104,7 +104,7 @@ export class Codex {
       const entry = { id: kind, no, unlocked, image: this._portrait(kind) };
       if (!unlocked) return entry;
       const d = ENEMY_DEFS[kind];
-      const grow = (/** @type {number} */ base, /** @type {number} */ share) => (d.boss ? '' : c('codex.perLevel', { n: num(base * share) }));
+      const grow = (/** @type {number} */ base, /** @type {number} */ share) => (d.boss ? '' : c('codex.perLevel', { n: num(base * share, 2) }));
       const [g0, g1] = d.gold;
       entry.name = c(`enemy.${kind}`);
       entry.text = c(`codex.text.${kind}`);
