@@ -14,7 +14,7 @@
 import { isDeepStrictEqual } from 'node:util';
 import { StoryState, storyReader, storyKey, isLooseFlag, journeySeed, readPartyRecords } from '../src/game/story/StoryState.js';
 import { CampaignState, cleanPlayerName, PLAYER_NAME_MAX } from '../src/game/campaign/CampaignState.js';
-import { PLAYER_CLASSES, isPlayerClass } from '../src/game/campaign/PlayerClasses.js';
+import { PLAYER_CLASSES, isPlayerClass, classLook } from '../src/game/campaign/PlayerClasses.js';
 import { normalizeCampaign, parseCampaign, serializeCampaign } from '../src/game/campaign/CampaignFormat.js';
 import { buildStory } from '../src/game/campaign/StoryFormat.js';
 import { cachedCondition, evalCondition, parseScript, interpolate, isTextRef } from '../src/engine/level/StoryScript.js';
@@ -1375,6 +1375,8 @@ begin('the player\'s character: the save, ${player}, the player speaking');
   const read = (p) => CampaignState.fromJSON(campaign, 'c', { ...JSON.parse(JSON.stringify(cs.toJSON())), player: p }).player;
   eq('an untrusted save: an unknown class, a blank name, no object → no character; a long name cut', [read({ name: 'Ana', cls: 'wizard' }), read({ name: ' ', cls: 'knight' }), read('Ana'), read({ name: 'y'.repeat(50), cls: 'knight' })?.name.length], [null, null, null, PLAYER_NAME_MAX]);
   ok('PLAYER_CLASSES: the knight, a known class', PLAYER_CLASSES.length >= 1 && PLAYER_CLASSES[0].id === 'knight' && isPlayerClass('knight') && !isPlayerClass('constructor'));
+  const errant = classLook('knight', 'errante');
+  ok('classLook: the knight errant wears plate and a sword; an unknown stage or class gives the first look', errant.outfit.style === 'plate' && errant.weapon === 'sword' && classLook('knight', 'nope') === errant && classLook('wizard') === errant && classLook() === errant);
   eq('CampaignFormat: player.create read, written only when true', [parseCampaign(serializeCampaign(normalizeCampaign({ format: 'luminati-campaign', levels: ['a'], player: { create: true } }).campaign)).campaign.player, normalizeCampaign({ format: 'luminati-campaign', levels: ['a'] }).campaign.player, serializeCampaign(normalizeCampaign({ format: 'luminati-campaign', levels: ['a'] }).campaign).includes('"player"')], [{ create: true }, { create: false }, false]);
   // ${player} and the player as a speaker
   const named = stubGame({ campaign: { playerName: 'Rodrigo', state: { visited: [], chapter: '' }, hour: () => 9, chapterId: () => '' } });

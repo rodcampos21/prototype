@@ -322,7 +322,7 @@ anchor: [0.5, 0], animations, name, spec, dispose() }`.
 | `randomize` | `true`: a seeded random villager that fills every field you did not set. |
 | `skin`, `hair` | Colour (see below). |
 | `hairStyle` | `'short' \| 'long' \| 'ponytail' \| 'bald' \| 'spiky' \| 'bun'` (unknown → `short`). |
-| `outfit` | `{ top, bottom, accent, style?: 'tunic'\|'vest'\|'robe'\|'dress'\|'dancer'\|'overalls'\|'tabard', shirt? }` |
+| `outfit` | `{ top, bottom, accent, style?: 'tunic'\|'vest'\|'robe'\|'dress'\|'dancer'\|'overalls'\|'tabard'\|'plate', shirt? }`. `plate` (October 2026): a breastplate (backplate) in the `shirt` ramp with `accent` trim — the neckline and the lower edge — and a gold crest on the chest, plated tassets down the sides of the `top` cloth skirt, an `accent` hem, cloth sleeves; pauldrons and bracers take the plate's ramp instead of metal. Used by the player's knight errant (`src/game/campaign/PlayerClasses.js`). |
 | `cape` | `false`, a colour, `true`, or `{ color, style?: 'cloak'\|'cape'\|'short', lining? }` |
 | `hat` | `'none' \| 'hood' \| 'wide' \| 'cap' \| 'helmet' \| 'circlet'`, plus `hatColor`, `hatBand`, `feather` (the cap feather appears only when set). |
 | `weapon` | `'none' \| 'sword' \| 'staff' \| 'bow' \| 'lute' \| 'spear' \| 'cane'` |
