@@ -640,7 +640,7 @@ const WOLF_POSES = {
   idle0: { tail: 0 }, idle1: { head: [0, 1], tail: 1 },
   move0: { walk: 0 }, move1: { walk: 1, body: -1, tail: 1 }, move2: { walk: 2 }, move3: { walk: 3, body: -1, tail: 1 },
   windup: { head: [1, 3], body: 1, ears: 'flat', mouth: 'snarl', eye: 'angry', tail: -1, legs: [[1, 0], [1, 0], [-1, 0], [-1, 0]] },
-  attack: { head: [-3, -1], body: -1, mouth: 'open', eye: 'angry', tail: 2, legs: [[-3, 2], [-2, 1], [3, 0], [2, 0]] },
+  attack: { head: [0, 1], body: 0, mouth: 'open', eye: 'angry', tail: 2, legs: [[-2, 1], [-1, 1], [2, 0], [1, 0]] },
   hurt: { head: [1, -1], ears: 'flat', eye: 'shut', tail: -1, legs: [[1, 0], [0, 0], [1, 0], [0, 0]] },
   dead: { dead: true },
 };
@@ -691,18 +691,19 @@ function wolfHeadSide(p, hx, hy, P) {
   blob(p, hx, hy, 3.6, 3, M.FUR, { hi: 0.35, lo: -0.3 });
   // the long muzzle: straw on the underside, a dark nose at the tip
   const open = P.mouth === 'open', snarl = P.mouth === 'snarl';
-  for (let x = hx - 6; x <= hx - 2; x++) {
-    p.set(x, hy, M.FUR, x === hx - 6 ? 2 : 3);
-    p.set(x, hy + 1, M.FUR, x === hx - 6 ? 1 : 2);
-    if (!open && x > hx - 6) p.set(x, hy + 2, M.FUR3, x < hx - 3 ? 2 : 1); // the straw chin
+  for (let x = hx - 5; x <= hx - 2; x++) {
+    p.set(x, hy, M.FUR, x === hx - 5 ? 2 : 3);
+    p.set(x, hy + 1, M.FUR, x === hx - 5 ? 1 : 2);
+    if (!open && x > hx - 5) p.set(x, hy + 2, M.FUR3, x < hx - 3 ? 2 : 1); // the straw chin
   }
-  p.set(hx - 7, hy, M.NOSE, 2); p.set(hx - 7, hy + 1, M.NOSE, 1);
+  p.set(hx - 6, hy, M.NOSE, 2); p.set(hx - 6, hy + 1, M.NOSE, 1);
   if (open) {
-    // jaw dropped: a dark mouth, white fangs, the lower jaw below
-    for (let x = hx - 6; x <= hx - 2; x++) { p.set(x, hy + 2, M.EYE, 0); p.set(x, hy + 3, M.FUR3, x < hx - 3 ? 2 : 1); }
-    p.set(hx - 5, hy + 2, M.BONE, 4); p.set(hx - 3, hy + 2, M.BONE, 3);
+    // jaws apart: the dark mouth between the muzzle and the dropped lower jaw, two white fangs
+    for (let x = hx - 5; x <= hx - 2; x++) { p.set(x, hy + 2, M.EYE, 0); p.set(x, hy + 3, M.FUR3, x < hx - 3 ? 2 : 1); }
+    p.set(hx - 5, hy + 3, M.FUR3, 1);
+    p.set(hx - 4, hy + 2, M.BONE, 4); p.set(hx - 2, hy + 2, M.BONE, 3);
   } else if (snarl) {
-    p.set(hx - 5, hy + 2, M.BONE, 4); p.set(hx - 4, hy + 1, M.EYE, 0); p.set(hx - 3, hy + 1, M.EYE, 0);
+    p.set(hx - 4, hy + 2, M.BONE, 4); p.set(hx - 3, hy + 1, M.EYE, 0); p.set(hx - 2, hy + 1, M.EYE, 0);
   }
   // cheek ruff: two leaf tips at the jaw
   p.set(hx + 2, hy + 3, M.FUR2, 1); p.set(hx + 3, hy + 2, M.FUR2, 2); p.set(hx + 1, hy + 3, M.FUR, 2);
