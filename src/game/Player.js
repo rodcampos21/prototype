@@ -95,16 +95,19 @@ function silhouetteMesh(geometry, material, name) {
 export class Player {
   /**
    * @param {{ tileMap: TileMap, rig: CameraRig, particles: Particles, audio: AudioSystem,
-   *           spawn: {x:number, z:number, facing?:string}, combat?: boolean }} ctx
+   *           spawn: {x:number, z:number, facing?:string}, combat?: boolean,
+   *           look?: Readonly<Record<string, any>>|null }} ctx  look: the character spec drawn
+   *   (a campaign's class look, src/game/campaign/PlayerClasses.js); null: the traveler
    */
-  constructor({ tileMap, rig, particles, audio, spawn, combat = false }) {
+  constructor({ tileMap, rig, particles, audio, spawn, combat = false, look = null }) {
     this.tileMap = tileMap;
     this.rig = rig;
     this.particles = particles;
     this.audio = audio;
+    const spec = look ? { ...look } : { ...CHARACTER_PRESETS.traveler, preset: 'traveler' };
     this.sheet = combat
-      ? createCharacterSheet({ ...CHARACTER_PRESETS.traveler, preset: 'traveler', weapon: 'sword' }, { combat: true })
-      : createCharacterSheet({ ...CHARACTER_PRESETS.traveler, preset: 'traveler' });
+      ? createCharacterSheet({ ...spec, weapon: 'sword' }, { combat: true })
+      : createCharacterSheet(spec);
     // (a facing read from level data or a save: an unknown one faces down)
     const facing = typeof spawn.facing === 'string' && Object.hasOwn(DIR_VECTORS, spawn.facing) ? spawn.facing : 'down';
     this.sprite = new Sprite3D(this.sheet, combat

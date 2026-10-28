@@ -1221,6 +1221,48 @@ function armSwingFront(pose) {
   }
 }
 
+/** The ramp of a character's armour pieces (pauldrons, bracers): the plate's (`shirt`) on a `plate` outfit, else metal. */
+const armorOf = (c) => (c.outfit.style === 'plate' ? M.SHIRT : M.METAL);
+
+/**
+ * The armour of the `plate` outfit, front or back (over the torso and the skirt drawn in the `top`
+ * cloth): a breastplate (or backplate) in the `shirt` ramp with the `accent` trim — the neckline and
+ * the lower edge, a crest on the chest (front) —, plated tassets down both sides of the cloth skirt
+ * and an `accent` hem. The sleeves stay cloth; pauldrons and bracers are drawn in the plate's ramp.
+ */
+function plateFront(p, top, waist, hem, cx, L, R, back) {
+  for (let y = top; y < waist; y++) {
+    const inset = y === top ? 1 : 0;
+    for (let x = L + inset; x <= R - inset; x++) {
+      let s = colShade(x - L, R - L + 1) + 1;
+      if (y === top) s = 2;
+      p.set(x, y, M.SHIRT, Math.min(4, s));
+    }
+  }
+  // the lower edge of the plate, gilt
+  for (let x = L; x <= R; x++) p.set(x, waist - 1, M.ACCENT, x === L ? 3 : x === R ? 1 : 2);
+  if (!back) {
+    // neckline: a gilt collar around the cloth under the chin
+    p.set(cx - 1, top, M.TOP, 1); p.set(cx, top, M.TOP, 1);
+    p.set(cx - 2, top, M.ACCENT, 3); p.set(cx + 1, top, M.ACCENT, 2);
+    // the crest (a gold beast on a shield): two by three
+    p.set(cx - 1, top + 2, M.GOLD, 4); p.set(cx, top + 2, M.GOLD, 3);
+    p.set(cx - 1, top + 3, M.GOLD, 3); p.set(cx, top + 3, M.GOLD, 2);
+    p.set(cx - 1, top + 4, M.GOLD, 2);
+    // the light from the upper left
+    p.set(L + 1, top + 1, M.SHIRT, 4); p.set(L + 1, top + 2, M.SHIRT, 4);
+  } else {
+    // the backplate's spine
+    for (let y = top + 1; y < waist - 1; y++) p.set(cx - 1, y, M.SHIRT, 2);
+  }
+  // tassets over the skirt's sides, the hem gilt
+  for (let y = waist + 1; y <= hem; y++) {
+    p.set(L, y, M.SHIRT, y === hem ? 2 : 3);
+    p.set(R, y, M.SHIRT, y === hem ? 1 : 2);
+  }
+  for (let x = L + 1; x <= R - 1; x++) p.set(x, hem, M.ACCENT, x < cx ? 3 : 2);
+}
+
 /** Front/back torso for all outfit styles. */
 function torsoFront(p, c, pose, back) {
   const r = c.rig;
@@ -1288,6 +1330,7 @@ function torsoFront(p, c, pose, back) {
     // chest highlight (light from the upper left)
     p.over(L + 1, top + 1, M.TOP, 3); p.over(L + 1, top + 2, M.TOP, 3); p.over(L + 2, top + 1, M.TOP, 3);
   }
+  if (style === 'plate') plateFront(p, top, waist, hem, cx, L, R, back);
   if (!back) {
     // collar / neckline under the chin
     if (style === 'robe') {
@@ -1355,7 +1398,7 @@ function torsoFront(p, c, pose, back) {
   }
 
   // belt / sash
-  if (style === 'tunic' || style === 'vest' || style === 'tabard') {
+  if (style === 'tunic' || style === 'vest' || style === 'tabard' || style === 'plate') {
     for (let x = L; x <= R; x++) p.set(x, waist, M.BELT, x === L ? 3 : x === R ? 1 : 2);
     if (!back) { p.set(cx - 1, waist, M.GOLD, 4); p.set(cx, waist, M.GOLD, 2); }
   } else if (style === 'robe') {
@@ -1406,7 +1449,7 @@ function armsFront(p, c, pose, back) {
     }
     // cuff
     if (wide) { p.set(x0, top + len - 1, M.ACCENT, 3); p.set(x0 + 1, top + len - 1, M.ACCENT, 2); p.set(k === 0 ? x0 - 1 : x0 + 2, top + len - 1, M.ACCENT, 2); }
-    if (c.gear.bracers && !r.child) { p.set(x0, top + len - 1, M.METAL, 3); p.set(x0 + 1, top + len - 1, M.METAL, 2); }
+    if (c.gear.bracers && !r.child) { p.set(x0, top + len - 1, armorOf(c), 3); p.set(x0 + 1, top + len - 1, armorOf(c), 2); }
     if (style === 'dancer') { p.set(x0, top + len - 1, M.GOLD, 3); p.set(x0 + 1, top + len - 1, M.GOLD, 2); }
     // hand
     const hy = top + len;
@@ -1417,7 +1460,8 @@ function armsFront(p, c, pose, back) {
     // shoulder pads: rounded metal guards with a bright rim
     if (c.gear.pauldrons && !r.child) {
       p.begin('below', 1);
-      const PL = { 1: [M.METAL, 0], 2: [M.METAL, 1], 3: [M.METAL, 2], 4: [M.METAL, 3], 5: [M.METAL, 4] };
+      const A = armorOf(c);
+      const PL = { 1: [A, 0], 2: [A, 1], 3: [A, 2], 4: [A, 3], 5: [A, 4] };
       const rows = k === 0 ? ['.45.', '4543', '2332'] : ['.43.', '3432', '1221'];
       p.tpl(T(rows, PL), k === 0 ? x0 - 1 : x0 - 1, top - 1);
       p.end();
@@ -2076,7 +2120,7 @@ function sideArm(p, c, pose, near, swingX) {
   const hx = sx + swingX;
   const hy = sy + len;
   if (style === 'robe') { p.set(hx, hy - 1, M.ACCENT, near ? 3 : 1); p.set(hx + 1, hy - 1, M.ACCENT, near ? 2 : 1); }
-  if (c.gear.bracers && !r.child) { p.set(hx, hy - 1, M.METAL, near ? 3 : 1); p.set(hx + 1, hy - 1, M.METAL, near ? 2 : 1); }
+  if (c.gear.bracers && !r.child) { p.set(hx, hy - 1, armorOf(c), near ? 3 : 1); p.set(hx + 1, hy - 1, armorOf(c), near ? 2 : 1); }
   if (style === 'dancer') { p.set(hx, hy - 1, M.GOLD, near ? 3 : 1); p.set(hx + 1, hy - 1, M.GOLD, near ? 2 : 1); }
   const handM = c.gear.gloves ? M.LEATHER : M.SKIN;
   p.set(hx, hy, handM, near ? 3 : 1); p.set(hx + 1, hy, handM, near ? 2 : 1);
@@ -2133,7 +2177,7 @@ function torsoSide(p, c, pose) {
   }
   p.end();
   // details
-  if (style === 'tunic' || style === 'vest' || style === 'tabard') {
+  if (style === 'tunic' || style === 'vest' || style === 'tabard' || style === 'plate') {
     for (let x = L; x <= R; x++) p.set(x, waist, M.BELT, x === L ? 3 : x === R ? 1 : 2);
     p.set(L, waist, M.GOLD, 3);
   } else if (style === 'robe') {
@@ -2151,6 +2195,14 @@ function torsoSide(p, c, pose) {
     for (let y = top + 2; y < waist; y++) { p.set(L, y, M.BOTTOM, 3); p.set(L + 1, y, M.BOTTOM, 2); }
     p.set(L + 2, top, M.BOTTOM, 2); p.set(L + 2, top + 1, M.BOTTOM, 2);
     p.set(L + 1, top + 2, M.GOLD, 3);
+  }
+  if (style === 'plate') {
+    // the breastplate seen from the side: the plate's ramp to the waist, its front edge gilt, a tasset
+    for (let y = top; y < waist; y++) for (let x = L + (y === top ? 1 : 0); x <= R - (y === top ? 1 : 0); x++) p.set(x, y, M.SHIRT, Math.min(4, colShade(x - L, R - L + 1) + 1));
+    for (let y = top + 1; y < waist; y++) p.set(L, y, M.ACCENT, 3);
+    for (let x = L; x <= R; x++) p.set(x, waist - 1, M.ACCENT, x === L ? 3 : 2);
+    for (let y = waist + 1; y < hem; y++) { p.set(L + 1, y, M.SHIRT, 3); p.set(L + 2, y, M.SHIRT, 2); }
+    for (let x = L - 1; x <= R + 1; x++) p.set(x, hem, M.ACCENT, 2);
   }
   if (style === 'tabard') {
     for (let y = top; y <= hem + 1; y++) { p.set(L, y, M.TOP, 3); p.set(L + 1, y, M.TOP, 2); }
@@ -2224,14 +2276,14 @@ function drawSide(p, c, pose, far) {
   if (c.gear.pauldrons && !r.child) {
     p.begin('below', 1);
     const sx = r.cx - 2, sy = r.armTop + up - 1;
-    p.tpl(T(['.344.', '34432', '33221'], { 1: [M.METAL, 0], 2: [M.METAL, 1], 3: [M.METAL, 2], 4: [M.METAL, 3] }), sx, sy);
+    p.tpl(T(['.344.', '34432', '33221'], { 1: [armorOf(c), 0], 2: [armorOf(c), 1], 3: [armorOf(c), 2], 4: [armorOf(c), 3] }), sx, sy);
     p.end();
   }
   const nearHand = act ? combatArms(p, c, act, 'under') : sideArm(p, c, pose, true, poleKind && far ? poleSwing(armSwing) : armSwing);
   if (c.gear.pauldrons && !r.child) {
     p.begin(null);
     const sx = r.cx - 2, sy = r.armTop + up - 1;
-    p.tpl(T(['.344.', '34432', '33221'], { 1: [M.METAL, 0], 2: [M.METAL, 1], 3: [M.METAL, 2], 4: [M.METAL, 3] }), sx, sy);
+    p.tpl(T(['.344.', '34432', '33221'], { 1: [armorOf(c), 0], 2: [armorOf(c), 1], 3: [armorOf(c), 2], 4: [armorOf(c), 3] }), sx, sy);
     p.end();
   }
   if (poleKind && far && !act) poleTip = drawPoleSide(p, c, nearHand[0] - 1, nearHand[1], poleKind, true);
@@ -3311,7 +3363,7 @@ function buildAnimations(rows, { idleFps = 2.5, walkFps = 8, runFps = 13, extra 
  *  - preset      one of CHARACTER_PRESETS keys (or 'random' — see randomize)
  *  - seed        integer; on a preset it adds a subtle deterministic colour variation (crowds)
  *  - skin, hair  colours; hairStyle 'short'|'long'|'ponytail'|'bald'|'spiky'|'bun'
- *  - outfit      { top, bottom, accent, style?: 'tunic'|'vest'|'robe'|'dress'|'dancer'|'overalls'|'tabard', shirt? }
+ *  - outfit      { top, bottom, accent, style?: 'tunic'|'vest'|'robe'|'dress'|'dancer'|'overalls'|'tabard'|'plate', shirt? }
  *  - cape        false | colour | true | { color, style?: 'cloak'|'cape'|'short', lining? }
  *  - hat         'none'|'hood'|'wide'|'cap'|'helmet'|'circlet'  (+ hatColor?, hatBand?, feather?)
  *  - weapon      'none'|'sword'|'staff'|'bow'|'lute'  (+ extras 'spear', 'cane')

@@ -623,7 +623,7 @@ export class Game {
     } else {
       onProgress(0.92, t('game.load.villagers'));
       await wait(0);
-      this.player = new Player({ tileMap: this.tileMap, rig: this.rig, particles: this.particles, audio: this.audio, spawn, combat: this.combatEnabled });
+      this.player = new Player({ tileMap: this.tileMap, rig: this.rig, particles: this.particles, audio: this.audio, spawn, combat: this.combatEnabled, look: this.campaign?.playerLook ?? null });
       scene.add(this.player.sprite);
       this.spriteManager.add(this.player.sprite);
       this.lighting.followTarget(this.player.sprite);

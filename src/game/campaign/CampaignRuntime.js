@@ -5,7 +5,7 @@ import { levelHasCombat, OBJECT_TYPES } from '../../engine/level/ObjectCatalog.j
 import { isOwnKey } from '../../engine/utils/own.js';
 import { chapterLevelId, activeChapter, acrossSeam, campaignLevel } from './CampaignFormat.js';
 import { CampaignState, formatPlayTime, SAVE_VERSION, cleanPlayerName, PLAYER_NAME_MAX } from './CampaignState.js';
-import { PLAYER_CLASSES, isPlayerClass } from './PlayerClasses.js';
+import { PLAYER_CLASSES, isPlayerClass, classLook } from './PlayerClasses.js';
 import { LevelPreparation } from './LevelPreparation.js';
 import { storyReader, journeySeed } from '../story/StoryState.js';
 import { renderLevelMap } from '../../engine/level/LevelMap.js';
@@ -1097,6 +1097,16 @@ export class CampaignRuntime {
     const cls = isPlayerClass(r?.cls) ? r.cls : PLAYER_CLASSES[0].id;
     this.state.player = { name, cls };
     this.save();
+  }
+
+  /**
+   * The look of the player's character (a campaign with `player.create`): its class's look at its
+   * stage (`classLook`; before the creation, the first class's — the only one today); null: the
+   * game's own traveler.
+   * @returns {Readonly<Record<string, any>>|null}
+   */
+  get playerLook() {
+    return this.campaign.player?.create ? classLook(this.state.player?.cls) : null;
   }
 
   /** The name of the player's character ('' without one: no creation, or not made yet). */
