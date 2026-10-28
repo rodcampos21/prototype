@@ -673,6 +673,52 @@ function maneLeaf(p, x, y, h, lean, tone) {
   }
 }
 
+/**
+ * A wolf's leg in side view (facing left; toes forward = −x). Forelegs: a straight column with a
+ * narrower wrist above the paw. Hind legs: the thigh angled forward to the stifle, the shank back
+ * to the hock (the backward "knee"), then the straight metatarsal down to the paw. Every paw is a
+ * 3 px foot with a dark toe split and a lit top; `lift` raises it, `dx` swings it (walk gait).
+ * @param {number} x the leg's column at the body @param {number} top @param {number} ground
+ * @param {number} lift @param {number} dx @param {boolean} far @param {boolean} hind
+ */
+function wolfLegSide(p, x, top, ground, lift, dx, far, hind) {
+  const bottom = ground - lift;
+  const n = Math.max(1, bottom - top);
+  const off = (/** @type {number} */ y) => Math.round(dx * (y - top) / n);
+  const tone = (/** @type {number} */ s) => Math.max(0, s - (far ? 1 : 0));
+  const knee = top + Math.round(n * 0.35), hock = top + Math.round(n * 0.65);
+  for (let y = top; y < bottom; y++) {
+    let cx = x + off(y);
+    let w = 2;
+    if (hind) {
+      // the thigh (3 px, into the haunch), the shank easing back one pixel to the hock, the
+      // straight metatarsal below it
+      if (y <= knee) w = 3;
+      else cx += y > hock ? 1 : Math.round((y - knee) / Math.max(1, hock - knee));
+    } else if (y === bottom - 1) w = 1; // the wrist, narrower above the paw
+    for (let i = 0; i < w; i++) p.set(cx + i, y, i === w - 1 ? M.FUR2 : M.FUR, tone(i === 0 ? 3 : i === w - 1 ? 2 : 2));
+  }
+  // the paw: toes forward with a dark split between them, lit on top
+  const px = x + off(bottom) + (hind ? 1 : 0) - 1;
+  p.set(px, bottom, M.FUR, tone(2)); p.set(px + 1, bottom, M.FUR2, tone(0)); p.set(px + 2, bottom, M.FUR, tone(1));
+}
+
+/**
+ * A wolf's leg facing the camera or from behind: a 2 px column, a narrower wrist (forelegs) or a
+ * hock bulging out (hind legs, from behind), and a 3 px paw with two dark toe splits.
+ * @param {number} x @param {number} top @param {number} ground @param {number} lift
+ * @param {-1|1} side which way the leg's outer edge faces @param {boolean} hind
+ */
+function wolfLegFront(p, x, top, ground, lift, side, hind) {
+  const bottom = ground - lift;
+  const hock = top + Math.round((bottom - top) * 0.55);
+  for (let y = top; y < bottom; y++) {
+    p.set(x, y, M.FUR, 3); p.set(x + 1, y, M.FUR, 1);
+    if (hind && y === hock) p.set(side < 0 ? x - 1 : x + 2, y, M.FUR2, 1);
+  }
+  p.set(x - 1, bottom, M.FUR, 2); p.set(x, bottom, M.FUR2, 0); p.set(x + 1, bottom, M.FUR, 2); p.set(x + 2, bottom, M.FUR, 1);
+}
+
 /** Wolf head (side view, facing left), (hx, hy) = the skull's centre. */
 function wolfHeadSide(p, hx, hy, P) {
   const flat = P.ears === 'flat';
@@ -706,6 +752,9 @@ function wolfHeadSide(p, hx, hy, P) {
     p.set(hx - 4, hy + 2, M.BONE, 4); p.set(hx - 2, hy + 2, M.BONE, 3);
   } else if (snarl) {
     p.set(hx - 4, hy + 2, M.BONE, 4); p.set(hx - 3, hy + 1, M.EYE, 0); p.set(hx - 2, hy + 1, M.EYE, 0);
+  } else {
+    // closed: the upper fang still shows over the lip (every pose, like the open jaws' fangs)
+    p.set(hx - 4, hy + 2, M.BONE, 4);
   }
   // cheek ruff: two leaf tips at the jaw
   p.set(hx + 2, hy + 3, M.FUR2, 1); p.set(hx + 3, hy + 2, M.FUR2, 2); p.set(hx + 1, hy + 3, M.FUR, 2);
@@ -713,8 +762,11 @@ function wolfHeadSide(p, hx, hy, P) {
   // the amber eye under a leaf brow
   p.begin(null);
   const ex = hx - 2, ey = hy - 1;
-  if (P.eye === 'shut') { p.set(ex, ey, M.EYE, 0); p.set(ex + 1, ey, M.EYE, 0); }
-  else if (P.eye === 'dead') { p.set(ex, ey, M.EYE, 0); p.set(ex + 1, ey + 1, M.EYE, 0); p.set(ex + 1, ey - 1, M.EYE, 0); p.set(ex - 1, ey + 1, M.EYE, 0); }
+  // (the eye sits in a lit socket so it reads on the dark pelt; shut and dead eyes are a pale
+  // straw lid line, never dark on dark)
+  p.set(ex - 1, ey, M.FUR, 3); p.set(ex, ey + 1, M.FUR, 3);
+  if (P.eye === 'shut') { p.set(ex, ey, M.FUR3, 3); p.set(ex + 1, ey, M.FUR3, 2); }
+  else if (P.eye === 'dead') { p.set(ex, ey, M.FUR3, 2); p.set(ex + 1, ey + 1, M.FUR3, 2); p.set(ex + 1, ey - 1, M.FUR3, 2); }
   else { p.set(ex, ey, M.EYE, 3); p.set(ex + 1, ey, M.EYE, 1); if (P.eye === 'angry') { p.set(ex, ey - 1, M.FUR2, 0); p.set(ex + 1, ey - 1, M.FUR2, 0); } }
   p.end();
 }
@@ -759,8 +811,8 @@ function drawWolf(p, view, key, f) {
     // tail and far legs (long and thin: a wolf stands tall)
     p.begin(null);
     wolfTail(p, 26, Math.round(bodyY - 2), P.tail ?? 0);
-    quadLeg(p, 12, 13 + bd, G, gait[1].lift, gait[1].dx, true, M.FUR2, M.FUR, 2);
-    quadLeg(p, 23, 13 + bd, G, gait[3].lift, gait[3].dx, true, M.FUR2, M.FUR, 2);
+    wolfLegSide(p, 12, 13 + bd, G, gait[1].lift, gait[1].dx, true, false);
+    wolfLegSide(p, 23, 13 + bd, G, gait[3].lift, gait[3].dx, true, true);
     p.end();
     // body: a deep chest, a tucked waist, the haunch; the neck rising to the head; straw belly
     p.begin(null);
@@ -792,8 +844,8 @@ function drawWolf(p, view, key, f) {
     p.end();
     // near legs
     p.begin('sides', 1);
-    quadLeg(p, 11, 13 + bd, G, gait[0].lift, gait[0].dx, false, M.FUR2, M.FUR, 2);
-    quadLeg(p, 22, 13 + bd, G, gait[2].lift, gait[2].dx, false, M.FUR2, M.FUR, 2);
+    wolfLegSide(p, 11, 13 + bd, G, gait[0].lift, gait[0].dx, false, false);
+    wolfLegSide(p, 22, 13 + bd, G, gait[2].lift, gait[2].dx, false, true);
     p.end();
     wolfHeadSide(p, hx, hy, P);
     return;
@@ -807,7 +859,7 @@ function drawWolf(p, view, key, f) {
     p.begin(null); leafScales(p, cx - 9, G - 6, cx + 9, G); for (let x = cx - 6; x <= cx + 5; x += 2) maneLeaf(p, x, G - 6, 2, 1, 2); p.end();
     p.begin('all', 0);
     for (const [lx, d] of [[6, -1], [8, -1], [24, 1], [26, 1]]) { p.set(lx, G - 1, M.FUR, 2); p.set(lx + d, G, M.FUR2, 1); }
-    if (!back) { p.set(cx - 2, G - 4, M.EYE, 0); p.set(cx - 1, G - 3, M.EYE, 0); p.set(cx + 2, G - 4, M.EYE, 0); p.set(cx + 1, G - 3, M.EYE, 0); }
+    if (!back) { p.set(cx - 2, G - 4, M.FUR3, 2); p.set(cx - 1, G - 3, M.FUR3, 2); p.set(cx + 2, G - 4, M.FUR3, 2); p.set(cx + 1, G - 3, M.FUR3, 2); }
     p.end();
     return;
   }
@@ -821,7 +873,8 @@ function drawWolf(p, view, key, f) {
     blob(p, cx, 6.5 + bd, 3.6, 2.6, M.FUR, { hi: 0.4, lo: -0.1 });
     p.end();
     p.begin(null);
-    for (const [k, lx] of [[0, 12], [1, 18]]) quadLeg(p, lx, 15 + bd, G, lift[k], 0, false, M.FUR2, M.FUR, 2);
+    wolfLegFront(p, 12, 15 + bd, G, lift[0], -1, true);
+    wolfLegFront(p, 18, 15 + bd, G, lift[1], 1, true);
     p.end();
     p.begin('below', 1);
     blob(p, cx, 12 + bd, 5.6, 4.4, M.FUR, { hi: 0.45, lo: -0.25 });
@@ -846,8 +899,8 @@ function drawWolf(p, view, key, f) {
   blob(p, cx, 14 + bd, 6, 3, M.FUR, { hi: 0.3, lo: -0.4, maxShade: 2 });
   p.end();
   p.begin('sides', 1);
-  quadLeg(p, 12 - spread, 14 + bd, G, lift[0], 0, false, M.FUR2, M.FUR, 2);
-  quadLeg(p, 18 + spread, 14 + bd, G, lift[1], 0, false, M.FUR2, M.FUR, 2);
+  wolfLegFront(p, 12 - spread, 14 + bd, G, lift[0], -1, false);
+  wolfLegFront(p, 18 + spread, 14 + bd, G, lift[1], 1, false);
   p.end();
   p.begin(null);
   blob(p, cx, 13 + bd, 5.4, 4, M.FUR, { hi: 0.45, lo: -0.2 });
@@ -876,14 +929,19 @@ function drawWolf(p, view, key, f) {
     p.set(x, y, y === hy + 1 ? M.FUR : M.FUR3, y === hy + 1 ? 3 : x < hx ? 2 : 1);
   }
   p.set(hx - 1, hy + 1, M.NOSE, 2); p.set(hx, hy + 1, M.NOSE, 1);
-  if (P.mouth === 'open') { p.set(hx - 1, hy + 4, M.EYE, 0); p.set(hx, hy + 4, M.EYE, 0); p.set(hx - 2, hy + 3, M.BONE, 4); p.set(hx + 1, hy + 3, M.BONE, 4); }
-  else if (P.mouth === 'snarl') { p.set(hx - 2, hy + 3, M.BONE, 4); p.set(hx + 1, hy + 3, M.BONE, 3); }
+  // straw cheeks either side of the muzzle: the face's light mask
+  p.set(hx - 3, hy + 1, M.FUR3, 2); p.set(hx + 2, hy + 1, M.FUR3, 1);
+  if (P.mouth === 'open') { p.set(hx - 1, hy + 4, M.EYE, 0); p.set(hx, hy + 4, M.EYE, 0); }
+  // the two fangs at the muzzle's corners, in every pose
+  p.set(hx - 2, hy + 3, M.BONE, 4); p.set(hx + 1, hy + 3, M.BONE, 3);
   p.end();
   p.begin(null);
   const ey = hy - 1;
   for (const ex of [hx - 2, hx + 1]) {
-    if (P.eye === 'shut') { p.set(ex, ey, M.EYE, 0); }
-    else { p.set(ex, ey, M.EYE, 3); if (P.eye === 'angry') p.set(ex + (ex < hx ? -1 : 1), ey - 1, M.FUR2, 0); }
+    const out = ex < hx ? -1 : 1;
+    p.set(ex + out, ey, M.FUR, 3); // the lit socket
+    if (P.eye === 'shut') { p.set(ex, ey, M.FUR3, 3); p.set(ex + out, ey, M.FUR3, 2); }
+    else { p.set(ex, ey, M.EYE, 3); if (P.eye === 'angry') p.set(ex + out, ey - 1, M.FUR2, 0); }
   }
   p.end();
 }
