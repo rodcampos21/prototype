@@ -393,7 +393,7 @@ export const COMBAT_CONTROLS = [            // HUD legend (ui.hud.setControls), 
   { keys: 'Q/E', label: 'Rotate camera' },
   { keys: 'Z/X', label: 'Zoom (or wheel)' },
   { keys: 'N/Tab', label: 'World map' },
-  { keys: 'T/R/P/M', label: 'Time / Weather / Photo / Music' },
+  { keys: 'P/M', label: 'Photo / Music' },
 ];
 export const COMBAT_PAD_CONTROLS = [        // legend while input.lastDevice === 'gamepad', 12 rows
   { keys: 'LS', label: 'Move' },

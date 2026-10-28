@@ -89,8 +89,6 @@ use the keys that sit where the US letters are. Printable version: [shortcuts.ht
 | Rotate the camera | hold **Q** / **E** | Up to 60° either side of north. |
 | Zoom in / out | hold **Z** / **X**, or **=** / **−**, or the **mouse wheel** | Camera distance 18–42, 30 by default (`CAMERA` in [`config.js`](../../src/game/config.js); a level's `environment.camera.distance` can change the default and widens the range to include it). |
 | World map | **N** or **Tab** | **N**, **Tab**, **Esc** or **Backspace** closes it. |
-| Next time of day | **T** | Dawn → Midday → Golden Hour → Dusk → Night, with a 2-second glide. |
-| Next weather | **R** | Clear → Rain → Snow → Clear. |
 | Photo mode | **P** | **P** or **Esc** (or Backspace) returns. |
 | Music on / off | **M** | |
 | Controls legend on / off | **H** | |
@@ -234,7 +232,9 @@ whether to keep playing (or starts the music again if it is silent).
 - **The clock runs** while you play: **one game hour ≈ 90 seconds** (`TIME_SPEED = 1/90` hours per
   second). Each level sets its start hour; Emberfall starts at 17:12 (golden hour), Starfall Vale at
   17:24. A level can stop the clock (`environment.clock: false`).
-- **T** glides (2 s, always forward in time) to the next preset:
+- **No key changes the time or the weather**: the clock and the weather are the game's (the story
+  sets them; the debug panel's Time & Weather folder, opened with `, still changes them for tests,
+  and its *next preset* glides 2 s, always forward in time, to the next preset):
 
   | Preset | Hour |
   | --- | --- |
@@ -247,7 +247,7 @@ whether to keep playing (or starts the music again if it is silent).
 - The light follows a 24-hour palette: pink dawn, white noon, the long raking shadows of golden
   hour, purple dusk and blue nights. At night the street lamps and windows light up, the fires
   carry the light and fireflies come out.
-- **R** cycles **clear → rain → snow → clear** and blends over a few seconds: rain greys the light,
+- The weather (clear, rain, snow) blends over a few seconds when it changes: rain greys the light,
   thickens the fog, strengthens the wind and dims the sun; snow falls and **settles** on the ground,
   grass and roofs. On grey days the lanterns and windows glow. Levels can start in rain or snow.
 - Resting at an inn sets the clock to 08:00.
@@ -259,8 +259,8 @@ whether to keep playing (or starts the music again if it is silent).
 ## 7. Photo mode
 
 **P** (gamepad: right stick click) shows *Photo mode · P or Esc to return* and hides the whole UI
-after a moment. You can still walk, rotate and zoom the camera, and change the time (**T**),
-weather (**R**) and music (**M**); talking is off. Photo mode cannot start during a conversation or
+after a moment. You can still walk, rotate and zoom the camera and toggle the music (**M**);
+talking is off. Photo mode cannot start during a conversation or
 while the world map is open. **P**, **Esc**, **Backspace** or gamepad **B** bring the UI back.
 
 For more freedom, set up the camera in the debug panel before entering photo mode (the panel is
@@ -390,9 +390,10 @@ flowchart TB
 6. **Campfire Meadow** (south) — flowers, petals and **Wren** the bard by the campfire
    (19.5, 33.4). If the music is silent, he plays *Emberfall Evening*; on a later visit he asks
    whether to keep playing.
-7. **Evening** — press **T** until *Night* and walk back to the square: lamps, windows and the
-   campfire light up, fireflies drift over the meadow and the grove. Try **R** for rain in the
-   grove and snow on the rooftops.
+7. **Evening** — wait for night (about five game minutes per hour of the clock, or the debug
+   panel's Time & Weather folder) and walk back to the square: lamps, windows and the campfire
+   light up, fireflies drift over the meadow and the grove. The same folder brings rain to the
+   grove and snow to the rooftops.
 
 ![Emberfall's square at night](../assets/screenshots/emberfall-plaza-night.jpg)
 
@@ -413,7 +414,7 @@ work with `__game.talkTo(id)`).
 
 `/game.html?level=starfall-vale` — the night of the Starfall Festival. You arrive at the south
 edge on the King's Road (70.5, 121.5), facing north, at 17:24. The clock runs: night falls about
-five minutes later, or press **T**. Open the world map (**N**) often — the vale is large.
+five minutes later. Open the world map (**N**) often — the vale is large.
 
 ![Starfall Vale title screen](../assets/screenshots/starfall-title.jpg)
 
@@ -576,8 +577,8 @@ The pass climbs from south to north — up the screen — so the camera always l
 The levels on the banners are the foes', set for four fighters: with the full party you leave the
 branch at about level 4 yourself.
 
-The clock is stopped at golden hour on this level; **T** still changes the time if you want to
-fight at night. Doing both branches is possible and gives extra experience and loot.
+The clock is stopped at golden hour on this level; the debug panel (`) still changes the time if
+you want to fight at night. Doing both branches is possible and gives extra experience and loot.
 
 ### 15.6 Who you meet
 

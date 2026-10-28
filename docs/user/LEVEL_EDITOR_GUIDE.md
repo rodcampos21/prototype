@@ -983,7 +983,8 @@ The [level design guide](../design/LEVEL_DESIGN_GUIDE.md) explains the craft; th
 - **Give things words**: knock texts, sign texts and villagers with a special action make a place
   feel alive. Regions with arrival banners name the areas (small regions first).
 - **Close the edges**: keep the forest border, or block open edges with `T` / `x` tiles.
-- **Play it**: F5 often, and press **T** in the game to see every hour.
+- **Play it**: F5 often, and use the debug panel's Time & Weather folder (` in the game) to see every
+  hour.
 
 ---
 
@@ -1056,7 +1057,7 @@ ground* (above height **2**, pitch **40**) → **Apply**.
 **10. Check, save, play (1 min).** *Level › Check for problems* and fix what it lists. Press
 **Ctrl+S**: file name `thistledown`, destination **Project folder** → **Save** (it writes
 `public/levels/thistledown.json`). Press **F5** to play-test, walk up the road, knock on the inn,
-talk to Hazel and Bram, climb the stairs — and press **T** a few times for the night. From now on the
+talk to Hazel and Bram, climb the stairs — and, in the debug panel (`), set the time for the night. From now on the
 level also plays at **http://127.0.0.1:5173/game.html?level=thistledown**, and the launcher
 (**http://127.0.0.1:5173/**) lists it with *Play* and *Edit*.
 

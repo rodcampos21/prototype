@@ -73,7 +73,7 @@ The shipped levels (all in [`public/levels/`](../../public/levels/)):
 
 | File | Level | Size | Objects | Made by | Play |
 | --- | --- | --- | --- | --- | --- |
-| `emberfall.json` | Emberfall — Riverside Village (default level) | 48 × 40 | 137 (8 villagers) | edited as JSON / in the editor | `game.html` |
+| `emberfall.json` | Emberfall — Riverside Village (the engine's demo village) | 48 × 40 | 137 (8 villagers) | edited as JSON / in the editor | `game.html?level=emberfall` |
 | `starfall-vale.json` | Starfall Vale — Where the Stars Come Home | 128 × 128 | 875 (29 villagers, 95 light descriptors) | **generated** by [`tools/make-starfall-vale.mjs`](../../tools/make-starfall-vale.mjs) | `game.html?level=starfall-vale` |
 | `brightwater-crossing.json` | Brightwater Crossing — A Riverside Hamlet | 36 × 28 | 68 (4 villagers) | built by hand in the editor UI | `game.html?level=brightwater-crossing` |
 | `sample-hamlet.json` | Willowmere — A Hamlet by the Pond | 28 × 22 | 38 (3 villagers) | **generated** by [`tools/make-sample-hamlet.mjs`](../../tools/make-sample-hamlet.mjs) | `game.html?level=sample-hamlet` |
@@ -89,7 +89,17 @@ ranger) at the Waystone Camp, Sela (a warden) at the Crossroads Waystone
 play is hard by design ([COMBAT.md](../contracts/COMBAT.md));
 the play-through bot recruits them (`sandbox/combat_play.js`, `party: false` plays alone).
 
-Two **campaigns** ship — stories of several levels played in one page
+**The game** this repository now builds is the campaign *Culto ao Baiacu Rei*,
+`public/campaigns/culto-ao-baiacu-rei/`, what `game.html` plays without a query (Portuguese source
+text, English by its content table). It opens with the **character creation** (`player.create`:
+a name and a class) and so far holds one level, *Estrada da Costa* (the Ato I prologue, 40 × 30,
+1 villager who joins the party, 1 enemy group, 1 chest, 5 story events;
+[design note](../design/levels/estrada-da-costa.md)), **generated** with `campaign.json` by
+[`tools/make-estrada-da-costa.mjs`](../../tools/make-estrada-da-costa.mjs). Its plans are in
+[design/baiacu/](../design/baiacu/PLANO-DE-MECANICAS.md). The levels above and the campaigns below
+are the engine's demos and regression tests: keep them working.
+
+Two demo **campaigns** ship — stories of several levels played in one page
 ([specs/CAMPAIGN_FORMAT.md](../specs/CAMPAIGN_FORMAT.md)). The first is *The Ferryman's Lantern*,
 `public/campaigns/ferrymans-lantern/` (`campaign.json` and five level files: Millbrook, Mill Road,
 the Old Quarry with combat, the mill cellar, chapter two's Millbrook at dusk), **generated** by
@@ -377,16 +387,17 @@ apply them step by step.
     ([CONVENTIONS.md §13](../development/CONVENTIONS.md#13-error-handling-and-logging),
     [KNOWN_ISSUES LVL-17](KNOWN_ISSUES.md#resolved-2026-10-01)). Check with
     `sandbox/game_levels.html?case=hostile` and its script `sandbox/game_levels.hostile.json`.
-17. **The UI is pixel art in whole art pixels, in three languages.** Size and place UI in art px
+17. **The UI is pixel art in whole art pixels, in two languages.** Size and place UI in art px
     of the pixel UI's 640 × 360 reference frame (`--px`; `group()`, `txt()`, the art kit — never `vw` /
     `clamp()` or a scale of your own), colours from G's palette only. Every word the player reads
-    is a string-table key (`t()`, with its `ja` and `zh` entries) or data translated **at display**
-    — prose by the key the data holds (`loc(key, english)`, the key read with `ContentKeys.js`'
-    readers, which the extractor reads the same way), names as terms (`term(name)`) — never
-    written into a level, campaign, story or save; names the code looks up stay English. After touching text or a
-    display site, run both i18n tours in ja and zh (0 misses). Load CJK glyphs with
-    `fonts.ensure` before measuring; never trust `document.fonts.check`. Check UI work at
-    1280 × 720, 1920 × 1080 and 1024 × 768 and with `--lang=ja` / `--lang=zh`
+    is a string-table key (`t()`, with its `pt` source and `en` translation) or data translated
+    **at display** — prose by the key the data holds (`loc(key, source)`, the key read with
+    `ContentKeys.js`' readers, which the extractor reads the same way), names as terms
+    (`term(name)`) — never written into a level, campaign, story or save; names the code looks up
+    stay as identities. Portuguese (`pt`, `SOURCE_LANG`) is the source and the default; English is
+    translated by the content tables. After touching text or a display site, check it in English
+    (`--lang=en`: 0 misses). Check UI work at 1280 × 720, 1920 × 1080 and 1024 × 768 and with
+    `--lang=en`
     ([PIXEL_UI.md](../specs/PIXEL_UI.md), [I18N.md](../specs/I18N.md),
     [KNOWN_ISSUES › UI and languages](KNOWN_ISSUES.md#ui-and-languages)).
 18. **Text keys live in the data; nobody types them.** Every translatable text carries a GUID

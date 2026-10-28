@@ -150,8 +150,8 @@ function iconSvg(icon) {
   return svg;
 }
 
-/** The widest a bark's text runs before it wraps (art px), per language: about 22 Latin letters, 12 kanji. */
-const BARK_MAX = { en: 136, ja: 144, zh: 132 };
+/** The widest a bark's text runs before it wraps (art px), per language: about 22 Latin letters. */
+const BARK_MAX = { pt: 136, en: 136 };
 /** The bubble's padding round the text (art px): the sides; above the first line box; under the last. */
 const PAD_X = 6, PAD_T = 3, PAD_B = 2;
 

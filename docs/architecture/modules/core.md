@@ -239,10 +239,8 @@ standard-mapping gamepad table.
 | `camLeft` / `camRight` | `KeyQ` / `KeyE` | `GamepadLB` / `GamepadRB` (+ right stick x) |
 | `zoomIn` / `zoomOut` | `KeyZ`,`Equal` / `KeyX`,`Minus` | `GamepadY` / `GamepadX` |
 | `debug` | `Backquote`, `F1` | none |
-| `time` | `KeyT` | none |
 | `photo` | `KeyP` | `GamepadRS` (right stick click) |
 | `help` | `KeyH` | `GamepadStart` |
-| `weather` | `KeyR` | none |
 | `music` | `KeyM` | none |
 | `map` | `KeyN`, `Tab` | `GamepadBack` (View) |
 

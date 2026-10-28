@@ -1,8 +1,12 @@
 /**
  * Content text: what players read from level, campaign and story data (and the hand-written
  * conversations in src/game/dialogue.js), translated at display (docs/specs/I18N.md §4). Node-safe:
- * nothing here touches `fetch`, `location` or `document` at import time (it imports nothing), so
- * the story runtime, the level tools and the i18n checker import it in Node.
+ * nothing here touches `fetch`, `location` or `document` at import time (it imports only the
+ * import-free I18n.js), so the story runtime, the level tools and the i18n checker import it in Node.
+ *
+ * "English" below means the source text — what the data holds. Since the switch to Portuguese
+ * (`SOURCE_LANG`) the source is Brazilian Portuguese; the engine's shipped demo levels still hold
+ * English source text, shown as it is in every language.
  *
  * Two kinds of content text:
  * - **Units** — prose (a dialogue page, a sign, a choice, a script's line, a quest's text, a title):
@@ -31,6 +35,8 @@
  * every table is held in `Map`s, never read as `obj[key]` (KNOWN_ISSUES LVL-17).
  */
 
+import { SOURCE_LANG } from './I18n.js';
+
 /** `format` of a content table file. */
 export const CONTENT_FORMAT = 'luminati-i18n';
 /** `format` of `public/i18n/index.json`. */
@@ -58,7 +64,7 @@ export const CONTENT_KINDS = Object.freeze(['line', 'choice', 'speaker', 'name',
 
 /** A table id: `common`, `levels/<slug>` or `campaigns/<slug>` (the level / campaign file-name rule). */
 const TABLE_ID = /^(common|(levels|campaigns)\/[a-z0-9][a-z0-9-]{0,59})$/;
-/** A language code of the index (`ja`, `zh`; never `en`: English is the source). */
+/** A language code of the index (`en`; never `SOURCE_LANG`: nothing translates the source). */
 const LANG_CODE = /^[a-z]{2,3}$/;
 /** At most this many `extends` links followed from one table (a cycle stops earlier). */
 const MAX_EXTENDS_DEPTH = 4;
@@ -104,8 +110,8 @@ const MAX_MISSES = 500;
 
 /** @type {ContentTable[]} the active chain (empty: English) */
 let chain = [];
-/** @type {string} the language of the active chain ('en' when empty) */
-let chainLang = 'en';
+/** @type {string} the language of the active chain (`SOURCE_LANG` when empty) */
+let chainLang = SOURCE_LANG;
 /** @type {Map<string, ContentMiss>} */
 const misses = new Map();
 
@@ -233,7 +239,7 @@ export function setContentTables(content) {
     if (!t.terms.size && !t.units.size) t = null;
   }
   chain = t ? [t] : [];
-  chainLang = t ? '' : 'en';
+  chainLang = t ? '' : SOURCE_LANG;
   misses.clear();
   dropped = 0;
 }
@@ -246,16 +252,16 @@ export function setContentTables(content) {
  */
 export function installContentTables(lang, tables) {
   chain = (tables ?? []).filter(Boolean);
-  chainLang = chain.length ? lang : 'en';
+  chainLang = chain.length ? lang : SOURCE_LANG;
   misses.clear();
   dropped = 0;
   return contentInfo();
 }
 
-/** Back to English (nothing translated). */
+/** Back to the source text (nothing translated). */
 export function clearContentTables() {
   chain = [];
-  chainLang = 'en';
+  chainLang = SOURCE_LANG;
   misses.clear();
   dropped = 0;
 }
@@ -414,7 +420,7 @@ export function parseContentIndex(raw) {
   if (Number.isInteger(r.version) && r.version > CONTENT_INDEX_VERSION) warnings.push(`index: version ${r.version} is newer than this engine (${CONTENT_INDEX_VERSION})`);
   if (!isPlain(r.languages)) { warnings.push('index: "languages" is not an object'); return { languages, warnings }; }
   for (const lang of Object.keys(r.languages)) {
-    if (!LANG_CODE.test(lang) || lang === 'en') { warnings.push(`index: "${show(lang)}" is not a translated language code — ignored`); continue; }
+    if (!LANG_CODE.test(lang) || lang === SOURCE_LANG) { warnings.push(`index: "${show(lang)}" is not a translated language code — ignored`); continue; }
     const e = r.languages[lang];
     const list = isPlain(e) && Array.isArray(e.tables) ? e.tables : null;
     if (!list) { warnings.push(`index: ${lang}: "tables" is not a list — ignored`); continue; }
@@ -496,7 +502,7 @@ const indexCache = new WeakMap();
 
 /**
  * Load the content tables of `lang` for a level or a campaign and install them (`loc` and `term`
- * translate from then on). English loads and fetches nothing. Reads `index.json`, then only the tables it lists for
+ * translate from then on). The source language loads and fetches nothing. Reads `index.json`, then only the tables it lists for
  * `lang`: the requested ones, the tables they `extend` (followed up to 4 deep) and `common`; a table
  * not listed is never fetched (the dev server would answer it with index.html). Never throws — what
  * cannot be read (a missing file, no JSON, a table that is not version 3) is skipped with a warning
@@ -505,7 +511,7 @@ const indexCache = new WeakMap();
  * In the browser the files come through `fetch` from `<BASE_URL>i18n/`; Node tools and tests pass
  * `read(path)` (a path under `public/i18n/`, e.g. `ja/common.json` → the parsed JSON, or null when
  * missing) or their own `fetch`.
- * @param {string} lang 'en' | 'ja' | 'zh' …
+ * @param {string} lang 'pt' (the source: nothing to load) | 'en'
  * @param {{ level?: string|null, source?: string|null, campaign?: string|null, tables?: string[]|null,
  *   fetch?: (url: string, init?: object) => Promise<{ ok: boolean, json(): Promise<unknown> }>,
  *   read?: (path: string) => unknown, base?: string, install?: boolean }} [o]
@@ -524,7 +530,7 @@ export async function loadContentTables(lang, o = {}) {
     for (const t of tables) n += sizeOf(t);
     return { lang, tables: tables.map((t) => t.id), strings: n, warnings, chain: tables };
   };
-  if (typeof lang !== 'string' || !LANG_CODE.test(lang) || lang === 'en') return done([]);
+  if (typeof lang !== 'string' || !LANG_CODE.test(lang) || lang === SOURCE_LANG) return done([]);
   const base = o.base ?? `${baseUrl()}i18n/`;
   const fetchFn = o.fetch ?? (typeof fetch === 'function' ? fetch : null);
   /** @type {(path: string) => Promise<unknown>} the parsed JSON of `path`, or null */

@@ -7,7 +7,7 @@
  * new unit to translate, its neighbours stay translated; an edited line is the same key with another
  * English (changed); a deleted line leaves an orphan (--prune).
  *
- *   node tools/i18n-worklist.mjs [--lang=ja[,zh]] [--table=<id>[,…]] [--out=<dir>] [--format=json|po]
+ *   node tools/i18n-worklist.mjs [--lang=en] [--table=<id>[,…]] [--out=<dir>] [--format=json|po]
  *       Write a worklist per language and table (default out: .check/i18n-worklist; scratch, never
  *       committed): `<out>/<lang>/<table>.json` (version 3), or `.po` with --format=po (gettext, for
  *       CAT tools and translation platforms: tools/lib/po.mjs). It lists, in the order the game's
@@ -45,7 +45,7 @@
  *       Drop orphan units (no reader shows their key with their English, nor an edit of it: the
  *       text was deleted) and orphan terms (nothing that reads the table shows the name).
  *
- *   node tools/i18n-worklist.mjs --init [--lang=ja,zh]
+ *   node tools/i18n-worklist.mjs --init [--lang=en]
  *       Create public/i18n/index.json and every missing table of the shipped levels
  *       (src/game/levels.js SHIPPED_LEVELS), the tracked campaigns and `common`, empty (version 3),
  *       for each language (the index's, or --lang). A campaign whose level file has the id and the
@@ -80,6 +80,7 @@ import {
 import { serializePo, parsePo } from './lib/po.mjs';
 import { isTableId } from '../src/engine/i18n/ContentText.js';
 import { isTextKey } from '../src/engine/i18n/ContentKeys.js';
+import { SOURCE_LANG, TRANSLATED_LANGS } from '../src/engine/i18n/I18n.js';
 
 /**
  * @import { ContentUnit } from '../src/engine/i18n/ContentText.js'
@@ -88,7 +89,7 @@ import { isTextKey } from '../src/engine/i18n/ContentKeys.js';
 
 const args = parseArgs(process.argv.slice(2));
 const list = (v) => (typeof v === 'string' ? v.split(',').map((x) => x.trim()).filter(Boolean) : null);
-const USAGE = 'usage: node tools/i18n-worklist.mjs [--lang=ja] [--table=<id>] [--out=<dir>] [--format=json|po] | --merge=<file|dir> [--dry-run] [--force[=fuzzy,english,markup,table,sources]] | --prune [--dry-run] [--force[=…]] | --init [--lang=ja,zh]';
+const USAGE = 'usage: node tools/i18n-worklist.mjs [--lang=en] [--table=<id>] [--out=<dir>] [--format=json|po] | --merge=<file|dir> [--dry-run] [--force[=fuzzy,english,markup,table,sources]] | --prune [--dry-run] [--force[=…]] | --init [--lang=en]';
 /** What `--force=<what>` can name (`--force` alone: all of them). */
 const FORCE_KINDS = Object.freeze(['fuzzy', 'english', 'markup', 'table', 'sources']);
 
@@ -661,8 +662,8 @@ async function init() {
   const index = readIndex(dir);
   if (brokenIndex(index)) return 1;
   const languages = new Map(index.languages);
-  for (const l of langs ?? (languages.size ? [] : ['ja', 'zh'])) {
-    if (!/^[a-z]{2,3}$/.test(l) || l === 'en') { console.error(`--lang: "${l}" is not a translated language code`); return 2; }
+  for (const l of langs ?? (languages.size ? [] : [...TRANSLATED_LANGS])) {
+    if (!/^[a-z]{2,3}$/.test(l) || l === SOURCE_LANG) { console.error(`--lang: "${l}" is not a translated language code`); return 2; }
     if (!languages.has(l)) languages.set(l, new Set());
   }
   const { SHIPPED_LEVELS } = await import(pathToFileURL(path.join(root, 'src', 'game', 'levels.js')).href);

@@ -2,7 +2,7 @@
 /**
  * check-i18n.mjs — the content tables' checker (docs/specs/I18N.md §4.7). Read-only.
  *
- *   node tools/check-i18n.mjs [--lang=ja[,zh]] [--table=<id>[,…]] [--strict] [--complete] [--json] [--verbose] [--quiet]
+ *   node tools/check-i18n.mjs [--lang=en] [--table=<id>[,…]] [--strict] [--complete] [--json] [--verbose] [--quiet]
  *   npm run i18n:check -- …
  *     --lang     the languages to check (default: every language of public/i18n/index.json)
  *     --table    the tables to report (`common`, `levels/emberfall`, `campaigns/ferrymans-lantern` …)
@@ -57,7 +57,7 @@ const args = parseArgs(process.argv.slice(2));
 const list = (v) => (typeof v === 'string' ? v.split(',').map((x) => x.trim()).filter(Boolean) : null);
 const langs = list(args.lang);
 const only = list(args.table);
-const USAGE = 'usage: node tools/check-i18n.mjs [--lang=ja] [--table=<id>[,…]] [--strict] [--complete] [--json] [--verbose] [--quiet]';
+const USAGE = 'usage: node tools/check-i18n.mjs [--lang=en] [--table=<id>[,…]] [--strict] [--complete] [--json] [--verbose] [--quiet]';
 if (args.help) {
   console.log(USAGE);
   process.exit(0);
@@ -141,7 +141,7 @@ if (json) {
       terms: shownLines(r.terms),
       glossary: shownLines(r.glossary),
     }])),
-    volume: Object.fromEntries(volRows.map(([id, v]) => [id, { ...v, ja: Math.round(v.chars * RATIOS.ja), zh: Math.round(v.chars * RATIOS.zh) }])),
+    volume: Object.fromEntries(volRows.map(([id, v]) => [id, { ...v, en: Math.round(v.chars * RATIOS.en) }])),
     noKey: Object.fromEntries(keyless.map((x) => [x.id, x.units.map((e) => ({ text: e.text, kind: e.kind, where: e.where }))])),
     ui: { modules: ui.modules, notes: ui.notes, missing: ui.missing },
     errors: globalErrors, warnings: globalWarnings, info: globalInfo,
@@ -154,20 +154,20 @@ if (json) {
 const totalUnits = volRows.reduce((n, [, v]) => n + v.units, 0);
 const totalTerms = volRows.reduce((n, [, v]) => n + v.terms, 0);
 const totalChars = volRows.reduce((n, [, v]) => n + v.chars, 0);
-console.log(`content i18n · ${ws.langs.length ? ws.langs.join(', ') : 'no language'} · ${only ? only.length : allListed.size} table(s) · ${fmt(totalUnits)} units + ${fmt(totalTerms)} terms (${fmt(totalChars)} characters of English)${args.strict ? ' · strict' : ''}${complete ? ' · complete' : ''} · ${ms} ms`);
+console.log(`content i18n · ${ws.langs.length ? ws.langs.join(', ') : 'no language'} · ${only ? only.length : allListed.size} table(s) · ${fmt(totalUnits)} units + ${fmt(totalTerms)} terms (${fmt(totalChars)} characters of source text)${args.strict ? ' · strict' : ''}${complete ? ' · complete' : ''} · ${ms} ms`);
 
 if (!quiet) {
   console.log('');
-  console.log('Volume — the English to translate, by the table it lives in');
+  console.log('Volume — the source text to translate, by the table it lives in');
   const pad = (s, n) => String(s).padEnd(n);
   const num = (s, n) => String(s).padStart(n);
-  console.log(`  ${pad('table', 34)}${num('units', 7)}${num('terms', 7)}${num('chars', 9)}${num('words', 8)}${num('~ja', 8)}${num('~zh', 8)}`);
+  console.log(`  ${pad('table', 34)}${num('units', 7)}${num('terms', 7)}${num('chars', 9)}${num('words', 8)}${num('~en', 8)}`);
   let tu = 0; let tt = 0; let tc = 0; let tw = 0;
   for (const [id, v] of volRows) {
     tu += v.units; tt += v.terms; tc += v.chars; tw += v.words;
-    console.log(`  ${pad(id, 34)}${num(fmt(v.units), 7)}${num(fmt(v.terms), 7)}${num(fmt(v.chars), 9)}${num(fmt(v.words), 8)}${num(fmt(v.chars * RATIOS.ja), 8)}${num(fmt(v.chars * RATIOS.zh), 8)}`);
+    console.log(`  ${pad(id, 34)}${num(fmt(v.units), 7)}${num(fmt(v.terms), 7)}${num(fmt(v.chars), 9)}${num(fmt(v.words), 8)}${num(fmt(v.chars * RATIOS.en), 8)}`);
   }
-  console.log(`  ${pad('total', 34)}${num(fmt(tu), 7)}${num(fmt(tt), 7)}${num(fmt(tc), 9)}${num(fmt(tw), 8)}${num(fmt(tc * RATIOS.ja), 8)}${num(fmt(tc * RATIOS.zh), 8)}`);
+  console.log(`  ${pad('total', 34)}${num(fmt(tu), 7)}${num(fmt(tt), 7)}${num(fmt(tc), 9)}${num(fmt(tw), 8)}${num(fmt(tc * RATIOS.en), 8)}`);
 }
 
 for (const r of reports) {
@@ -201,7 +201,7 @@ for (const r of reports) {
 
 console.log('');
 if (!quiet) {
-  if (ui.modules.length) console.log(`UI glossary: ${ui.names.size} English UI strings from ${ui.modules.length} module(s) compared with the content's names (terms)`);
+  if (ui.modules.length) console.log(`UI glossary: ${ui.names.size} source UI strings from ${ui.modules.length} module(s) compared with the content's names (terms)`);
   else console.log(`UI glossary: no UI string tables yet (tools/lib/i18n.mjs uiGlossary reads ${UI_TABLE_DIRS.map((d) => `${d}/`).join(', ')} and every ${UI_FEATURE_ROOT}/**/strings.js)`);
   for (const n of ui.notes) console.log(`  · ${n}`);
   if (ui.missing.length) console.log(`  · not written yet (their names are not compared): ${ui.missing.join(', ')}`);

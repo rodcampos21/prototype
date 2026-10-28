@@ -19,7 +19,7 @@
  * reordered pages and repeated English (nothing moves), the UI glossary, Node safety, and the real
  * data: the shipped tables have no errors, no warnings and nothing untranslated, every unit the
  * extractor lists holds a text key in the data, and every unit and term comes back translated
- * through `loc` / `term` in Japanese and Chinese with no miss.
+ * through `loc` / `term` in every translated language (`TRANSLATED_LANGS`: English) with no miss.
  *
  *   node tools/test-i18n.mjs [--verbose]
  *
@@ -49,6 +49,7 @@ import {
   translationMemory, suggestionsFor, CODE_READER, WORKLIST_VERSION, WORKLIST_FORMAT,
 } from './lib/i18n.mjs';
 import { serializePo, parsePo, poEscape } from './lib/po.mjs';
+import { SOURCE_LANG, TRANSLATED_LANGS } from '../src/engine/i18n/I18n.js';
 import { createEmptyLevel, addObject, serializeLevel, parseLevel } from '../src/engine/level/LevelFormat.js';
 import { buildStory } from '../src/game/campaign/StoryFormat.js';
 import { normalizeCampaign } from '../src/game/campaign/CampaignFormat.js';
@@ -92,7 +93,7 @@ const sorted = (/** @type {string[]} */ l) => [...l].sort(keyCompare);
 begin('Node safety');
 {
   ok('no document, no window in Node', typeof globalThis.document === 'undefined' && typeof globalThis.window === 'undefined');
-  ok('the modules imported without a browser (and installed nothing)', contentInfo().lang === 'en' && contentInfo().tables.length === 0, contentInfo());
+  ok('the modules imported without a browser (and installed nothing)', contentInfo().lang === SOURCE_LANG && contentInfo().tables.length === 0, contentInfo());
   eq('the kinds', [...CONTENT_KINDS], ['line', 'choice', 'speaker', 'name', 'label', 'title']);
   eq('the table version: 3 (units keyed by the text keys the data holds)', CONTENT_VERSION, 3);
 }
@@ -110,7 +111,7 @@ begin('loc / term: English and pass-through');
   eq('setContentTables: a table\'s parts', [term('Pip'), loc(G('a'), 'Hello'), contentInfo().units, contentInfo().terms], ['ピップ', 'やあ', 1, 1]);
   eq('… an unknown name or key: the English', [term('Wren'), loc(G('b'), 'Bye')], ['Wren', 'Bye']);
   setContentTables(null);
-  eq('setContentTables(null): English again', [term('Pip'), contentInfo().lang], ['Pip', 'en']);
+  eq('setContentTables(null): the source again', [term('Pip'), contentInfo().lang], ['Pip', SOURCE_LANG]);
   eq('contentFormat fills ${name} slots', contentFormat('Strike with {${attack}} — again ${attack}', { attack: 'J' }), 'Strike with {J} — again J');
   eq('contentFormat: an unknown slot and gold braces stay', contentFormat('{gold} ${nope} ${toString}', {}), '{gold} ${nope} ${toString}');
   eq('contentFormat without params (null, a string): every slot stays, no throw', [contentFormat('a ${x}', /** @type {any} */ (null)), contentFormat('a ${length}', /** @type {any} */ ('str'))], ['a ${x}', 'a ${length}']);
@@ -134,10 +135,10 @@ begin('hostile keys and names (KNOWN_ISSUES LVL-17)');
   ok('Object.prototype untouched', !Object.hasOwn(Object.prototype, 'プロト') && ({}).toString === Object.prototype.toString);
   eq('the misses keep hostile names apart from keys', contentMisses().map((m) => [m.key ?? null, m.name ?? null, m.why]), [[null, 'valueOf', 'term'], ['toString', null, 'missing']]);
   clearContentTables();
-  const idx = parseContentIndex(JSON.parse('{"format":"luminati-i18n-index","version":1,"languages":{"__proto__":{"tables":["common"]},"en":{"tables":["common"]},"ja":{"tables":["common","levels/../x","levels/a","__proto__",{"toString":1}]}}}'));
-  eq('index: only "ja" (no __proto__, no en)', [...idx.languages.keys()], ['ja']);
+  const idx = parseContentIndex(JSON.parse(`{"format":"luminati-i18n-index","version":1,"languages":{"__proto__":{"tables":["common"]},"${SOURCE_LANG}":{"tables":["common"]},"ja":{"tables":["common","levels/../x","levels/a","__proto__",{"toString":1}]}}}`));
+  eq('index: only "ja" (no __proto__, not the source language)', [...idx.languages.keys()], ['ja']);
   eq('index: bad table ids dropped', [...idx.languages.get('ja')], ['common', 'levels/a']);
-  ok('… with warnings', hasMsg(idx.warnings, 'levels/../x') && hasMsg(idx.warnings, '"en"'), idx.warnings);
+  ok('… with warnings', hasMsg(idx.warnings, 'levels/../x') && hasMsg(idx.warnings, `"${SOURCE_LANG}"`), idx.warnings);
   eq('isTableId', ['common', 'levels/a-b', 'campaigns/x', 'levels/A', 'levels/../a', 'other/x', 'levels/', ''].map(isTableId), [true, true, true, false, false, false, false, false]);
   const nope = parseContentTable(/** @type {any} */ ('nope'));
   eq('parseContentTable on a non-object: no table, a warning, no throw', [nope.table, nope.warnings.length], [null, 1]);
@@ -185,7 +186,7 @@ begin('lookup: the key the data holds, recorded English, no guess at another key
   installContentTables('ja', [T3('levels/e'), common]);
   eq('an empty table stays in the chain (contentInfo shows what loaded)', [contentInfo().tables, term('Alpha Town')], [['levels/e', 'common'], 'アルファ']);
   clearContentTables();
-  eq('clear: English', [loc(G('pip.d0'), 'Hello.'), contentInfo().lang], ['Hello.', 'en']);
+  eq('clear: the source text', [loc(G('pip.d0'), 'Hello.'), contentInfo().lang], ['Hello.', SOURCE_LANG]);
   eq('extends: itself and common are ignored', T3('levels/l', { ext: ['levels/l', 'common', 'campaigns/c'] }).extends, ['campaigns/c']);
   const t = parseContentTable(v3('levels/q', 'zh'), { id: 'levels/p', lang: 'ja' });
   ok('a file naming another language / source: warnings (errors for the checker)', hasMsg(t.warnings, '"lang"') && hasMsg(t.warnings, '"source"') && t.warnings.every(parseIssueIsError), t.warnings);
@@ -208,8 +209,8 @@ begin('loadContentTables: only what index.json lists');
   let reads = [];
   const read = (p) => { reads.push(p); return Object.hasOwn(files, p) ? JSON.parse(JSON.stringify(files[p])) : null; };
   const fresh = () => { const r = (p) => read(p); reads = []; return r; };
-  let r = await loadContentTables('en', { level: 'x', read: fresh() });
-  ok('English reads nothing', reads.length === 0 && r.tables.length === 0 && contentInfo().lang === 'en', reads);
+  let r = await loadContentTables(SOURCE_LANG, { level: 'x', read: fresh() });
+  ok('the source language reads nothing', reads.length === 0 && r.tables.length === 0 && contentInfo().lang === SOURCE_LANG, reads);
   r = await loadContentTables('ja', { campaign: 'c', read: fresh() });
   eq('a campaign: its table, the table it extends, common', r.tables, ['campaigns/c', 'levels/x', 'common']);
   ok('… reads index + those three, never the unlisted extends', reads.length === 4 && !reads.some((p) => p.includes('unlisted')), reads);
@@ -755,10 +756,10 @@ try {
     tbl('ja', 'campaigns/camp', { ext: ['levels/alpha'], units: { [A.hello]: U('Old hello.', '古い挨拶。') } });
     // a UI string table naming the same things (the glossary cross-check: core tables and a
     // feature's strings.js; any other module of a feature is no table)
-    w('src/engine/i18n/strings/hud.js', "export const HUD = { en: { waystone: 'Waystone', other: 'Unrelated', yes: 'Yes' }, ja: { waystone: '導石', yes: 'はい' } };\nexport const notATable = 5;\n");
-    w('src/game/combat/strings.js', "export default { en: { title: 'Signpost', fn: () => 'x' }, ja: { title: '立て札' }, zh: {} };\n");
-    w('src/game/combat/other.js', "export default { en: { a: 'Kit' }, ja: { a: 'キット' } };\n");
-    w('src/game/story/strings.js', "import { nope } from './missing.js';\nexport const X = { en: { a: nope } };\n");
+    w('src/engine/i18n/strings/hud.js', "export const HUD = { pt: { waystone: 'Waystone', other: 'Unrelated', yes: 'Yes' }, ja: { waystone: '導石', yes: 'はい' } };\nexport const notATable = 5;\n");
+    w('src/game/combat/strings.js', "export default { pt: { title: 'Signpost', fn: () => 'x' }, ja: { title: '立て札' }, zh: {} };\n");
+    w('src/game/combat/other.js', "export default { pt: { a: 'Kit' }, ja: { a: 'キット' } };\n");
+    w('src/game/story/strings.js', "import { nope } from './missing.js';\nexport const X = { pt: { a: nope } };\n");
     w('public/i18n/ja/levels/stray.json', serializeTable({ lang: 'ja', id: 'levels/stray' }));
     const ui = await uiGlossary(tmp);
     ok('uiGlossary: the core tables and the features\' strings.js (default or named exports); a module that cannot load is a note',
@@ -1301,11 +1302,13 @@ begin('the real data');
 {
   // the shipped tables: no errors, no warnings; every
   // unit the extractor lists holds a text key in the data; every unit and term comes back translated
-  // through the real loader, with no miss, in ja and zh
+  // through the real loader, with no miss, in every translated language. Only the game's own content
+  // (written in Portuguese, the source) is translated: the engine's demo levels hold English source
+  // text and have no tables.
   const ws = await loadWorkspace();
   const ui = await uiGlossary();
-  eq('the index lists every shipped table for ja and zh', ['ja', 'zh'].map((l) => [...(ws.index.languages.get(l) ?? [])].sort()), ['ja', 'zh'].map(() => ['campaigns/emberfall-interiors', 'campaigns/ferrymans-lantern', 'common', 'levels/brightwater-crossing', 'levels/cinderwatch-pass', 'levels/emberfall', 'levels/gildhaven', 'levels/sample-hamlet', 'levels/starfall-vale']));
-  ok('emberfall-interiors extends levels/emberfall', ws.closure.get('campaigns/emberfall-interiors')?.includes('levels/emberfall'), ws.closure.get('campaigns/emberfall-interiors'));
+  eq('the index lists the translated languages', [...ws.index.languages.keys()].sort(), [...TRANSLATED_LANGS].sort());
+  eq('… and the game\'s translated tables for each', TRANSLATED_LANGS.map((l) => [...(ws.index.languages.get(l) ?? [])].sort()), TRANSLATED_LANGS.map(() => ['campaigns/culto-ao-baiacu-rei']));
   ok('the source errors: none (no key with two Englishes in a table\'s own sources)', [...ws.sources.values()].every((s) => s.errors.length === 0), [...ws.sources].map(([id, s]) => [id, s.errors]));
   ok('the source warnings (quest texts saved filled in): none', sourceWarnings(ws.sources).length === 0, sourceWarnings(ws.sources));
   /** @type {string[]} */
@@ -1319,8 +1322,8 @@ begin('the real data');
       if (!good) unkeyed.push(`${id}: ${e.where} "${e.text}" (${e.key || 'no key'})`);
     }
   }
-  ok(`every unit the extractor lists holds its text key in the data: a GUID (a banner subtitle <GUID>.2), a code key in common (${keyed} units)`, unkeyed.length === 0 && keyed > 900 && keylessUnits(ws.sources).length === 0, unkeyed.slice(0, 5));
-  for (const lang of ['ja', 'zh']) {
+  ok(`every unit the extractor lists holds its text key in the data: a GUID (a banner subtitle <GUID>.2), a code key in common (${keyed} units)`, unkeyed.length === 0 && keyed > 30 && keylessUnits(ws.sources).length === 0, unkeyed.slice(0, 5));
+  for (const lang of TRANSLATED_LANGS) {
     const rep = checkLanguage(ws, lang, { ui: ui.names });
     const n = (f) => rep.tables.reduce((s, t) => s + f(t), 0);
     eq(`${lang}: 0 errors, 0 warnings, nothing untranslated, changed or orphaned`, {
@@ -1340,7 +1343,8 @@ begin('the real data');
       const r = await loadContentTables(lang, { ...o, read });
       if (r.warnings.length) misses.push(`${id}: loader ${r.warnings.join('; ')}`);
       const s = ws.sources.get(id);
-      const shown = id === 'common' ? s.strings : [...s.strings, ...ws.sources.get('common').strings];
+      // (common's code units — the demo dialogues of dialogue.js — only where the language lists common)
+      const shown = id === 'common' || !ws.index.languages.get(lang)?.has('common') ? s.strings : [...s.strings, ...ws.sources.get('common').strings];
       for (const e of shown) {
         const v = e.term ? term(e.text) : loc(e.key, e.text, e.kind);
         if (e.term) names++; else units++;
@@ -1349,15 +1353,15 @@ begin('the real data');
       for (const m of contentMisses()) misses.push(`${id} ${m.key ?? m.name}: ${m.why}`);
     }
     clearContentTables();
-    ok(`${lang}: every unit (by its GUID) and term the extractor lists resolves through loc / term with no miss (${units} unit and ${names} term reads)`, misses.length === 0 && units > 1500 && names > 300, misses.slice(0, 5));
-    ok(`${lang}: … and no unit comes back as its English`, same.length === 0, same.slice(0, 5));
+    ok(`${lang}: every unit (by its GUID) and term the extractor lists resolves through loc / term with no miss (${units} unit and ${names} term reads)`, misses.length === 0 && units > 30 && names > 5, misses.slice(0, 5));
+    ok(`${lang}: … and no unit comes back as its source text`, same.length === 0, same.slice(0, 5));
   }
   const src = await tableSources('levels/cinderwatch-pass');
   ok('Cinderwatch Pass (combat): no drillmaster pages (Captain Maren\'s own lines play), no shopkeeper item', !src.strings.some((e) => /› maren \(npc\) › dialogue|› (bram|odo) \(npc\) › item/.test(e.where)) && src.strings.some((e) => /› odo \(npc\) › dialogue/.test(e.where)), src.strings.filter((e) => /maren|bram|odo/.test(e.where)).map((e) => e.where));
   const english = src.strings.filter((e) => (e.term ? term(e.text) : loc(e.key, e.text)) !== e.text);
-  ok('no table installed: every one comes back as its English', english.length === 0 && contentInfo().lang === 'en', english.slice(0, 3));
+  ok('no table installed: every one comes back as its source text', english.length === 0 && contentInfo().lang === SOURCE_LANG, english.slice(0, 3));
   ok('the code\'s units: every loc() call of dialogue.js is in common', ws.sources.get('common').strings.some((e) => e.key?.startsWith('dlg.') && e.where.startsWith('src/game/dialogue.js')));
-  ok('every table file is listed in the index', ['ja', 'zh'].every((l) => tableFilesOf(l).every((id) => ws.index.languages.get(l)?.has(id))), ['ja', 'zh'].map((l) => tableFilesOf(l)));
+  ok('every table file is listed in the index', TRANSLATED_LANGS.every((l) => tableFilesOf(l).every((id) => ws.index.languages.get(l)?.has(id))), TRANSLATED_LANGS.map((l) => tableFilesOf(l)));
   // the CLI: no errors, no warnings
   const p = spawnSync(process.execPath, [path.join(ROOT, 'tools', 'check-i18n.mjs'), '--json'], { encoding: 'utf8' });
   let js = null;

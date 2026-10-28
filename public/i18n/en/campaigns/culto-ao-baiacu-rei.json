@@ -1,0 +1,179 @@
+{
+  "format": "luminati-i18n",
+  "version": 3,
+  "lang": "en",
+  "source": "campaigns/culto-ao-baiacu-rei",
+  "extends": [],
+  "terms": {
+    "Clareira": "Clearing",
+    "Criatura da mata": "Forest Creature",
+    "Culto ao Baiacu Rei": "Cult of the Pufferfish King",
+    "Estrada da Costa": "The Coast Road",
+    "O resgate": "The Rescue",
+    "Praia dos Destroços": "Wreckage Beach",
+    "Surubin": "Surubin",
+    "Uma voz": "A voice"
+  },
+  "units": {
+    "0D5D362E43CD5C26FA16E16559129DDE": {
+      "source": "CULTO AO BAIACU REI",
+      "target": "CULT OF THE PUFFERFISH KING"
+    },
+    "2E2FFB9DA250D0F49ADF4F470ECD726C": {
+      "source": "Estrada da Costa",
+      "target": "The Coast Road"
+    },
+    "2E2FFB9DA250D0F49ADF4F470ECD726C.2": {
+      "source": "Terra Selvagem",
+      "target": "The Wild Land"
+    },
+    "2E8388DF76BA69A0C115AF18AD2ABBE8": {
+      "source": "Ato I · A Terra Selvagem",
+      "target": "Act I · The Wild Land"
+    },
+    "3B863517E7064D29A07EAEF016666BCD": {
+      "source": "Ah. O Rei também manda lições, ${player}.",
+      "target": "Ah. The King sends lessons too, ${player}."
+    },
+    "4F5F4977629D6FA7E41A004158FC0EE6": {
+      "source": "Na Capital dizem que esta terra engole homens. Eu prefiro acreditar que ela só tem fome de fé.",
+      "target": "In the Capital they say this land swallows men. I'd rather believe it's only hungry for faith."
+    },
+    "6A9F91C3CBC5A0CD4D4176A3B46A5D55": {
+      "source": "E... obrigado a você também, cavaleiro.",
+      "target": "And... thank you too, knight."
+    },
+    "7E18399571CCDB6DD7F5C16B9F8996A2": {
+      "source": "Por Ele eu atravessaria dois.",
+      "target": "For Him I would cross two."
+    },
+    "8D8994D15DC5441421A2C2C307E65EED": {
+      "source": "Ato I: a Terra Selvagem",
+      "target": "Act I: The Wild Land"
+    },
+    "9E54FAAFCBAA19E1ED81F84B54052396": {
+      "source": "O mar daqui tem outro cheiro. Mais verde. Mais... selvagem.",
+      "target": "The sea smells different here. Greener. More... wild."
+    },
+    "13AA3BD02CF765A0558AD46BDA96605A": {
+      "source": "Que as marés nos guiem. E que guiem você também, cavaleiro, mesmo que você não acredite nelas.",
+      "target": "May the tides guide us. And may they guide you too, knight, even if you don't believe in them."
+    },
+    "044EB878765353017E47173D1473A2DA": {
+      "source": "Ó Rei das Profundezas, me guarda! Socorro!",
+      "target": "O King of the Deep, protect me! Help!"
+    },
+    "55D8BCEE46823D841DA7F2B58BA7B55D": {
+      "source": "Fim do teste: a estrada da costa",
+      "target": "End of the test: the coast road"
+    },
+    "72AA98124379E961AA7324CEBA0ABD94": {
+      "source": "Amanhã eu te conto da missão. Hoje... hoje eu só quero agradecer ao Rei por estar vivo.",
+      "target": "Tomorrow I'll tell you about the mission. Today... today I just want to thank the King for being alive."
+    },
+    "79D27A63ABBC1C1B1333D469CCB249C0": {
+      "source": "${player}. Você está segurando esse cajado de cabeça para baixo.",
+      "target": "${player}. You're holding that staff upside down."
+    },
+    "196E454FAE990BAB634279532ACD0D01": {
+      "source": "A clareira fica subindo o riacho. Lá a gente acende um fogo e espera a tempestade passar.",
+      "target": "The clearing is up the stream. We can light a fire there and wait out the storm."
+    },
+    "564A75529063D9A1E1CE51B235DE4E32": {
+      "source": "${player}. Um deus peixe? Você atravessou o mar por isso?",
+      "target": "${player}. A fish god? You crossed the sea for that?"
+    },
+    "755A52A701B9A3606219374ECC0002E4": {
+      "source": "Atrás de você, na clareira, alguém ainda grita por socorro.",
+      "target": "Behind you, in the clearing, someone is still crying for help."
+    },
+    "931EB8DE5BD2880BFAB37884EACC1AC2": {
+      "source": "Adepto do Culto ao Baiacu Rei",
+      "target": "Adept of the Cult of the Pufferfish King"
+    },
+    "1324E8EF9FFA2E48C0D9A1EC93F406AF": {
+      "source": "Ajudou! Ele mandou você, não mandou?",
+      "target": "He did! He sent you, didn't He?"
+    },
+    "1567EA1DFEB896B6C1A84C552CB4278C": {
+      "source": "Ó Rei das Profundezas, obrigado! Obrigado!",
+      "target": "O King of the Deep, thank you! Thank you!"
+    },
+    "4094CBF2858B6A544BFAA1B1CB3FE2A0": {
+      "source": "Eu sei usar o cajado. Quer dizer... eu sei segurar o cajado.",
+      "target": "I know how to use the staff. I mean... I know how to hold the staff."
+    },
+    "163089DC247CC04A57D0EAF1B06749F1": {
+      "source": "Estrada da Costa",
+      "target": "The Coast Road"
+    },
+    "A00326075BFD2072B929BF0452BE0215": {
+      "source": "Terra Selvagem",
+      "target": "The Wild Land"
+    },
+    "AAC2D839EFF7BFDE720D2924E19DC227": {
+      "source": "A estrada de terra segue a costa sob a tempestade. O vento traz sal, chuva e algo mais.",
+      "target": "The dirt road follows the coast under the storm. The wind carries salt, rain and something else."
+    },
+    "B0B324088035FB6075C266BE1743AA24": {
+      "source": "Aqui! Por favor!",
+      "target": "Over here! Please!"
+    },
+    "B6E6CA38DB1AD320BF497EE359DDC08E": {
+      "source": "Que bom que o seu deus te ajudou.",
+      "target": "Good thing your god helped you."
+    },
+    "C06C425C6577E20139837755B80D5F97": {
+      "source": "Cuidado! Elas estão por toda parte!",
+      "target": "Look out! They're everywhere!"
+    },
+    "C1381373B17EF5139DC1F5619163CDA9": {
+      "source": "Prazer, Surubin. Sou ${player}. Que bom que o seu deus te ajudou.",
+      "target": "Pleased to meet you, Surubin. I'm ${player}. Good thing your god helped you."
+    },
+    "CB365A11F94B7F7D6B16B59FEE9F9628": {
+      "source": "Terra Selvagem",
+      "target": "The Wild Land"
+    },
+    "D224C3328416DFA18C9E9573E1769720": {
+      "source": "O Rei das Profundezas mandou você, ${player}. Tenho certeza.",
+      "target": "The King of the Deep sent you, ${player}. I'm sure of it."
+    },
+    "DBCA6E00C2C4AD9B6662489E0122B9A0": {
+      "source": "Precisamos sair dessa chuva. Vi uma clareira subindo o riacho. Você vem?",
+      "target": "We need to get out of this rain. I saw a clearing up the stream. Are you coming?"
+    },
+    "DC1397EF027BA106B140A5B27DDE50A1": {
+      "source": "Estrada da Costa",
+      "target": "The Coast Road"
+    },
+    "DCD5FD69F36E120AC5CAD896BF4D60B8": {
+      "source": "Sou Surubin, adepto do Culto ao Baiacu Rei. Vim de Marina para trazer a fé a esta terra.",
+      "target": "I am Surubin, adept of the Cult of the Pufferfish King. I came from Marina to bring the faith to this land."
+    },
+    "E3CDFB9AB9C67A9A2034E64231BFA30B": {
+      "source": "Um rapaz de vestes encharcadas, cercado por criaturas da mata, segura um cajado como quem nunca usou um.",
+      "target": "A young man in soaked robes, surrounded by forest creatures, holds a staff like someone who has never used one."
+    },
+    "E42BAE9BF4785DA548DCFF4F850D183F": {
+      "source": "Salve o forasteiro cercado na clareira.",
+      "target": "Save the stranger cornered in the clearing."
+    },
+    "EF4AB603323B2D394B521845BF093BD1": {
+      "source": "Até a chuva passar.",
+      "target": "Until the rain stops."
+    },
+    "F6EB926D5149CC93FD7CED420FCDF11B": {
+      "source": "Um deus peixe? Você atravessou o mar por isso?",
+      "target": "A fish god? You crossed the sea for that?"
+    },
+    "F76F6592B598A20BB1668105378C2C5B": {
+      "source": "Você segura esse cajado de cabeça para baixo.",
+      "target": "You're holding that staff upside down."
+    },
+    "F353EAD949536F72C787C4180E19E47C": {
+      "source": "Siga com Surubin pela estrada ao norte.",
+      "target": "Follow the road north with Surubin."
+    }
+  }
+}

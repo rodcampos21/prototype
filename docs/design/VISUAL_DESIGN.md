@@ -363,8 +363,9 @@ overrides raised the night fill and the dusk trough (see [Architecture overview]
 shadows don't shimmer when the camera moves.
 
 **Time of day in play:** the clock runs at `TIME_SPEED = 1/90` game hours per second (one game hour
-≈ 90 s; a level can stop it with `environment.clock: false`). **T** glides (2 s, always forward) to
-the next preset of `TIME_PRESETS` in `Weather.js`:
+≈ 90 s; a level can stop it with `environment.clock: false`). No key changes it (the clock is the
+game's); the debug panel's *next preset* glides (2 s, always forward) to the next preset of
+`TIME_PRESETS` in `Weather.js`:
 
 | Preset | Dawn | Midday | Golden Hour | Dusk | Night |
 | --- | --- | --- | --- | --- | --- |
@@ -405,7 +406,8 @@ Willowmere 16.8).
 
 ## 9. Weather
 
-**R** cycles `clear → rain → snow` (`WEATHERS` in `Weather.js`); a level may start in rain or snow
+The weather is `clear`, `rain` or `snow` (`WEATHERS` in `Weather.js`), set by the level (`environment.weather`)
+and the story (`weather`); no key changes it, the debug panel does (tests); a level may start in rain or snow
 (`environment.weather`). Weather is a set of multipliers blended smoothly (`damp(1.1, dt)` per
 frame) on top of the time-of-day palette and the debug "tuning" base values:
 

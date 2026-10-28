@@ -329,6 +329,7 @@ anchor: [0.5, 0], animations, name, spec, dispose() }`.
 | `beard` | `false`, `true` (= `'full'`), `'full' \| 'mustache' \| 'goatee'`, or a colour (a full beard in that colour). |
 | `eyes` | A colour, or `'brown' \| 'blue' \| 'green' \| 'grey' \| 'violet' \| 'gold'`. |
 | `blush`, `female` | Booleans. |
+| `head` | Absent (a human head), or `'catfish'`: the fish-folk head — a broad, flat, spotted skull in the `skin` ramp, small wide-set eyes, a wide mouth over a pale throat, a crest fin in the `hair` ramp and two barbels hanging over the chest. It replaces the head, face, hair and beard (hats still sit on top). Used by Surubin in `estrada-da-costa.json`. |
 | `build` | `'normal' \| 'stout' \| 'elder' \| 'child'` |
 | `gear` | `{ satchel, pack, quiver, scarf, pauldrons, bracers, gloves, glasses, book, apron, sash, sashes, boots, leather, belt, staffGem }`. Values are booleans or colours; `true` means the default colour. |
 

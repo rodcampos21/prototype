@@ -44,24 +44,26 @@ export const REF_KINDS = /** @type {const} */ (['item', 'quest', 'stage', 'visit
 /**
  * Values of the game a condition reads by a bare word: the hour of day, the day (1 on a new game,
  * +1 at every midnight), the player's gold, the chapter in force, the level (base id), the weather,
- * — in a villager's talk — how many times the player talked to them before, and how many members
- * the player's party has (`party >= 2`; docs/specs/PARTY.md §7.2).
+ * — in a villager's talk — how many times the player talked to them before, how many members
+ * the player's party has (`party >= 2`; docs/specs/PARTY.md §7.2) and the name of the player's
+ * character (`${player}` in a text: the name given at a campaign's character creation, else the
+ * story's default).
  */
-export const GAME_REFS = /** @type {const} */ (['hour', 'day', 'gold', 'chapter', 'level', 'weather', 'visits', 'party']);
+export const GAME_REFS = /** @type {const} */ (['hour', 'day', 'gold', 'chapter', 'level', 'weather', 'visits', 'party', 'player']);
 
 /**
  * Words no flag or variable may be called: the game values, the condition words and words kept for
  * later versions (a name that a later version gives a meaning would silently change — `party` was
  * one until it became a game value).
  */
-export const RESERVED_WORDS = new Set([...GAME_REFS, 'and', 'or', 'not', 'true', 'false', 'ending', 'self', 'random', 'player', 'time', 'none']);
+export const RESERVED_WORDS = new Set([...GAME_REFS, 'and', 'or', 'not', 'true', 'false', 'ending', 'self', 'random', 'time', 'none']);
 
 /** States of a quest (`quest:<id>`). */
 export const QUEST_STATES = /** @type {const} */ (['none', 'active', 'done', 'failed']);
 
 /** Kinds whose value is text (compared to a word); every other reference is a number. */
-const TEXT_REFS = new Set(['quest', 'game:chapter', 'game:level', 'game:weather']);
-/** Is a reference's value text (quest state, chapter, level, weather) rather than a number? @param {Ref} r */
+const TEXT_REFS = new Set(['quest', 'game:chapter', 'game:level', 'game:weather', 'game:player']);
+/** Is a reference's value text (quest state, chapter, level, weather, the player's name) rather than a number? @param {Ref} r */
 export const isTextRef = (r) => TEXT_REFS.has(r.kind) || TEXT_REFS.has(`${r.kind}:${r.name}`);
 
 const NAME = /^[A-Za-z0-9_][A-Za-z0-9_.-]*$/;

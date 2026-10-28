@@ -77,26 +77,21 @@ const PAD_RIGHT = 15;
 
 /** The language row's default entries (show()'s `languages`): the codes and their own names. */
 export const TITLE_LANGUAGES = Object.freeze([
+  Object.freeze({ code: 'pt', label: 'PT' }),
   Object.freeze({ code: 'en', label: 'EN' }),
-  Object.freeze({ code: 'ja', label: '日本語' }),
-  Object.freeze({ code: 'zh', label: '中文' }),
 ]);
 
 /**
- * The language names in their own scripts as 12-dot bitmaps ('#' ink; the capitals on the CJK
- * glyphs' baseline, 9 dots tall), drawn in whole device pixels at the line role's size (`langDot`):
- * the same on every page, whatever CJK face the page has loaded (an English page loads none). A
- * label with another character is set as text instead.
+ * The language codes as 12-dot bitmaps ('#' ink; the capitals 9 dots tall on the bottom rows),
+ * drawn in whole device pixels at the line role's size (`langDot`): the same on every page. A label
+ * with another character is set as text instead.
  * @type {Readonly<Record<string, readonly string[]>>}
  */
 const LANG_GLYPHS = Object.freeze({
   E: ['......', '......', '......', '######', '#.....', '#.....', '#.....', '#####.', '#.....', '#.....', '#.....', '######'],
   N: ['.......', '.......', '.......', '#.....#', '##....#', '#.#...#', '#.#...#', '#..#..#', '#...#.#', '#...#.#', '#....##', '#.....#'],
-  日: ['#########', '#.......#', '#.......#', '#.......#', '#.......#', '#########', '#.......#', '#.......#', '#.......#', '#.......#', '#.......#', '#########'],
-  本: ['......#......', '......#......', '#############', '.....###.....', '....#.#.#....', '...#..#..#...', '..#...#...#..', '.#....#....#.', '#...#####...#', '......#......', '......#......', '......#......'],
-  語: ['..#...#######', '#####...#....', '........#....', '.###...#####.', '...........#.', '.###..#######', '.............', '#####..#####.', '#...#..#...#.', '#...#..#...#.', '#...#..#...#.', '#####..#####.'],
-  中: ['.....#.....', '.....#.....', '###########', '#....#....#', '#....#....#', '#....#....#', '###########', '.....#.....', '.....#.....', '.....#.....', '.....#.....', '.....#.....'],
-  文: ['......#......', '......#......', '#############', '..#.......#..', '...#.....#...', '....#...#....', '.....#.#.....', '......#......', '.....#.#.....', '....#...#....', '..##.....##..', '##.........##'],
+  P: ['......', '......', '......', '#####.', '#....#', '#....#', '#....#', '#####.', '#.....', '#.....', '#.....', '#.....'],
+  T: ['.......', '.......', '.......', '#######', '...#...', '...#...', '...#...', '...#...', '...#...', '...#...', '...#...', '...#...'],
 });
 
 /**

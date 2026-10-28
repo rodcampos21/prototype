@@ -204,7 +204,8 @@ const LATIN = /^[A-Za-z0-9À-ɏ'’.,:;!?%/+\-× ]+$/;
 function cjkPieces(text) {
   /** @type {any} */
   const Seg = /** @type {any} */ (Intl).Segmenter;
-  const words = getLang() === 'ja' && typeof Seg === 'function'
+  // (dormant: no CJK language ships — `isCJK`)
+  const words = /** @type {string} */ (getLang()) === 'ja' && typeof Seg === 'function'
     ? [...new Seg('ja', { granularity: 'word' }).segment(text)].map((x) => x.segment)
     : [...text];
   /** @type {string[]} */

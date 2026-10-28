@@ -111,12 +111,13 @@ level = millbrook · weather = rain     the level (base id) · the weather (in a
 visits                                 (in a talk script) conversations with this villager before this one
 party >= 2                             how many members the player's party has (0–3)
 party:sela                             that villager (its id, actor or name, in any case) is in the party
+player = Rodrigo                       the name of the player's character (text; mostly `${player}`)
 ```
 
 ```
 expr  := or ; or := and ('or' | '||') and … ; and := not ('and' | '&&') not … ; not := ('not' | '!') not | atom
 atom  := '(' expr ')' | 'true' | 'false' | ref [ ('=' | '==' | '!=' | '<' | '<=' | '>' | '>=') value ]
-ref   := name | kind ':' name | hour | day | gold | chapter | level | weather | visits | party
+ref   := name | kind ':' name | hour | day | gold | chapter | level | weather | visits | party | player
 kind  := item | quest | stage | visits | visited | done | party
 value := number | 'true' | 'false' | name
 number := plain decimals: 3, -2, 0.5, .5  (no exponent: 1e3 is neither a number nor a name)
@@ -125,7 +126,7 @@ name  := letters, digits, _ . -  (not a number)
 
 - A reference standing alone is true when it is not 0 / '' / `none` (`quest:x` alone: started);
   `true` / `false` alone are constants. Words (`and`, `true`, `gold` …) are read in any case.
-- **The right of a comparison.** Text references (`quest:`, `chapter`, `level`, `weather`) compare
+- **The right of a comparison.** Text references (`quest:`, `chapter`, `level`, `weather`, `player`) compare
   only with `=` / `!=` to a word; a quest compares only with its four states. A stage reference
   compares with a **stage name** (or a number). Every other reference compares with a number,
   `true` / `false` (1 / 0: `met = true`) or a **variable name** (`gold >= inn.price`); a reserved
@@ -146,9 +147,10 @@ name  := letters, digits, _ . -  (not a number)
   for both, the turns are counted together (the checks warn; one actor's villagers count as one).
 - **`visited:<level>`** reads a base level id of the campaign (the checks warn about any other);
   on a single level it never holds.
-- **Reserved words** — `hour day gold chapter level weather visits party and or not true false
-  ending self random player time none` — cannot be flag names in a condition (`set gold` is an
-  error). `party` was kept for later until it became a game value (the number of members); alone
+- **Reserved words** — `hour day gold chapter level weather visits party player and or not true
+  false ending self random time none` — cannot be flag names in a condition (`set gold` is an
+  error). `player` was kept for later until it became a game value (the character's name, October
+  2026). `party` was kept for later until it became a game value (the number of members); alone
   in a `when` / `unless` (the flag rule below) it is still a flag that can never be set — an error
   with the hint (`party > 0`, `party:<who>`).
 - **`party:<who>`** is 1 while that villager is a member of the player's party, else 0 — by its
@@ -201,10 +203,15 @@ choice Give Hollis the planks?
 
 **Speakers.** A name that is a villager of the level (id, actor or name, case-insensitive) or an
 actor of the story files shows that character's name plate and colour; any other name is shown as
-written (`level:check` warns unless it is quoted).
+written (`level:check` warns unless it is quoted). `player:` (any case) is the player's own
+character: the plate shows the name given at the campaign's character creation
+([CAMPAIGN_FORMAT.md §2](CAMPAIGN_FORMAT.md#2-campaignjson), `player.create`) — never translated —
+and the portrait is the player's sprite; with no character made, the UI default (`Viajante` /
+`Traveller`).
 
 **Text.** `{word}` is gold (as in plain dialogue); `${ref}` is a value — `${gold}`,
-`${item:plank}`, `${deliveries}`, `${hour}` (spaces inside the braces are ignored: `${ gold }`);
+`${item:plank}`, `${deliveries}`, `${hour}`, `${player}` (the character's name, as on `player:`
+lines) (spaces inside the braces are ignored: `${ gold }`);
 `${stage:find-ilse}` shows the stage reached (its id, not its number), `${quest:find-ilse}` the
 quest's state. `${` always begins a value, so a `$` just before it is a dollar sign
 (`$${price}` → `$12`); `$$` anywhere else is one dollar sign (`$$5` → `$5`); a reference that

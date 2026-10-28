@@ -79,11 +79,13 @@ platforms and report verification limitations. See
 - Build asset/API URLs from `import.meta.env.BASE_URL` or relative page/module URLs. Root paths
   such as `/levels/` break sub-path hosting; verify with `--base=project` and the built pages.
 - Use the pixel UI kit, whole art pixels, palette, and type/layout helpers. UI text uses `t()`
-  with English, Japanese, and Simplified Chinese strings. Content prose uses `loc(key, english)`;
-  names use `term(name)`. Keep English identities in data and translate only at display.
+  with Portuguese (`pt`, the source and default: `SOURCE_LANG`) and English strings. Content prose
+  is written in Portuguese and uses `loc(key, source)`; names use `term(name)`. Keep source
+  identities in data and translate only at display; English comes from the content tables
+  (`public/i18n/en/`). The engine's demo levels keep English source text and have no tables.
 - Preserve text keys through edits. The editor, generators, and `i18n:keys` create GUIDs and
   `#line:` tags; do not hand-edit or copy them. New translatable fields need extractor/key
-  support. Update content tables with worklist tools; load CJK glyphs before measuring.
+  support. Update content tables with worklist tools.
 - Add JSDoc to public APIs. Fix type errors at their cause; cast only where the checker cannot
   follow valid code, and explain any `@ts-expect-error`. Declare lazy fields in the folder's
   `types.d.ts`, never a same-name declaration file that shadows JavaScript. Generator-imported
@@ -91,10 +93,11 @@ platforms and report verification limitations. See
 
 ## Content and verification
 
-The six level/campaign generators are `tools/make-starfall-vale.mjs`, `make-sample-hamlet.mjs`,
-`make-cinderwatch-pass.mjs`, `make-gildhaven.mjs`, `make-ferrymans-lantern.mjs`, and
-`make-emberfall-interiors.mjs`. Use `--check` to verify committed output or `--out=<scratch-path>`
-to inspect changes. The interiors generator reads Emberfall, so an Emberfall edit may require
+The seven level/campaign generators are `tools/make-starfall-vale.mjs`, `make-sample-hamlet.mjs`,
+`make-cinderwatch-pass.mjs`, `make-gildhaven.mjs`, `make-ferrymans-lantern.mjs`,
+`make-emberfall-interiors.mjs`, and `make-estrada-da-costa.mjs` (the game's campaign
+`public/campaigns/culto-ao-baiacu-rei/`, what `game.html` plays by default). Use `--check` to verify
+committed output or `--out=<scratch-path>` to inspect changes. The interiors generator reads Emberfall, so an Emberfall edit may require
 regenerating that campaign too. Never hand-edit generated output.
 
 Before finishing a code change, run `npm run typecheck`, relevant Node/browser checks, and
@@ -105,7 +108,7 @@ page should have no console errors, warnings, failed requests, or throwing actio
 
 Rendering or level-building changes require before/after fingerprints and level round trips
 ([playbook 16](docs/ai/TASK_PLAYBOOKS.md#16-regression-check-before-you-finish)). UI changes need
-the relevant page at 1280 × 720, 1920 × 1080, and 1024 × 768, including Japanese and Chinese.
+the relevant page at 1280 × 720, 1920 × 1080, and 1024 × 768, in Portuguese and English.
 Text/display changes need key/translation checks and both content tours. Run GPU timing and
 frame-gap checks without competing GPU work; record hardware and browser with measurements.
 

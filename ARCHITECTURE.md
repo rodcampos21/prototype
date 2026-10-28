@@ -208,7 +208,7 @@ export class Input {
 Default action bindings: `up` KeyW/ArrowUp, `down` KeyS/ArrowDown, `left` KeyA/ArrowLeft,
 `right` KeyD/ArrowRight, `run` ShiftLeft/ShiftRight, `confirm` Space/Enter/KeyF,
 `cancel` Escape/Backspace, `camLeft` KeyQ, `camRight` KeyE, `zoomIn` KeyZ/Equal,
-`zoomOut` KeyX/Minus, `debug` Backquote/F1, `time` KeyT, `photo` KeyP, `help` KeyH, `weather` KeyR,
+`zoomOut` KeyX/Minus, `debug` Backquote/F1, `photo` KeyP, `help` KeyH,
 `music` KeyM, `map` KeyN/Tab (world map). Gamepad (standard mapping): A=confirm, B=cancel,
 LB/RB=camLeft/camRight, left stick = move, RT = run, Back/View = map, right stick click = photo. Keys pressed between frames must still register `wasPressed` on the
 next frame. Prevent default browser behaviour for bound keys (arrows/space scrolling, F1 help).
@@ -785,8 +785,8 @@ into no chunk that does not use them.
 The demo, "Emberfall", is a small riverside village at golden hour: multi-level terrain with
 cliffs and stairs, a river with a bridge and a waterfall, houses, trees, market, well, lampposts,
 campfire, windmill, flowers & grass, NPCs with dialog, a cat and chickens. The player (a traveler)
-walks with WASD, talks with Space, rotates the camera with Q/E, zooms with the wheel, cycles time
-of day with T, toggles weather with R, photo mode with P, debug panel with ` (backquote).
+walks with WASD, talks with Space, rotates the camera with Q/E, zooms with the wheel, photo mode with P (the clock and the weather are the
+game's: no key changes them), debug panel with ` (backquote).
 `window.__game` exposes `{ engine, setTime(h), teleport(x, z), player, postfx, lighting, ui }` for
 automated checks. `?autostart=1` skips the title screen.
 *Note 2026-10-07, following the code (KNOWN_ISSUES DOC-12):* those members are a subset —

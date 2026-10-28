@@ -4,7 +4,8 @@ import { cachedCondition, evalCondition } from '../../engine/level/StoryConditio
 import { levelHasCombat, OBJECT_TYPES } from '../../engine/level/ObjectCatalog.js';
 import { isOwnKey } from '../../engine/utils/own.js';
 import { chapterLevelId, activeChapter, acrossSeam, campaignLevel } from './CampaignFormat.js';
-import { CampaignState, formatPlayTime, SAVE_VERSION } from './CampaignState.js';
+import { CampaignState, formatPlayTime, SAVE_VERSION, cleanPlayerName, PLAYER_NAME_MAX } from './CampaignState.js';
+import { PLAYER_CLASSES, isPlayerClass } from './PlayerClasses.js';
 import { LevelPreparation } from './LevelPreparation.js';
 import { storyReader, journeySeed } from '../story/StoryState.js';
 import { renderLevelMap } from '../../engine/level/LevelMap.js';
@@ -209,7 +210,7 @@ export class CampaignRuntime {
       story: this.story,
       level: levelOf,
       visited: () => this.state.visited,
-      game: (name) => (name === 'hour' ? this.state.time ?? undefined : name === 'weather' ? this.state.weather : name === 'chapter' ? this.state.chapter : undefined),
+      game: (name) => (name === 'hour' ? this.state.time ?? undefined : name === 'weather' ? this.state.weather : name === 'chapter' ? this.state.chapter : name === 'player' ? this.playerName : undefined),
     });
     return (c) => {
       if (!this.runner) return evalCondition(cachedCondition(c), basic);
@@ -1055,6 +1056,52 @@ export class CampaignRuntime {
     this.runner?.resyncClock();
     this.save();
     return ok;
+  }
+
+  /**
+   * Does the game still have to make the player's character (a campaign with `player.create` whose
+   * state holds none: a new journey — a save from before the creation is not read, CampaignStart)?
+   */
+  get needsCharacter() {
+    return !!this.campaign.player?.create && !this.state.player;
+  }
+
+  /**
+   * The character creation's options (translated): the campaign's classes with their names and
+   * lines, the field's suggestion, the texts (CharacterCreation.show).
+   * @returns {import('../../engine/ui/CharacterCreation.js').CreationOptions}
+   */
+  creationOptions() {
+    return {
+      title: t('campaign.create.title'),
+      nameLabel: t('campaign.create.name'),
+      suggested: t('campaign.create.suggested'),
+      classLabel: t('campaign.create.class'),
+      classes: PLAYER_CLASSES.map((c) => ({ id: c.id, label: t(`campaign.class.${c.id}`), detail: t(`campaign.class.${c.id}.detail`) })),
+      confirm: t('campaign.create.confirm'),
+      choose: t('title.choose'),
+      prevClass: t('campaign.create.prevClass'),
+      nextClass: t('campaign.create.nextClass'),
+      maxLength: PLAYER_NAME_MAX,
+      name: this.state.player?.name ?? '',
+      cls: this.state.player?.cls,
+    };
+  }
+
+  /**
+   * Keep the character the player made (`cleanPlayerName`; an unknown class: the first) and save.
+   * @param {{ name: string, cls: string }} r
+   */
+  setPlayer(r) {
+    const name = cleanPlayerName(r?.name) || cleanPlayerName(t('campaign.create.suggested'));
+    const cls = isPlayerClass(r?.cls) ? r.cls : PLAYER_CLASSES[0].id;
+    this.state.player = { name, cls };
+    this.save();
+  }
+
+  /** The name of the player's character ('' without one: no creation, or not made yet). */
+  get playerName() {
+    return this.state.player?.name ?? '';
   }
 
   /** A debug start preset's values on a new story (`&story=<name>`). */

@@ -1848,19 +1848,25 @@ function drawHeadFront(p, c, pose, back) {
   const view = back ? 'up' : 'down';
   const lag = lagOf(pose);
 
-  // back hair layer (long hair behind shoulders) is drawn earlier in drawFront
-  p.begin(null);
-  p.tpl(HEAD[view], hx, hy);
-  p.end();
-  if (!back) {
+  const hat = c.hat;
+  if (c.head === 'catfish') {
+    catfishHead(p, c, hx, hy, view, lag);
+  } else {
+    // back hair layer (long hair behind shoulders) is drawn earlier in drawFront
     p.begin(null);
-    faceDown(p, c, hx, hy, pose);
+    p.tpl(HEAD[view], hx, hy);
     p.end();
+    if (!back) {
+      p.begin(null);
+      faceDown(p, c, hx, hy, pose);
+      p.end();
+    }
   }
   // hair
-  const hat = c.hat;
   const hs = HAIR[c.hairStyle][view];
-  if (hat !== 'hood') {
+  if (c.head === 'catfish') {
+    // the crest fin stands in for hair
+  } else if (hat !== 'hood') {
     p.begin(back ? null : 'below', 1);
     tplSway(p, hs.front, hx, hy, hs.swayFrom, lag.sway, Math.max(0, lag.dy));
     p.end();
@@ -1872,7 +1878,7 @@ function drawHeadFront(p, c, pose, back) {
     p.tpl(T(['.33432332.', '..3.3..2..'], HAIR_L), hx + 1, hy + 3);
     p.end();
   }
-  if (c.beard && !back) {
+  if (c.beard && !back && c.head !== 'catfish') {
     p.begin(null);
     p.tpl(BEARDS[c.beard].down, hx, hy);
     p.end();
@@ -1936,7 +1942,7 @@ function drawFront(p, c, pose, back) {
   if (!back) {
     if (c.cape) capeFrontBack(p, c, pose);
     drawBackGear(p, c, pose, 'down');
-    if (HAIR[c.hairStyle].down.back && c.hat !== 'hood') {
+    if (HAIR[c.hairStyle].down.back && c.hat !== 'hood' && c.head !== 'catfish') {
       p.begin(null);
       p.tpl(HAIR[c.hairStyle].down.back, r.cx - 6, r.headY + up);
       p.end();
@@ -2237,11 +2243,17 @@ function drawSide(p, c, pose, far) {
   }
   if (c.cape) capeSide(p, c, pose, 'front');
   // head
-  p.begin(null);
-  p.tpl(HEAD.side, hx, hy);
-  faceSide(p, c, hx, hy, pose);
-  p.end();
-  if (c.hat !== 'hood') {
+  if (c.head === 'catfish') {
+    catfishHead(p, c, hx, hy, 'side', pose.walk >= 0 ? { sway: lag.trail - 1 } : null);
+  } else {
+    p.begin(null);
+    p.tpl(HEAD.side, hx, hy);
+    faceSide(p, c, hx, hy, pose);
+    p.end();
+  }
+  if (c.head === 'catfish') {
+    // the crest fin stands in for hair
+  } else if (c.hat !== 'hood') {
     p.begin('below', 1);
     const hsd = HAIR[c.hairStyle].side;
     tplSway(p, hsd.front, hx, hy, hsd.swayFrom, pose.walk >= 0 ? lag.trail - 1 : 0, Math.max(0, lag.dy));
@@ -2263,7 +2275,7 @@ function drawSide(p, c, pose, far) {
     p.tpl(T(['3432', '3.3.'], HAIR_L), hx + 1, hy + 3);
     p.end();
   }
-  if (c.beard) {
+  if (c.beard && c.head !== 'catfish') {
     p.begin(null);
     p.tpl(BEARDS[c.beard].side, hx, hy);
     p.end();
@@ -2451,6 +2463,82 @@ function pointedEarSide(p, hx, hy) {
     [7, 7, 2], [8, 7, 1], [9, 7, 1], [10, 7, 1], [7, 8, 1]];
   for (const [dx, dy, s] of E) p.set(hx + dx, hy + dy, M.SKIN, s);
   p.set(hx + 9, hy + 7, M.BLUSH, 1); p.set(hx + 10, hy + 7, M.SKIN, 0); // hollow
+  p.end();
+}
+
+/**
+ * Catfish head of the fish-folk (spec `head: 'catfish'`): a broad flat skull in the skin ramp with
+ * dark spots, small wide-set eyes, a wide mouth over a pale throat, a crest fin in the hair ramp and
+ * two long barbels hanging from the mouth corners over the chest. Replaces the head, face, hair and
+ * beard; hats still sit on top. 14 px wide (one px past the head box on each side; the snout two px
+ * forward in the side view).
+ */
+const CATFISH_L = {
+  ...SKIN_L, k: [M.SKIN, 0], f: [M.HAIR, 2], F: [M.HAIR, 3], E: [M.EYE, 3], p: [M.EYE, 0], o: [M.EYE, 0],
+  g: [M.SKIN, 1], b: [M.SKIN, 3], B: [M.SKIN, 2],
+};
+const CATFISH_HEAD = {
+  down: T([
+    '......fF......',
+    '.....fFFf.....',
+    '...mmmfFmmm...',
+    '..mkkmmmmkkm..',
+    '.mmmmmkmmmmms.',
+    '.mEEmmmmmmEEs.',
+    'smEpmmmmmmpEss',
+    'skmmmmmmmmmkss',
+    'sboooooooooobs',
+    '.blLLLLLLLLlb.',
+    '.b.lLLLLLLl.b.',
+    '.b..........b.',
+    '..B........B..',
+  ], CATFISH_L, -1),
+  up: T([
+    '......fF......',
+    '.....fFFf.....',
+    '...mmmfFmmm...',
+    '..mkkmfmmkkm..',
+    '.mmmmmmmmmmms.',
+    '.mmmkmmmmkmms.',
+    'smmmmmkkmmmmss',
+    'skmmmmmmmmmkss',
+    'bmmmmkmmmmmmsb',
+    'b.mmmmmmmmss.b',
+    'b...ssssss...b',
+    'b............b',
+    '.B..........B.',
+  ], CATFISH_L, -1),
+  side: T([
+    '.......fF.....',
+    '......fFFf....',
+    '....mmmFfmmm..',
+    '..mmmmmmkkmmm.',
+    '.mmmkmmmmmmkms',
+    '.mEEmmmmgmmmms',
+    'mmpEmmmmgmmkss',
+    'mmmmmmmgmmmss.',
+    'ooooommmmmss..',
+    'bLLLLmmmsss...',
+    'b.lLLsss......',
+    'b.............',
+    '.B............',
+  ], CATFISH_L, -2),
+};
+
+/** The catfish head in the front (`down`), back (`up`) or side (facing left) view; barbels sway with the hem lag. */
+function catfishHead(p, c, hx, hy, view, lag) {
+  p.begin(null);
+  p.tpl(CATFISH_HEAD[view], hx, hy);
+  p.end();
+  // barbel tips (the template's last row) trail a pixel behind the walk
+  const sway = lag ? lag.sway : 0;
+  if (!sway) return;
+  p.begin(null);
+  const tips = { down: [hx + 1, hx + 10], up: [hx, hx + 11], side: [hx - 1] };
+  for (const x of tips[view]) {
+    p.erase(x, hy + 12);
+    p.set(x + sway, hy + 12, M.SKIN, 2);
+  }
   p.end();
 }
 

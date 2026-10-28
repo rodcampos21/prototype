@@ -13,9 +13,11 @@
  */
 import { isDeepStrictEqual } from 'node:util';
 import { StoryState, storyReader, storyKey, isLooseFlag, journeySeed, readPartyRecords } from '../src/game/story/StoryState.js';
-import { CampaignState } from '../src/game/campaign/CampaignState.js';
+import { CampaignState, cleanPlayerName, PLAYER_NAME_MAX } from '../src/game/campaign/CampaignState.js';
+import { PLAYER_CLASSES, isPlayerClass } from '../src/game/campaign/PlayerClasses.js';
+import { normalizeCampaign, parseCampaign, serializeCampaign } from '../src/game/campaign/CampaignFormat.js';
 import { buildStory } from '../src/game/campaign/StoryFormat.js';
-import { cachedCondition, evalCondition, parseScript } from '../src/engine/level/StoryScript.js';
+import { cachedCondition, evalCondition, parseScript, interpolate, isTextRef } from '../src/engine/level/StoryScript.js';
 import { MAX_PARTY, ruleOfPreset, normalizeRule, PARTY_PRESETS } from '../src/engine/level/PartyRules.js';
 import { setContentTables, term, contentMisses, clearContentMisses } from '../src/engine/i18n/ContentText.js';
 import { guidOf, tagLine } from '../src/engine/i18n/ContentKeys.js';
@@ -950,7 +952,7 @@ begin('runner: translations (I18N.md §4)');
   /** @type {string[]} */
   const toasts = [];
   g.ui.hud.toast = (msg) => { toasts.push(msg); };
-  setLang('ja');
+  setLang('en');
   // (a version-3 table: units by the GUIDs of the lines' `#line:` tags, names as terms — `Leave` has
   // another translation under another key)
   const K = (/** @type {string} */ s) => guidOf(`runtime-tr:${s}`);
@@ -989,7 +991,7 @@ begin('runner: translations (I18N.md §4)');
     eq('… and nothing shown untranslated', contentMisses(), []);
   } finally {
     setContentTables(null);
-    setLang('en');
+    setLang('pt');
   }
 }
 
@@ -1079,7 +1081,7 @@ begin('runner: content keys (I18N.md §4.2)');
   g.ui.endCard = { show(o) { cards.push(o); return Promise.resolve(); } };
   g.returnToTitle = () => {};
   registerCoreStrings();
-  setLang('ja');
+  setLang('en');
   const units = {
     [K('p0')]: { source: 'Good day.', target: 'こんにちは。' },
     [K('p1')]: { source: 'Which way?', target: 'どっち？' },
@@ -1110,7 +1112,7 @@ begin('runner: content keys (I18N.md §4.2)');
     eq('a talk: the plate a term, the title by the key its object holds, the line, the question and the options by their tags', [page[0]?.speaker, page[0]?.title, page[0]?.text, page.at(-1)?.text, page.at(-1)?.choices], ['ピップ', '渡し守の子', 'こんにちは。', 'どっち？', ['北', '南']]);
     await r.talk(anon);
     eq('a villager without a name: the UI\'s default (game.default.villager), its line by its key', [opens.at(-1)?.[0]?.speaker, opens.at(-1)?.[0]?.text], [t('game.default.villager'), 'ふむ。']);
-    ok('… which reads 村人', t('game.default.villager') === '村人', t('game.default.villager'));
+    ok('… which reads Villager (the UI in English)', t('game.default.villager') === 'Villager', t('game.default.villager'));
     await r.talk(wren);
     eq('an actor\'s talk: its script\'s key', opens.at(-1)?.[0]?.text, 'やあ、子よ。');
     r.state.setVar('n', 3);
@@ -1133,7 +1135,7 @@ begin('runner: content keys (I18N.md §4.2)');
     await r._exec({ kind: 'story', key: 'story:ford-open', nodes: r._script('event.ford-open').nodes }, { ownBusy: true });
     eq('a banner: title and subtitle by their two keys (the tag and <tag>.2)', banners.at(-1), ['浅瀬', 'ついに開いた']);
     await r._exec({ kind: 'event', key: 'event:millbrook.ev_end', nodes: le('ev_end').nodes }, { ownBusy: true });
-    eq('an ending without a title: the UI\'s default (story.ending.default), the level\'s name a term', cards.at(-1), { title: 'おわり', subtitle: 'テスト' });
+    eq('an ending without a title: the UI\'s default (story.ending.default), the level\'s name a term', cards.at(-1), { title: 'The End', subtitle: 'テスト' });
     await r._exec({ kind: 'event', key: 'event:millbrook.ev_end2', nodes: le('ev_end2').nodes }, { ownBusy: true });
     eq('an ending\'s title by its key', cards.at(-1)?.title, '灯の帰る家');
     // an ad-hoc script (`__game.story.run`: lines without tags) — no key: its English, a nokey miss
@@ -1196,7 +1198,7 @@ begin('runner: content keys (I18N.md §4.2)');
     eq('… a key that is no GUID is not kept', [st.quest('w').texts.s, Object.keys(st.quest('w').keys)], ['Old.', []]);
   } finally {
     setContentTables(null);
-    setLang('en');
+    setLang('pt');
   }
   // English: the same texts as before keys (no table: loc and term give the English)
   opens.length = 0;
@@ -1206,9 +1208,9 @@ begin('runner: content keys (I18N.md §4.2)');
   await r.talk(pip);
   eq('English: the plate, the title, the line and the options as written (no tag shown)', [opens.at(-1)?.[0]?.speaker, opens.at(-1)?.[0]?.title, opens.at(-1)?.[0]?.text, opens.at(-1)?.at(-1)?.choices], ['Pip', 'Ferry Boy', 'Good day.', ['North', 'South']]);
   await r._exec({ kind: 'event', key: 'event:millbrook.ev_end', nodes: le('ev_end').nodes }, { ownBusy: true });
-  eq('English: an ending without a title reads The End', cards.at(-1), { title: 'The End', subtitle: 'Test' });
+  eq('the source language: an ending without a title reads Fim (the UI in Portuguese)', cards.at(-1), { title: 'Fim', subtitle: 'Test' });
   await r.talk(anon);
-  eq('English: a villager without a name reads Villager', opens.at(-1)?.[0]?.speaker, 'Villager');
+  eq('the source language: a villager without a name reads Morador', opens.at(-1)?.[0]?.speaker, 'Morador');
 }
 
 begin('review fixes: what no window shows records no miss (I18N.md §4.2)');
@@ -1241,7 +1243,7 @@ begin('review fixes: what no window shows records no miss (I18N.md §4.2)');
   const want = (/** @type {string[]} */ list) => [...list].sort();
   // (a table with nothing these lines need: every lookup of a shown text is a miss)
   registerCoreStrings();
-  setLang('ja');
+  setLang('en');
   setContentTables({ terms: { Unrelated: '無関係' } });
   try {
     // a cutscene skipped while it waits: the lines after it are passed over (c0 c1 the says, c2 the
@@ -1284,7 +1286,7 @@ begin('review fixes: what no window shows records no miss (I18N.md §4.2)');
     eq('shown: its misses are recorded', [opens.length, misses()], [1, want([`${K('s0')} missing`, `${K('title')} missing`, 'term Pip'])]);
   } finally {
     setContentTables(null);
-    setLang('en');
+    setLang('pt');
   }
 }
 
@@ -1339,13 +1341,13 @@ begin('review fixes: a shop item keeps the name it was given by');
   eq('… a `take` toast names it so', toasts.at(-1), t('story.item.given', { item: "Ilse's Lantern", n: 1 }));
   r.giveNamed("Ilse's Lantern");
   // translated: the name given is the term (what the extractor lists for a shop's item)
-  setLang('ja');
+  setLang('en');
   setContentTables({ terms: { "Ilse's Lantern": 'イルゼのランタン', 'Ferry Lamp': '渡しのランプ' }, units: { [LAMP_KEY]: { source: 'A lamp for the ferry.', target: '渡しのためのランプ。' } } });
   try {
     eq('the journal (ja): the given name\'s term, no miss', [r.journalData().items.map((i) => [i.id, i.name]), contentMisses()], [[['lamp', '渡しのランプ'], ['ilse-s-lantern', 'イルゼのランタン']], []]);
   } finally {
     setContentTables(null);
-    setLang('en');
+    setLang('pt');
   }
   // the save
   const saved = JSON.parse(JSON.stringify(r.state.toJSON()));
@@ -1360,6 +1362,32 @@ begin('review fixes: a shop item keeps the name it was given by');
   const odd = StoryState.fromJSON(JSON.parse(JSON.stringify({ items: { a: 1 }, itemNames: { a: '  Apple\u0007 ', gold: 'Gold', 'a b': 'Bad id', '1e5': 'A number', b: '', c: 7, ['d'.repeat(81)]: 'Long id', e: 'x'.repeat(300) } }).replace('"itemNames":{', '"itemNames":{"__proto__":"x","constructor":"y",')));
   eq('an untrusted save: plain names of item ids kept (control characters out, trimmed, cut at 200), the rest dropped', [Object.keys(odd.itemNames).sort(), odd.itemNames.a, odd.itemNames.e?.length], [['__proto__', 'a', 'constructor', 'e'], 'Apple', 200]);
   ok('… "__proto__" and "constructor" plain keys of a prototype-less map', Object.getPrototypeOf(odd.itemNames) === null && odd.itemNameOf('__proto__') === 'x' && odd.itemNameOf('toString') === '' && odd.itemNameOf('hasOwnProperty') === '');
+}
+
+begin('the player\'s character: the save, ${player}, the player speaking');
+{
+  const campaign = /** @type {any} */ ({ start: { level: 'a', entrance: '' }, levels: [{ id: 'a' }], flags: [], chapters: [], player: { create: true } });
+  eq('cleanPlayerName: trimmed, spaces made one, control and format characters out, cut at 16', [cleanPlayerName('  Rodrigo  '), cleanPlayerName('Sir\u0007  Lance​lot'), cleanPlayerName('x'.repeat(40)).length, cleanPlayerName(7), cleanPlayerName(' \u0007 ')], ['Rodrigo', 'Sir Lancelot', PLAYER_NAME_MAX, '', '']);
+  const cs = new CampaignState(campaign, 'c');
+  ok('a new journey has no character, and its save holds none', cs.player === null && !('player' in cs.toJSON()));
+  cs.player = { name: 'Rodrigo', cls: 'knight' };
+  eq('the save holds the character, read back the same', CampaignState.fromJSON(campaign, 'c', JSON.parse(JSON.stringify(cs.toJSON()))).player, { name: 'Rodrigo', cls: 'knight' });
+  const read = (p) => CampaignState.fromJSON(campaign, 'c', { ...JSON.parse(JSON.stringify(cs.toJSON())), player: p }).player;
+  eq('an untrusted save: an unknown class, a blank name, no object → no character; a long name cut', [read({ name: 'Ana', cls: 'wizard' }), read({ name: ' ', cls: 'knight' }), read('Ana'), read({ name: 'y'.repeat(50), cls: 'knight' })?.name.length], [null, null, null, PLAYER_NAME_MAX]);
+  ok('PLAYER_CLASSES: the knight, a known class', PLAYER_CLASSES.length >= 1 && PLAYER_CLASSES[0].id === 'knight' && isPlayerClass('knight') && !isPlayerClass('constructor'));
+  eq('CampaignFormat: player.create read, written only when true', [parseCampaign(serializeCampaign(normalizeCampaign({ format: 'luminati-campaign', levels: ['a'], player: { create: true } }).campaign)).campaign.player, normalizeCampaign({ format: 'luminati-campaign', levels: ['a'] }).campaign.player, serializeCampaign(normalizeCampaign({ format: 'luminati-campaign', levels: ['a'] }).campaign).includes('"player"')], [{ create: true }, { create: false }, false]);
+  // ${player} and the player as a speaker
+  const named = stubGame({ campaign: { playerName: 'Rodrigo', state: { visited: [], chapter: '' }, hour: () => 9, chapterId: () => '' } });
+  named.player.sprite = { sheet: { canvas: 'SHEET' } };
+  const r = new StoryRunner({ game: named, story, state: new StoryState(story), levelId: 'here' });
+  r.attachLevel('here');
+  eq('${player}: the character\'s name', interpolate('Prazer, ${player}.', r.reader), 'Prazer, Rodrigo.');
+  ok('player is a game value (no flag may be called so) and a text value', isTextRef({ kind: 'game', name: 'player' }) && evalCondition(cachedCondition('player = Rodrigo'), r.reader));
+  const line = r._line('player', 'Prazer, Surubin.', {});
+  eq('a `player:` line: the name on the plate, untranslated, the player\'s sprite as the portrait', [line.speaker, line.text, line.sheet], ['Rodrigo', 'Prazer, Surubin.', 'SHEET']);
+  const anon = new StoryRunner({ game: stubGame(), story, state: new StoryState(story), levelId: 'here' });
+  anon.attachLevel('here');
+  eq('no character made: the UI default', interpolate('${player}', anon.reader), t('story.player.default'));
 }
 
 // =================================================================================================
