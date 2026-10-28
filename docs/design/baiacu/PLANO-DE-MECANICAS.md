@@ -57,7 +57,7 @@ Consequências:
 | D | Relógio pelos dias do jogo (obras e contagens avançam a cada manhã, eventos que evoluem) | Médio |
 | E | Construção em espaços fixos (o sistema central) | Grande |
 | F | Arte: estruturas novas com estágios, NPCs novos, Surubin por rank, cavaleiro, inimigos novos | Grande e contínuo |
-| G | Atlas (mapa de nós com estados) | Grande, depois do núcleo |
+| G | Atlas: G1, o mapa mínimo do Surubin para viajar (já no M2/M3); G2, o atlas completo | G1 médio; G2 grande, depois do núcleo |
 | H | Infra: desacoplar as fases de demonstração, testes do jogo | Pequeno e contínuo |
 | I | Clima sorteado por mapa nas viradas do dia, com trava pela história | Médio |
 | J | Criação de personagem (nome e classe) e voz do jogador nos diálogos | Médio |
@@ -111,7 +111,10 @@ português e os checks de i18n passam sem japonês e chinês.
 1. Criar a campanha `public/campaigns/ato-1/` com um gerador (`tools/make-ato-1.mjs`, no molde de
    `make-ferrymans-lantern.mjs`):
    - `estrada-da-costa` (o prólogo que já existe, movido para dentro da campanha);
-   - `acampamento`, a **fase hub**, com a clareira junto ao riacho e os espaços de construção;
+   - `acampamento`, a **fase hub**: a própria `clareira-do-riacho` da C02, aumentada e organizada
+     (fogueira no centro, tenda do Surubin com a mesa do mapa ao norte, estandarte e altar a
+     leste, três espaços de construção a sul e oeste, área livre para a capela). Sem trilhas de
+     saída: a viagem é pelo mapa (G1);
    - os nós iniciais do atlas como fases pequenas: `mata-da-clareira`, `riacho-dos-juncos`,
      `pedreira-da-encosta`.
 2. **Visual do cavaleiro**: hoje `Player.js` usa sempre o preset `traveler`. Adicionar um campo
@@ -129,6 +132,10 @@ português e os checks de i18n passam sem japonês e chinês.
    `minerio`, `couro`, `osso`, `minerio-raro`, `pedra-raiz`.
 2. **HUD de recursos** (novo componente no kit de UI pixel): uma faixa com ícone e quantidade dos
    recursos principais, visível no acampamento e nas expedições.
+2a. **Mochila e estoque**: o que se coleta numa expedição vai para a mochila, que tem limite; ao
+   voltar ao acampamento, a mochila é guardada no estoque. O silo dobra o limite. Junto com a
+   reposição dos pontos de coleta só de manhã (item 3), isso faz cada obra pedir umas 4
+   expedições (Caderno, *Coleta em várias expedições*).
 3. **Pontos de coleta**: um novo tipo de objeto `resourceNode` (árvore cortável, veio de pedra, moita
    de ervas), com Espaço para coletar, quantidade e reposição a cada manhã. Enquanto ele não existe,
    dá para usar um `event` `use` com `give madeira 3` e `once`.
@@ -155,9 +162,13 @@ Um dia dura cerca de 36 minutos reais (`TIME_SPEED`: 1 hora de jogo = 90 s).
    noite, de 18:30 até a manhã seguinte.
 4. **O relógio anda em todo lugar**, inclusive no acampamento: nada de `clock: false` por ato. Uma
    cena pode segurar a hora (`time 21`), mas o dia continua contando depois dela.
-5. **Dormir** (Bíblia, *Dormir*): na tenda do acampamento, pula até a manhã seguinte e avança o
-   dia, as obras e as contagens; um prazo pode vencer durante a noite. Só no acampamento: fora dele
-   não se dorme.
+5. **Dormir** (Bíblia, *Dormir*): só no alojamento, depois de construído. Pula até a manhã
+   seguinte e avança o dia, as obras e as contagens; um prazo pode vencer durante a noite. Antes
+   do alojamento, o tempo só passa jogando.
+5a. **A noite** (Bíblia, *A noite*): de 18:30 até a manhã, os nós têm muito mais monstros e podem
+   aparecer variantes mais fortes. Caminho: cada fase de expedição declara grupos de inimigos
+   extras com `when` na hora (condição nova `night`, ou `hour >= 18.5`) e os mais fortes com um
+   peso noturno; o acampamento nunca tem inimigos.
 6. **Exibição diegética**: a contagem aparece no atlas (G); até lá, no diário e em falas.
 7. Obras (E) e eventos usam o mesmo dia.
 
@@ -165,6 +176,13 @@ Um dia dura cerca de 36 minutos reais (`TIME_SPEED`: 1 hora de jogo = 90 s).
 
 **Regra de design:** o jogador escolhe **o que** construir, nunca **onde**. Cada espaço tem uma
 lista fechada de construções possíveis.
+
+**Ato I (decidido em 2026-10-28):** três espaços fixos, um para cada obra (forja, silo,
+alojamento). A C03 escolhe só qual começar primeiro. Depois: a forja é obrigatória na fase 2
+(QP04), o alojamento na fase 4 (antes da QS03), e o silo é opcional (única porta para o Pomar
+Abandonado). Qualquer uma pode ser feita antes da hora, em qualquer ordem, se houver recursos.
+O que cada uma libera: forja → Fumaça na Serra e Odo; silo → Pomar Abandonado e a mochila maior;
+alojamento → Estrada dos Peregrinos, dormir e cura.
 
 **Modelo de dados** (novo, em `story/main.json` ou num `buildings.json` da campanha):
 
@@ -268,9 +286,22 @@ Se em algum momento quiserem retocar à mão: um script que **exporta** qualquer
 (para editar no Aseprite) e um caminho para **carregar** um PNG no lugar da folha gerada. Isso quebra
 a regra "nenhum asset binário" da engine, então só vale se for uma decisão consciente.
 
-### G. Atlas (depois do núcleo)
+### G. Atlas
 
-Uma tela própria (no estilo do mapa-múndi atual, `ui/Minimap.js` / `WorldMap`) com:
+**G1, o mapa do Surubin (decidido em 2026-10-28, entra no M2/M3).** Não há saídas de mapa no
+acampamento: a viagem é pela mesa do Surubin. Versão mínima:
+
+1. Objeto na tenda do Surubin que abre a tela do mapa (Espaço).
+2. Tela em pergaminho com o esboço do terreno já percorrido e os pontos clicáveis, com os estados
+   boato (tracejado), descoberto e explorado. Escolha também por setas ou controle.
+3. Escolher um ponto viaja para a fase do nó (a viagem com fade da campanha), avançando o relógio
+   pelo tempo de viagem do nó.
+4. Cada nó tem um ponto de chegada (estaca com fita) que leva de volta ao acampamento; na volta, a
+   mochila é guardada e o Surubin "desenha" o que foi descoberto.
+5. Só se viaja a partir da mesa; viagem direta entre nós vizinhos fica para depois.
+6. Estado no save: os nós e seus estados (boato, descoberto, explorado).
+
+**G2, o atlas completo (depois do núcleo).** Uma tela própria (no estilo do mapa-múndi atual, `ui/Minimap.js` / `WorldMap`) com:
 
 - nós e caminhos;
 - estados: rumor, descoberto, explorado e consagrado;
@@ -278,9 +309,8 @@ Uma tela própria (no estilo do mapa-múndi atual, `ui/Minimap.js` / `WorldMap`)
 - contagens visíveis;
 - "um marcador importante por vez".
 
-Viajar a partir do atlas substitui as saídas fixas de mapa. O atlas é desenhado pelo Surubin na
-mesa do acampamento, então ele abre por um objeto do acampamento. É a etapa mais longa, e o núcleo
-(B a E) funciona sem ela usando saídas e placas.
+O G2 cresce a partir do G1: contagens visíveis, marcador importante único, consagração de nós
+(Ato II).
 
 ### H. Infraestrutura
 
@@ -341,21 +371,21 @@ Design na Bíblia, seção *O protagonista*.
 | 1 | Língua-fonte do conteúdo: escrever em português e traduzir para o inglês, ou o contrário? | **Decidido (2026-10-28):** tudo em português, idioma padrão português, inglês por tradução automática. |
 | 2 | Primeira construção: estágios visíveis (fundação, andaime, pronto) ou só "em obra / pronta"? | Os três estágios: é o que faz a cidade "crescer à vista". |
 | 3 | Duração das obras: sempre 1 dia no Ato I, ou variável? | **Decidido (2026-10-28):** obras contam dias do jogo, não expedições. Recomendação: 1 dia no Ato I; variável a partir do Ato II. |
-| 4 | Espaços vazios aparecem desde o começo, ou vão sendo revelados? | Revelar por ato: o acampamento do Ato I tem 3 ou 4 espaços. |
+| 4 | Espaços vazios aparecem desde o começo, ou vão sendo revelados? | **Decidido (2026-10-28):** o Ato I começa com três espaços fixos (forja, silo, alojamento); a área da capela e dos colonos abre na fase 4. |
 | 5 | Arte só procedural, ou abrir caminho para PNG (F6)? | Procedural por enquanto. Reavaliar quando houver um artista. |
 | 6 | Manter as fases de demonstração (Emberfall, Starfall…) no repositório? | Manter até o Ato I estar jogável: elas são os testes de regressão da engine. |
-| 7 | Atlas antes ou depois do núcleo de construção? | Depois. Saídas de mapa resolvem o Ato I inicial. |
+| 7 | Atlas antes ou depois do núcleo de construção? | **Decidido (2026-10-28):** o mapa mínimo do Surubin (G1) vem já no M2/M3 e substitui as saídas; o atlas completo (G2) fica depois. |
 
 ## 6. Ordem sugerida (marcos)
 
 | Marco | Entrega | Etapas |
 | --- | --- | --- |
 | **M1, Idioma** | Jogo em português, sem japonês e chinês | A |
-| **M2, Acampamento jogável** | Campanha Ato I: criação de personagem → prólogo → acampamento → Mata da Clareira → volta; cavaleiro com visual próprio e falando; clima sorteado por mapa; C02 e C03 | B, I, J, F1 (tenda, estandarte, altar), F2 (cavaleiro) |
-| **M3, Primeira obra** | Recursos coletados, escolha forja / silo / alojamento, obra em estágios que avança a cada manhã (protótipo E1) | C, D, E1, F1 (forja, silo, alojamento, andaime) |
+| **M2, Acampamento jogável** | Campanha Ato I: criação de personagem → prólogo → C02 → acampamento na clareira → mapa do Surubin → Mata da Clareira → volta; cavaleiro com visual próprio e falando; clima sorteado por mapa; mais monstros à noite | B, G1, I, J, F1 (tenda, mesa do mapa, estandarte, altar), F2 (cavaleiro) |
+| **M3, Primeira obra** | Mochila e estoque, coleta em várias expedições (Mata, Riacho, Pedreira), C03 com a escolha forja / silo / alojamento, obra que avança a cada manhã, altar, dormir no alojamento (protótipo E1) | C, D, E1, F1 (forja, silo, alojamento, andaime) |
 | **M4, Sistema de construção** | `buildSlot` + `BuildingSystem` + menu + editor; contagens EV01/EV02 | E2, D completo, F4 |
 | **M5, Fase 1–3 do Ato I** | Odo, Fumaça na Serra, Pedras Riscadas, duelo do mestre | F2 (NPCs), F3 |
-| **M6, Atlas** | Atlas do Ato I com os 12 (13) nós | G |
+| **M6, Atlas completo** | Atlas do Ato I com os 12 (13) nós, contagens visíveis | G2 |
 
 Cada marco termina com as checagens de sempre: `typecheck`, `level:check --campaign`, testes de
 história, build, capturas revisadas e documentação atualizada.
