@@ -15,6 +15,7 @@ import { isDeepStrictEqual } from 'node:util';
 import { StoryState, storyReader, storyKey, isLooseFlag, journeySeed, readPartyRecords } from '../src/game/story/StoryState.js';
 import { CampaignState, cleanPlayerName, PLAYER_NAME_MAX } from '../src/game/campaign/CampaignState.js';
 import { PLAYER_CLASSES, isPlayerClass, classLook } from '../src/game/campaign/PlayerClasses.js';
+import { weatherPhase, weatherPoolOf, rollWeather } from '../src/game/WeatherRoll.js';
 import { normalizeCampaign, parseCampaign, serializeCampaign } from '../src/game/campaign/CampaignFormat.js';
 import { buildStory } from '../src/game/campaign/StoryFormat.js';
 import { cachedCondition, evalCondition, parseScript, interpolate, isTextRef } from '../src/engine/level/StoryScript.js';
@@ -1390,6 +1391,38 @@ begin('the player\'s character: the save, ${player}, the player speaking');
   const anon = new StoryRunner({ game: stubGame(), story, state: new StoryState(story), levelId: 'here' });
   anon.attachLevel('here');
   eq('no character made: the UI default', interpolate('${player}', anon.reader), t('story.player.default'));
+}
+
+begin('the weather a map rolls (WeatherRoll.js), the story holding it');
+{
+  eq('weatherPhase: morning from 5, afternoon from 12, night from 18:30', [4.9, 5, 11.99, 12, 18.49, 18.5, 23, -1, 29].map(weatherPhase), ['night', 'morning', 'morning', 'afternoon', 'afternoon', 'night', 'night', 'night', 'morning']);
+  ok('weatherPoolOf: none, junk, zero weights → null', [undefined, {}, { weatherPool: 3 }, { weatherPool: [1] }, { weatherPool: { clear: 0, fog: 5 } }].every((e) => weatherPoolOf(e) === null));
+  eq('weatherPoolOf: known weathers with positive weights, per-turn weights kept', weatherPoolOf({ weatherPool: JSON.parse('{"clear":70,"rain":-3,"snow":{"night":20,"noon":5,"morning":0},"__proto__":{"rain":9}}') }), [{ weather: 'clear', weight: 70 }, { weather: 'snow', weight: { night: 20 } }]);
+  const pool = /** @type {NonNullable<ReturnType<typeof weatherPoolOf>>} */ (weatherPoolOf({ weatherPool: { clear: 70, rain: 30 } }));
+  const at = { phase: /** @type {const} */ ('morning'), seed: 1234, day: 3, level: 'clareira' };
+  ok('rollWeather: the same seed, map, day and turn → the same weather', rollWeather(pool, at) === rollWeather(pool, { ...at }));
+  let rain = 0;
+  const N = 4000;
+  for (let d = 1; d <= N; d++) if (rollWeather(pool, { ...at, day: d }) === 'rain') rain++;
+  ok('rollWeather: over many days the weights hold (≈ 30 % rain)', Math.abs(rain / N - 0.3) < 0.03, rain / N);
+  const snowy = /** @type {NonNullable<ReturnType<typeof weatherPoolOf>>} */ (weatherPoolOf({ weatherPool: { snow: { night: 1 } } }));
+  eq('rollWeather: a turn where nothing weighs → null (the weather stays)', [rollWeather(snowy, { ...at, phase: 'morning' }), rollWeather(snowy, { ...at, phase: 'night' })], [null, 'snow']);
+  // the story: `weather auto` parses; the command goes to the game's storyWeather (held / let go)
+  eq('parse: weather auto', /** @type {any} */ (parseScript(['weather auto']).nodes[0])?.args, { weather: 'auto' });
+  ok('parse: weather fog is an error', parseScript(['weather fog']).errors.length === 1);
+  const g = stubGame();
+  /** @type {string[]} */
+  const said = [];
+  g.storyWeather = (w) => { said.push(w); };
+  const r = new StoryRunner({ game: g, story, state: new StoryState(story), levelId: 'here' });
+  r.attachLevel('here');
+  await r._exec({ kind: 'test', key: 'test:weather', nodes: parseScript(['weather rain', 'weather auto']).nodes }, { ownBusy: true });
+  eq('the weather command → game.storyWeather', said, ['rain', 'auto']);
+  const campaign = /** @type {any} */ ({ start: { level: 'a', entrance: '' }, levels: [{ id: 'a' }], flags: [], chapters: [] });
+  const cs = new CampaignState(campaign, 'c');
+  ok('a save without a held weather writes none', !('weatherLock' in cs.toJSON()));
+  cs.weatherLock = 'rain';
+  eq('the held weather is saved and read back; junk is dropped', [CampaignState.fromJSON(campaign, 'c', JSON.parse(JSON.stringify(cs.toJSON()))).weatherLock, CampaignState.fromJSON(campaign, 'c', { ...cs.toJSON(), weatherLock: 'fog' }).weatherLock], ['rain', '']);
 }
 
 // =================================================================================================

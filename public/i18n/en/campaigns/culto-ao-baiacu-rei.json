@@ -6,6 +6,7 @@
   "extends": [],
   "terms": {
     "Clareira": "Clearing",
+    "Clareira do Riacho": "The Stream Clearing",
     "Criatura da mata": "Forest Creature",
     "Culto ao Baiacu Rei": "Cult of the Pufferfish King",
     "Estrada da Costa": "The Coast Road",
@@ -18,6 +19,14 @@
     "0D5D362E43CD5C26FA16E16559129DDE": {
       "source": "CULTO AO BAIACU REI",
       "target": "CULT OF THE PUFFERFISH KING"
+    },
+    "2AE9DE18F7CF05A23E15B608DCD8B06A": {
+      "source": "Faz tempo que eu não tenho para onde voltar.",
+      "target": "It's been a long time since I had anywhere to go back to."
+    },
+    "2B30D062DDD6F77C1125D31633D5F813": {
+      "source": "Uma estação. Depois, sigo meu caminho.",
+      "target": "One season. Then I go my own way."
     },
     "2E2FFB9DA250D0F49ADF4F470ECD726C": {
       "source": "Estrada da Costa",
@@ -39,6 +48,14 @@
       "source": "Na Capital dizem que esta terra engole homens. Eu prefiro acreditar que ela só tem fome de fé.",
       "target": "In the Capital they say this land swallows men. I'd rather believe it's only hungry for faith."
     },
+    "4FC54BDD8CEADE5DBBFB126E14E64C7B": {
+      "source": "Os marinheiros dizem que os povos daqui riscam golpes de espada nas pedras. Se existir um segredo aqui, ele vai estar no meu mapa. E você vê primeiro.",
+      "target": "The sailors say the peoples here carve sword strokes into the stones. If there is a secret here, it will be on my map. And you see it first."
+    },
+    "5DF3D9EB55749CFFD1FA48BC5FC83B17": {
+      "source": "A Capital espera uma colônia. Um abrigo para os fiéis que virão. Sozinho, eu não consigo.",
+      "target": "The Capital expects a colony. A shelter for the faithful still to come. I can't do it alone."
+    },
     "6A9F91C3CBC5A0CD4D4176A3B46A5D55": {
       "source": "E... obrigado a você também, cavaleiro.",
       "target": "And... thank you too, knight."
@@ -46,6 +63,10 @@
     "7E18399571CCDB6DD7F5C16B9F8996A2": {
       "source": "Por Ele eu atravessaria dois.",
       "target": "For Him I would cross two."
+    },
+    "8A7B41FBFC248B51B7FAEE0FEB157AEE": {
+      "source": "Uma estação... Então o tempo dirá o caminho a ser seguido.",
+      "target": "One season... Then time will tell which way to go."
     },
     "8D8994D15DC5441421A2C2C307E65EED": {
       "source": "Ato I: a Terra Selvagem",
@@ -59,17 +80,25 @@
       "source": "Que as marés nos guiem. E que guiem você também, cavaleiro, mesmo que você não acredite nelas.",
       "target": "May the tides guide us. And may they guide you too, knight, even if you don't believe in them."
     },
+    "15C43A6C8009249551681AA702712143": {
+      "source": "Clareira do Riacho",
+      "target": "The Stream Clearing"
+    },
+    "15C43A6C8009249551681AA702712143.2": {
+      "source": "Terra Selvagem",
+      "target": "The Wild Land"
+    },
+    "32E172BE1D750176DA798EDA42131C0C": {
+      "source": "Eu busco os segredos da espada. Não tenho tempo para os desejos de um deus que nem conheço.",
+      "target": "I seek the secrets of the sword. I have no time for the wishes of a god I don't even know."
+    },
+    "39BAF5BC09B48B77C85A574FA8D10990": {
+      "source": "Uma estação. Depois, sigo meu caminho.",
+      "target": "One season. Then I go my own way."
+    },
     "044EB878765353017E47173D1473A2DA": {
       "source": "Ó Rei das Profundezas, me guarda! Socorro!",
       "target": "O King of the Deep, protect me! Help!"
-    },
-    "55D8BCEE46823D841DA7F2B58BA7B55D": {
-      "source": "Fim do teste: a estrada da costa",
-      "target": "End of the test: the coast road"
-    },
-    "72AA98124379E961AA7324CEBA0ABD94": {
-      "source": "Amanhã eu te conto da missão. Hoje... hoje eu só quero agradecer ao Rei por estar vivo.",
-      "target": "Tomorrow I'll tell you about the mission. Today... today I just want to thank the King for being alive."
     },
     "79D27A63ABBC1C1B1333D469CCB249C0": {
       "source": "${player}. Você está segurando esse cajado de cabeça para baixo.",
@@ -79,6 +108,10 @@
       "source": "A clareira fica subindo o riacho. Lá a gente acende um fogo e espera a tempestade passar.",
       "target": "The clearing is up the stream. We can light a fire there and wait out the storm."
     },
+    "433F68BDA66984E5F80BDDC242AC98AD": {
+      "source": "Que as marés nos guiem.",
+      "target": "May the tides guide us."
+    },
     "564A75529063D9A1E1CE51B235DE4E32": {
       "source": "${player}. Um deus peixe? Você atravessou o mar por isso?",
       "target": "${player}. A fish god? You crossed the sea for that?"
@@ -87,9 +120,17 @@
       "source": "Atrás de você, na clareira, alguém ainda grita por socorro.",
       "target": "Behind you, in the clearing, someone is still crying for help."
     },
+    "758CFB904D8CCCD00E92F4D1543D7F77": {
+      "source": "Terra Selvagem",
+      "target": "The Wild Land"
+    },
     "931EB8DE5BD2880BFAB37884EACC1AC2": {
       "source": "Adepto do Culto ao Baiacu Rei",
       "target": "Adept of the Cult of the Pufferfish King"
+    },
+    "973A9BFFFCFFC0680E4CE731B5BB08A8": {
+      "source": "Fim do teste: a fogueira",
+      "target": "End of the test: the campfire"
     },
     "1324E8EF9FFA2E48C0D9A1EC93F406AF": {
       "source": "Ajudou! Ele mandou você, não mandou?",
@@ -103,9 +144,37 @@
       "source": "Eu sei usar o cajado. Quer dizer... eu sei segurar o cajado.",
       "target": "I know how to use the staff. I mean... I know how to hold the staff."
     },
+    "4467FFE03AE6BBBF6E05B8E1CC413D9B": {
+      "source": "Já dormi sob muitos tetos. Nenhum me ensinou nada.",
+      "target": "I've slept under many roofs. None of them taught me anything."
+    },
+    "31039B4CB3C235B2A7D322878D92C83A": {
+      "source": "Você não precisa acreditar no Rei. Só precisa acreditar que um teto é melhor que a estrada.",
+      "target": "You don't need to believe in the King. You only need to believe a roof is better than the road."
+    },
     "163089DC247CC04A57D0EAF1B06749F1": {
       "source": "Estrada da Costa",
       "target": "The Coast Road"
+    },
+    "933937049E187531F5CCA8F13CAC48C1": {
+      "source": "Faz tempo que eu não tenho para onde voltar.",
+      "target": "It's been a long time since I had anywhere to go back to."
+    },
+    "A6B2F0169F0E2DBEF6A6D12CDB221F28": {
+      "source": "Cuidado com a língua, cavaleiro. O Rei provê, e proverá muito mais àqueles que o seguem.",
+      "target": "Mind your tongue, knight. The King provides, and will provide far more to those who follow Him."
+    },
+    "A7C6F1C6825BF7F4F17E35944180A740": {
+      "source": "Se o seu Rei mandar o jantar, eu fico.",
+      "target": "If your King sends dinner, I'll stay."
+    },
+    "A32B5FA102260198305A803EC4F27329": {
+      "source": "O cavaleiro olha a fogueira por um tempo, cansado da longa jornada e de não avançar na busca.",
+      "target": "The knight stares into the fire for a while, weary of the long journey and of getting nowhere in his search."
+    },
+    "A68C2F382DB845D099AFD3F2F5D1CD5A": {
+      "source": "Então deixa eu te oferecer outra coisa. Vou desenhar um mapa desta terra: cada trilha, cada ruína.",
+      "target": "Then let me offer you something else. I'm going to draw a map of this land: every trail, every ruin."
     },
     "A00326075BFD2072B929BF0452BE0215": {
       "source": "Terra Selvagem",
@@ -135,13 +204,29 @@
       "source": "Terra Selvagem",
       "target": "The Wild Land"
     },
+    "D2EA291AC90A4233F01ABC08432A43EB": {
+      "source": "Terra Selvagem",
+      "target": "The Wild Land"
+    },
     "D224C3328416DFA18C9E9573E1769720": {
       "source": "O Rei das Profundezas mandou você, ${player}. Tenho certeza.",
       "target": "The King of the Deep sent you, ${player}. I'm sure of it."
     },
+    "D1970C2BC3C03F8586EF9C371BC79489": {
+      "source": "Agora tem. O Rei acolhe aqueles que o seguem.",
+      "target": "Now you do. The King shelters those who follow Him."
+    },
     "DBCA6E00C2C4AD9B6662489E0122B9A0": {
       "source": "Precisamos sair dessa chuva. Vi uma clareira subindo o riacho. Você vem?",
       "target": "We need to get out of this rain. I saw a clearing up the stream. Are you coming?"
+    },
+    "DBCB76FF4D09BBFE7DE4C8CC5407B7FF": {
+      "source": "A tempestade passou. Sobre a clareira, o céu limpo se enche de estrelas.",
+      "target": "The storm has passed. Over the clearing, the clear sky fills with stars."
+    },
+    "DC4C0EFE449E62ACEBD58F1AC0FD62CE": {
+      "source": "Se o seu Rei mandar o jantar, eu fico.",
+      "target": "If your King sends dinner, I'll stay."
     },
     "DC1397EF027BA106B140A5B27DDE50A1": {
       "source": "Estrada da Costa",

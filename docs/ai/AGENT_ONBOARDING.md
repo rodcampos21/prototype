@@ -92,9 +92,10 @@ the play-through bot recruits them (`sandbox/combat_play.js`, `party: false` pla
 **The game** this repository now builds is the campaign *Culto ao Baiacu Rei*,
 `public/campaigns/culto-ao-baiacu-rei/`, what `game.html` plays without a query (Portuguese source
 text, English by its content table). It opens with the **character creation** (`player.create`:
-a name and a class) and so far holds one level, *Estrada da Costa* (the Ato I prologue, 40 × 30,
-1 villager who joins the party, 1 enemy group, 1 chest, 5 story events;
-[design note](../design/levels/estrada-da-costa.md)), **generated** with `campaign.json` by
+a name and a class) and so far holds two levels: *Estrada da Costa* (the Ato I prologue, C01,
+40 × 30, 1 villager who joins the party, 1 enemy group, 1 chest, 5 story events) and *Clareira do
+Riacho* (the campfire, C02, 26 × 22; [design note](../design/levels/estrada-da-costa.md)),
+**generated** with `campaign.json` by
 [`tools/make-estrada-da-costa.mjs`](../../tools/make-estrada-da-costa.mjs). Its plans are in
 [design/baiacu/](../design/baiacu/PLANO-DE-MECANICAS.md). The levels above and the campaigns below
 are the engine's demos and regression tests: keep them working.

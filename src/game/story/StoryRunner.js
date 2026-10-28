@@ -1483,7 +1483,8 @@ export class StoryRunner {
         return '';
       }
       case 'time': this._advanceClock(a.hour); return '';
-      case 'weather': g.weather.setWeather(a.weather); return '';
+      // (a weather is held until `weather auto` lets the map's pool roll again: Game.storyWeather)
+      case 'weather': g.storyWeather(a.weather); return '';
       case 'travel':
         if (!g.campaign) throw new Error(`line ${n.line}: "travel" needs a campaign`);
         if (!g.campaign.isLevel(a.level)) throw new Error(`line ${n.line}: "${a.level}" is not a level of the campaign`);
