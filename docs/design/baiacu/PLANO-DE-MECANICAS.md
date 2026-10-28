@@ -59,6 +59,8 @@ Consequências:
 | F | Arte: estruturas novas com estágios, NPCs novos, Surubin por rank, cavaleiro, inimigos novos | Grande e contínuo |
 | G | Atlas (mapa de nós com estados) | Grande, depois do núcleo |
 | H | Infra: desacoplar as fases de demonstração, testes do jogo | Pequeno e contínuo |
+| I | Clima sorteado por mapa nas viradas do dia, com trava pela história | Médio |
+| J | Criação de personagem (nome e classe) e voz do jogador nos diálogos | Médio |
 
 Fora deste plano por enquanto: co-op online (a engine não tem rede) e classes além do Cavaleiro.
 
@@ -283,6 +285,45 @@ mesa do acampamento, então ele abre por um objeto do acampamento. É a etapa ma
 3. **Documentação**: cada sistema novo ganha sua especificação em `docs/specs/` e uma linha no
    onboarding, como pede o `AGENTS.md`.
 
+### I. Clima sorteado por mapa
+
+Design na Bíblia, seção *Tempo e clima*. Hoje o relógio já corre (`TIME_SPEED`: 1 hora de jogo =
+90 s; fases em `HUD.js timePhase`), mas o clima de uma fase é fixo (`environment.weather`) e só muda
+pela tecla R ou pelo comando `weather` da história.
+
+1. **Campo novo de fase** `environment.weatherPool`, opcional e ausente por padrão (regra de ouro 5):
+   `{ "clear": 75, "rain": 25 }`, com pesos por clima e um peso de neve opcional por fase do dia
+   (`"snow": { "night": 20 }`). Entra no `LevelFormat`, no inspetor do editor e nos tipos.
+2. **Sorteio nas viradas de fase** em `src/game/Weather.js`: quando `timePhase` muda (amanhecer,
+   meio-dia, tarde, crepúsculo, noite), sorteia o próximo clima com `RNG` semeado pela jornada, pelo
+   dia, pela fase e pelo nome da fase do mapa (determinístico: recarregar não muda o resultado). A
+   troca usa a transição suave que já existe.
+3. **Na chegada a um mapa** o clima é sorteado para a fase atual; o clima do mapa anterior não é
+   carregado (hoje a campanha carrega o clima de uma fase para a outra: mudar em `CampaignRuntime`).
+4. **Trava pela história**: o comando `weather rain` passa a travar o sorteio; um novo `weather auto`
+   destrava. Condição nova `weather = rain` já existe para ler o clima.
+5. **Interiores** continuam sem clima visível (já é assim).
+6. **R** vira tecla só de depuração (fora do jogo final).
+7. Testes: um teste em Node do sorteio (mesma semente, mesmo resultado; distribuição perto dos pesos)
+   e uma rodada no navegador com o relógio acelerado.
+
+### J. Criação de personagem e voz do jogador
+
+Design na Bíblia, seção *O protagonista*.
+
+1. **Tela de criação** (novo componente da UI em pixel art, no kit `src/engine/ui/`): depois de
+   "Nova jornada", antes do prólogo. Campo de nome (até 16 letras, nome sugerido, teclado e controle),
+   escolha de classe (lista vinda de uma tabela de classes; hoje só o Cavaleiro) e confirmar.
+2. **Save**: `CampaignState` guarda `player: { name, cls }`, validado como dado não confiável.
+3. **Visual do jogador**: `Player.js` deixa de usar sempre o preset `traveler` e lê o preset da
+   classe (o Cavaleiro Errante precisa de um preset novo, etapa F2).
+4. **Nome nas falas**: valor de história `${player}` (nome escolhido) e o jogador como orador nos
+   scripts (`player: Prazer, Surubin.`), com placa de nome e retrato. A convenção do caderno,
+   `#NomeDoPlayer#`, vira `${player}` quando a cena entra no gerador.
+5. **Escolhas com a voz do jogador**: já funcionam (`choice` + `>`); falta só a placa do orador
+   mostrar o nome do jogador.
+6. Tradução: o nome é escolhido pelo jogador e nunca é traduzido.
+
 ---
 
 ## 5. Decisões para vocês dois
@@ -302,7 +343,7 @@ mesa do acampamento, então ele abre por um objeto do acampamento. É a etapa ma
 | Marco | Entrega | Etapas |
 | --- | --- | --- |
 | **M1, Idioma** | Jogo em português, sem japonês e chinês | A |
-| **M2, Acampamento jogável** | Campanha Ato I: prólogo → acampamento → Mata da Clareira → volta; cavaleiro com visual próprio; C02 e C03 | B, F1 (tenda, estandarte, altar), F2 (cavaleiro) |
+| **M2, Acampamento jogável** | Campanha Ato I: criação de personagem → prólogo → acampamento → Mata da Clareira → volta; cavaleiro com visual próprio e falando; clima sorteado por mapa; C02 e C03 | B, I, J, F1 (tenda, estandarte, altar), F2 (cavaleiro) |
 | **M3, Primeira obra** | Recursos coletados, escolha forja / silo / alojamento, obra em estágios, turno por expedição (protótipo E1) | C, D, E1, F1 (forja, silo, alojamento, andaime) |
 | **M4, Sistema de construção** | `buildSlot` + `BuildingSystem` + menu + editor; contagens EV01/EV02 | E2, D completo, F4 |
 | **M5, Fase 1–3 do Ato I** | Odo, Fumaça na Serra, Pedras Riscadas, duelo do mestre | F2 (NPCs), F3 |
