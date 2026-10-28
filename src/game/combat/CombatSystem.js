@@ -412,7 +412,8 @@ export class CombatSystem {
     for (const k of kinds) {
       try { this.sheets.set(k, createEnemySheet(/** @type {EnemyKind} */ (k))); } catch (err) { console.warn(`[combat] no sheet for "${k}":`, err); }
     }
-    // the Códex (codex.js): a kill unlocks its kind's page; portraits from the level's sheets, or
+    // the Códex (codex.js): a kill unlocks its kind's page (a campaign carries and saves the
+    // unlocks: exportProgress / importProgress); portraits from the level's sheets, or
     // a sheet made for the cut (a kind this level has none of) and let go at once
     this.codex = new Codex({
       events: this.events,
@@ -3403,12 +3404,13 @@ export class CombatSystem {
 
   /**
    * The player's progress a campaign carries to its next combat level (src/game/campaign/
-   * CampaignState.js): level, XP, gold, draughts, upgrades and the one-time wares bought.
+   * CampaignState.js): level, XP, gold, draughts, upgrades, the one-time wares bought and the
+   * Códex's unlocks (§7.10).
    * @returns {import('../campaign/CampaignState.js').CombatProgress}
    */
   exportProgress() {
     const pc = this.pc;
-    return { level: pc.level, xp: pc.xp, gold: pc.gold, potions: pc.potions, upgrades: { ...pc.upgrades }, wares: [...this.purchased] };
+    return { level: pc.level, xp: pc.xp, gold: pc.gold, potions: pc.potions, upgrades: { ...pc.upgrades }, wares: [...this.purchased], codex: this.codex.exportKills() };
   }
 
   /**
@@ -3427,6 +3429,7 @@ export class CombatSystem {
     pc.potions = n(p.potions, 0, POTION_MAX);
     for (const k of ['maxHp', 'maxMp', 'attack', 'def']) pc.upgrades[k] = n(p.upgrades?.[k], 0, 999);
     this.purchased = new Set((Array.isArray(p.wares) ? p.wares : []).filter((w) => typeof w === 'string' && SHOP_WARES.some((s) => s.id === w)));
+    this.codex.importKills(p.codex);
     pc.refill();
     for (const a of this.allies) a.syncLevel();
   }

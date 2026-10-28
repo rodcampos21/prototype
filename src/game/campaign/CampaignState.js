@@ -61,9 +61,11 @@ export function formatPlayTime(seconds) {
 /**
  * The player's combat progress carried from one combat level to the next (CombatSystem
  * `exportProgress` / `importProgress`): level, XP, gold, draughts, the upgrades from chests and
- * wares, and the one-time wares bought. (The story's `gold` is the purse between combat levels.)
+ * wares, the one-time wares bought and the Códex's unlocks (`codex`: defeated per enemy kind,
+ * COMBAT.md §7.10). (The story's `gold` is the purse between combat levels.)
  * @typedef {{ level: number, xp: number, gold: number, potions: number,
- *   upgrades: { maxHp: number, maxMp: number, attack: number, def: number }, wares: string[] }} CombatProgress
+ *   upgrades: { maxHp: number, maxMp: number, attack: number, def: number }, wares: string[],
+ *   codex?: Record<string, number> }} CombatProgress
  */
 
 export class CampaignState {
@@ -199,7 +201,13 @@ export class CampaignState {
         level: n(c.level, 1, 10), xp: n(c.xp, 0, 1e7), gold: n(c.gold, 0, 1e7), potions: n(c.potions, 0, 5),
         upgrades: { maxHp: n(up.maxHp, 0, 999), maxMp: n(up.maxMp, 0, 999), attack: n(up.attack, 0, 999), def: n(up.def, 0, 999) },
         wares: Array.isArray(c.wares) ? c.wares.filter((w) => typeof w === 'string') : [],
+        codex: {},
       };
+      // (kinds and counts only: CombatSystem.importProgress keeps the kinds the Códex lists)
+      for (const [kind, v] of Object.entries(isPlain(c.codex) ? c.codex : {})) {
+        const k = Math.floor(n(v, 0, 1e7));
+        if (k > 0 && kind.length <= 40 && /^[a-z][a-z0-9_-]*$/i.test(kind)) s.combat.codex[kind] = k;
+      }
     }
     if (Array.isArray(d.visited)) s.visited = d.visited.filter((id) => typeof id === 'string' && campaign.levels.some((l) => l.id === id));
     for (const [k, v] of Object.entries(isPlain(d.opened) ? d.opened : {})) {

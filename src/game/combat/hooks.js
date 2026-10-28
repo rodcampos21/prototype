@@ -481,7 +481,7 @@ export function makeHooks(sys) {
     /** The Códex's unlocks: defeated per kind (an unlocked kind has a count). */
     codex: () => ({ ...sys.codex.kills }),
 
-    /** Forget every Códex unlock (this browser's); the unlocks after (none). */
+    /** Forget every Códex unlock of the running game; the unlocks after (none). */
     codexReset() {
       sys.codex.reset();
       return { ...sys.codex.kills };

@@ -956,10 +956,13 @@ passes `codex.entries()` to `Journal.setData` as `JournalData.codex` (`Game.jour
 
 - **Entries:** `CODEX` lists the kinds in number order (`{ no, kind }`; `no` shown as four digits,
   0001). Today: 0001 `slime`.
-- **Unlocking:** every `kill` event of a non-passive enemy (summoned adds excluded) counts for its kind; the first
-  one unlocks the page. Unlocks and counts belong to the browser (`localStorage['luminati.codex']`,
-  `{ format: 'luminati-codex', kills: { kind: n } }`), not to a campaign save, and carry across
-  levels and campaigns.
+- **Unlocking:** every `kill` event of a non-passive enemy (summoned adds excluded) counts for its
+  kind; the first one unlocks the page.
+- **Saving:** the unlocks are part of the game being played. A campaign carries them from level to
+  level and keeps them in its save with the rest of the combat progress (`CombatProgress.codex`:
+  defeated per kind; `exportProgress` / `importProgress`, CampaignState `combat.codex`), so each
+  campaign — and a new game of it — has its own Códex. A level played on its own starts with an
+  empty Códex every time. A save without `codex` loads with an empty one.
 - **A locked page:** the number, "????", the kind's portrait as a silhouette (its shape in navy
   with a lighter rim) and how to record it.
 - **An unlocked page:** the number and name (`enemy.<kind>`), the portrait (the first idle frame of
@@ -969,7 +972,7 @@ passes `codex.entries()` to `Journal.setData` as `JournalData.codex` (`Game.jour
   gold as a share; none for a boss), the drop chances above 0 (§7.8) and the defeated count.
 - **Adding a mob:** a row in `CODEX` and its description (`codex.text.<kind>`, `pt` and `en`) in
   combat/strings.js; stats, growth, drops, name and picture come from the existing data.
-- **Hooks:** `codex()` (defeated per kind), `codexReset()` (§20).
+- **Hooks:** `codex()` (defeated per kind), `codexReset()` (empties the running game's; §20).
 
 ---
 

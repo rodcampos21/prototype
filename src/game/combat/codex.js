@@ -10,10 +10,11 @@ import { ownValue } from '../../engine/utils/own.js';
 /**
  * The Códex — the journal's bestiary tab (COMBAT.md §7.10): every enemy kind the game lists, by
  * its number. A kind is locked (a silhouette, its number and "????") until the player defeats one
- * of it anywhere; then its page shows the picture, the description, the stats at level 1 with
- * what each gains per level, the drops and how many were defeated. Unlocks belong to the browser
- * (`localStorage['luminati.codex']`, like the editor's prefs), not to a campaign save: a bestiary
- * outlives a single run.
+ * of it; then its page shows the picture, the description, the stats at level 1 with what each
+ * gains per level, the drops and how many were defeated. Unlocks belong to the game being played:
+ * a campaign carries them from level to level and keeps them in its save with the rest of the
+ * combat progress (CombatSystem `exportProgress` / `importProgress`, CampaignState `combat.codex`);
+ * a level played on its own starts with an empty Códex every time.
  *
  * Adding a mob: one row in `CODEX` (its number and its `ENEMY_DEFS` kind) and its description in
  * combat/strings.js (`codex.text.<kind>`, Portuguese and English). Its stats, growth and drops
@@ -33,11 +34,6 @@ export const CODEX = Object.freeze([
   Object.freeze({ no: 1, kind: /** @type {EnemyKind} */ ('slime') }),
 ]);
 
-/** Where the unlocks are kept (per browser). */
-export const CODEX_KEY = 'luminati.codex';
-/** The stored record's format id. */
-const FORMAT = 'luminati-codex';
-
 /** @param {string} k @param {Record<string, any>} [v] */
 const c = (k, v) => t(`combat.${k}`, v);
 
@@ -53,19 +49,16 @@ function num(n, digits = 1) {
 export class Codex {
   /**
    * @param {{ events?: { on(name: string, fn: (e: any) => void): () => void } | null,
-   *   picture?: (kind: EnemyKind) => HTMLCanvasElement | null, storage?: Storage | null }} [o]
+   *   picture?: (kind: EnemyKind) => HTMLCanvasElement | null }} [o]
    *   events: the combat's (its `kill` unlocks the kind); picture: a kind's portrait (an idle frame
-   *   of its sheet); storage: where unlocks are kept (default `localStorage`; null: this session only)
+   *   of its sheet)
    */
-  constructor({ events = null, picture = () => null, storage } = {}) {
+  constructor({ events = null, picture = () => null } = {}) {
     this._picture = picture;
-    /** @type {Storage|null} */
-    this._storage = storage === undefined ? safeLocalStorage() : storage;
     /** @type {Map<string, HTMLCanvasElement|null>} portraits by kind (cut once) */
     this._pictures = new Map();
     /** @type {Record<string, number>} defeated per kind (a kind present: unlocked) */
     this.kills = Object.create(null);
-    this._load();
     this._off = events ? events.on('kill', (e) => { if (e && !e.passive && !e.isAdd) this.record(e.kind); }) : null;
   }
 
@@ -78,7 +71,6 @@ export class Codex {
     if (!CODEX.some((x) => x.kind === kind)) return false;
     const first = !this.isUnlocked(kind);
     this.kills[kind] = (this.kills[kind] ?? 0) + 1;
-    this._save();
     return first;
   }
 
@@ -90,7 +82,28 @@ export class Codex {
   /** Forget every unlock (tests; `__game.combat.codexReset()`). */
   reset() {
     this.kills = Object.create(null);
-    this._save();
+  }
+
+  /**
+   * The unlocks as saved (CombatProgress `codex`): defeated per kind, unlocked kinds only.
+   * @returns {Record<string, number>}
+   */
+  exportKills() {
+    return { ...this.kills };
+  }
+
+  /**
+   * Restore `exportKills`'s result (a saved game is untrusted: kinds the Códex does not list and
+   * counts that are not whole positive numbers are dropped). Replaces what was there.
+   * @param {unknown} kills
+   */
+  importKills(kills) {
+    this.kills = Object.create(null);
+    if (!kills || typeof kills !== 'object') return;
+    for (const { kind } of CODEX) {
+      const n = Math.floor(Number(ownValue(/** @type {Record<string, unknown>} */ (kills), kind)));
+      if (Number.isFinite(n) && n > 0) this.kills[kind] = Math.min(n, 1e7);
+    }
   }
 
   /**
@@ -144,22 +157,6 @@ export class Codex {
     return this._pictures.get(kind) ?? null;
   }
 
-  _load() {
-    if (!this._storage) return;
-    try {
-      const v = JSON.parse(this._storage.getItem(CODEX_KEY) ?? 'null');
-      if (!v || v.format !== FORMAT || !v.kills || typeof v.kills !== 'object') return;
-      for (const { kind } of CODEX) {
-        const n = Math.floor(Number(ownValue(v.kills, kind)));
-        if (Number.isFinite(n) && n > 0) this.kills[kind] = n;
-      }
-    } catch { /* unreadable: start empty */ }
-  }
-
-  _save() {
-    if (!this._storage) return;
-    try { this._storage.setItem(CODEX_KEY, JSON.stringify({ format: FORMAT, kills: { ...this.kills } })); } catch { /* full or blocked */ }
-  }
 }
 
 /**
@@ -177,10 +174,3 @@ export function portraitFrom(sheet) {
   return out;
 }
 
-/** `localStorage`, or null where it throws (blocked storage, a sandboxed frame). */
-function safeLocalStorage() {
-  try {
-    const s = globalThis.localStorage;
-    return s ?? null;
-  } catch { return null; }
-}
