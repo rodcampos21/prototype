@@ -948,6 +948,29 @@ draws in the order gold, heart, mana, draught.
 - `deathCount` (per enemy, input of the loot seed) counts that enemy's deaths this session; it is
   reset by the `reset()` hook only (§20.1).
 
+### 7.10 The Códex (`codex.js`)
+
+The bestiary: a third tab of the story journal (STORY_SCRIPT §9.4), shown on levels with combat
+and a story. `CombatSystem.load` creates a `Codex` (so a peaceful level holds none of it); the game
+passes `codex.entries()` to `Journal.setData` as `JournalData.codex` (`Game.journalData`).
+
+- **Entries:** `CODEX` lists the kinds in number order (`{ no, kind }`; `no` shown as four digits,
+  0001). Today: 0001 `slime`.
+- **Unlocking:** every `kill` event of a non-passive enemy (summoned adds excluded) counts for its kind; the first
+  one unlocks the page. Unlocks and counts belong to the browser (`localStorage['luminati.codex']`,
+  `{ format: 'luminati-codex', kills: { kind: n } }`), not to a campaign save, and carry across
+  levels and campaigns.
+- **A locked page:** the number, "????", the kind's portrait as a silhouette (its shape in navy
+  with a lighter rim) and how to record it.
+- **An unlocked page:** the number and name (`enemy.<kind>`), the portrait (the first idle frame of
+  the kind's sheet facing the camera, drawn whole-pixel in a glass panel), "Recorded", the
+  description (`codex.text.<kind>`), the stats at level 1 — HP, attack, defense, poise, speed, XP,
+  gold — with what each gains per level (`ENEMY_SCALING`, §7.2: HP, attack and XP as an amount,
+  gold as a share; none for a boss), the drop chances above 0 (§7.8) and the defeated count.
+- **Adding a mob:** a row in `CODEX` and its description (`codex.text.<kind>`, `pt` and `en`) in
+  combat/strings.js; stats, growth, drops, name and picture come from the existing data.
+- **Hooks:** `codex()` (defeated per kind), `codexReset()` (§20).
+
 ---
 
 ## 8. Boss: Cinderheart (`ai/golem.js`, arena from `BossArena.js`)

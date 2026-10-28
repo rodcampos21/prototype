@@ -18,8 +18,8 @@ declare module 'lil-gui' {
 // Story UI (Journal, Emotes, EndCard; created by UI.useStoryUI)
 // -------------------------------------------------------------------------------------------------
 
-/** The journal's tabs. */
-export type JournalTab = 'quests' | 'items';
+/** The journal's tabs ('codex' only when the data carries a Códex). */
+export type JournalTab = 'quests' | 'items' | 'codex';
 
 /** An objective of a quest: shown with a box, ticked (and struck through) once `done`. */
 export interface JournalGoal {
@@ -52,6 +52,34 @@ export interface JournalItem {
   key?: boolean;
 }
 
+/** A row of a Códex page: a stat at level 1 and what it gains per level ('' none), or a drop. */
+export interface JournalCodexRow {
+  label: string;
+  value: string;
+  growth?: string;
+}
+
+/**
+ * A page of the Códex (the bestiary tab; the game's combat/codex.js builds them, translated). A
+ * locked page shows its number, "????" and the picture as a silhouette; an unlocked one its name,
+ * the picture, the text, the stats with their growth, the drops and the defeated count.
+ */
+export interface JournalCodexEntry {
+  /** the enemy kind */
+  id: string;
+  /** the number shown (padded to 4 digits: 0001) */
+  no: number;
+  unlocked?: boolean;
+  name?: string;
+  /** the portrait (an idle frame of the enemy's sheet); drawn as a silhouette while locked */
+  image?: HTMLCanvasElement | null;
+  text?: string;
+  stats?: JournalCodexRow[];
+  drops?: JournalCodexRow[];
+  /** defeated so far */
+  kills?: number;
+}
+
 /**
  * `Journal.setData(…)`. Untrusted (built from story files): every field is optional, wrong shapes
  * are dropped, every text is set with `textContent` (`{word}` renders in gold).
@@ -61,6 +89,8 @@ export interface JournalData {
   items?: JournalItem[];
   /** shown on the Items tab */
   gold?: number;
+  /** the Códex tab's pages, in number order; absent: no Códex tab (a level without combat) */
+  codex?: JournalCodexEntry[];
 }
 
 /**

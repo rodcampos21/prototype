@@ -823,7 +823,7 @@ export class StoryRunner {
       ge.last = now;
     }
     this.game.campaign?.onStoryChange({ save });
-    if (this.game.ui.journal?.isOpen) this.game.ui.journal.setData(this.journalData());
+    if (this.game.ui.journal?.isOpen) this.game.ui.journal.setData(this.game.journalData());
   }
 
   /**

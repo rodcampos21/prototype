@@ -40,6 +40,7 @@ import { CombatMusic } from './CombatMusic.js';
 import { makeHooks } from './hooks.js';
 import { Nav } from './Nav.js';
 import COMBAT_STRINGS from './strings.js';
+import { Codex, portraitFrom } from './codex.js';
 // the party's companions (docs/specs/PARTY.md §5): a member's fight, made by `addAlly`
 import { MemberCombat } from '../party/MemberCombat.js';
 import { ALLY } from '../party/rules.js';
@@ -411,6 +412,19 @@ export class CombatSystem {
     for (const k of kinds) {
       try { this.sheets.set(k, createEnemySheet(/** @type {EnemyKind} */ (k))); } catch (err) { console.warn(`[combat] no sheet for "${k}":`, err); }
     }
+    // the Códex (codex.js): a kill unlocks its kind's page; portraits from the level's sheets, or
+    // a sheet made for the cut (a kind this level has none of) and let go at once
+    this.codex = new Codex({
+      events: this.events,
+      picture: (kind) => {
+        const own = this.sheets.get(kind);
+        if (own) return portraitFrom(own);
+        const sheet = createEnemySheet(kind);
+        const pic = portraitFrom(sheet);
+        sheet.dispose();
+        return pic;
+      },
+    });
     this.atlas = createFxAtlas();
     this.atlasFrames = this.atlas.frames;
     this.quads = new FxQuads({ atlas: this.atlas, capacity: 256 });
@@ -3730,6 +3744,7 @@ export class CombatSystem {
   dispose() {
     if (!this._ready) return;
     this._ready = false;
+    this.codex?.dispose();
     // the companions' fights go (the party keeps the members; a next combat level adds them again)
     for (const a of this.allies) a.release();
     this.allies.length = 0;

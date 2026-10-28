@@ -1635,12 +1635,23 @@ export class Game {
     if (open === this.journalOpen) return this.journalOpen;
     // (the journal plays its own open / close sounds: `onSound`)
     if (open) {
-      j.setData(this.story.journalData());
+      j.setData(this.journalData());
       j.open('quests');
       this.ui.prompt.hide();
       this.combat?.onMapOpen();
     } else j.close();
     return this.journalOpen;
+  }
+
+  /**
+   * What the journal shows: the story's quests, items and gold, and — on a level with combat — the
+   * Códex (combat/codex.js), its third tab.
+   * @returns {import('../engine/ui/types.js').JournalData}
+   */
+  journalData() {
+    const data = this.story ? this.story.journalData() : {};
+    const codex = this.combat?.codex;
+    return codex ? { ...data, codex: codex.entries() } : data;
   }
 
   /** Is the story journal open? */
