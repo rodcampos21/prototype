@@ -951,8 +951,13 @@ draws in the order gold, heart, mana, draught.
 ### 7.10 The Códex (`codex.js`)
 
 The bestiary: a third tab of the story journal (STORY_SCRIPT §9.4), shown on levels with combat
-and a story. `CombatSystem.load` creates a `Codex` (so a peaceful level holds none of it); the game
-passes `codex.entries()` to `Journal.setData` as `JournalData.codex` (`Game.journalData`).
+and a story, and on every level of a campaign once it has played a combat level. `CombatSystem.load`
+creates the live `Codex`; the game passes `codex.entries()` to `Journal.setData` as
+`JournalData.codex` (`Game.journalData`). On a campaign's level without combat the journal shows
+the save's unlocks (`state.combat.codex`) through a `Codex` the game makes the first time the
+journal opens there (`Game._loadCodex`: the Códex module, the combat strings and the enemy sprite
+painter are fetched only then, so a peaceful level loads none of it before; the tab appears a
+moment after the journal opens).
 
 - **Entries:** `CODEX` lists the kinds in number order (`{ no, kind }`; `no` shown as four digits,
   0001). Today: 0001 `slime`.

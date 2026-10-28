@@ -554,8 +554,8 @@ the purse is the combat's; it goes back to the story when the player leaves.
 
 **B** opens the journal (a story only): the quests (active first; their stages reached, goals
 ticked) and the items (key items apart) and gold. B or Esc closes it; it holds the player like the
-world map. On a level with combat it has a third tab, the **Códex** (the bestiary: a page per enemy
-kind, unlocked by defeating one; [COMBAT.md §7.10](../contracts/COMBAT.md#710-the-códex-codexjs)).
+world map. On a level with combat — and on every level of a campaign that has played one — it has
+a third tab, the **Códex** (the bestiary: a page per enemy kind, unlocked by defeating one; [COMBAT.md §7.10](../contracts/COMBAT.md#710-the-códex-codexjs)).
 
 It shows everything in the page's language (I18N.md §4.5, §4.8): the quest titles and item names
 as terms; the story files' quest and item texts, stages and goals by the keys the story files hold

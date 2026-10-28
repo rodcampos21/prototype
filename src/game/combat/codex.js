@@ -21,7 +21,8 @@ import { ownValue } from '../../engine/utils/own.js';
  * come from `ENEMY_DEFS` / `ENEMY_SCALING`, its name from `enemy.<kind>`, its picture from its
  * enemy sheet — nothing else to write.
  *
- * Owned by CombatSystem (created with it, so a peaceful level holds none of it); the game hands
+ * Owned by CombatSystem (created with it); on a campaign's level without combat the game makes one
+ * from the save's unlocks the first time the journal opens (`Game._loadCodex`). The game hands
  * `entries()` to the journal (`Game.journalData`).
  */
 
