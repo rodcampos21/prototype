@@ -8,7 +8,7 @@
  * `sprite.setFrame(poses[name], row)`. `spriteOptions` holds only Sprite3D option keys; the game
  * spreads it into the sprite options (`{ ...CHARACTER_SPRITE_OPTS, ...sheet.spriteOptions, combatFx: true }`).
  *
- * Art: the monsters (slime, bat, boar, wolf, iguana, dummy, golem) are painted like the creatures of
+ * Art: the monsters (slime, bat, boar, wolf, fera, dummy, golem) are painted like the creatures of
  * CharacterSprites.js — shaded parts in a (material, shade) label buffer, 5-tone ramps, the dark
  * plum silhouette outline, light from the upper left — through its `_painterKit`. The humanoids
  * (goblin, archer, shaman) are `createCharacterSheet(spec, { combat: true })` sheets. Glow texels
@@ -27,12 +27,12 @@ const { Painter, resolvePainter, M, blob, quadGait, quadLeg, rampForKind, finish
 
 /**
  * Every enemy kind with a sheet (ObjectCatalog.ENEMY_KINDS, plus `wolf` — the Lobo-de-Capim of the
- * Ato I bestiary — and `iguana` — the giant iguana corrupted by the Baiacu Rei, a boss — whose
+ * Ato I bestiary — and `fera` — A Fera Maculada, the Ato I boss: a giant iguana corrupted by the Baiacu Rei — whose
  * sheets come before their gameplay: no ENEMY_DEFS entry or brain yet; the `kind` of
  * createEnemySheet).
- * @type {readonly ('slime'|'goblin'|'archer'|'shaman'|'bat'|'boar'|'dummy'|'golem'|'wolf'|'iguana')[]}
+ * @type {readonly ('slime'|'goblin'|'archer'|'shaman'|'bat'|'boar'|'dummy'|'golem'|'wolf'|'fera')[]}
  */
-export const ENEMY_SHEET_KINDS = Object.freeze(['slime', 'goblin', 'archer', 'shaman', 'bat', 'boar', 'dummy', 'golem', 'wolf', 'iguana']);
+export const ENEMY_SHEET_KINDS = Object.freeze(['slime', 'goblin', 'archer', 'shaman', 'bat', 'boar', 'dummy', 'golem', 'wolf', 'fera']);
 
 /** Columns 0–9 shared by the monster (non-humanoid) sheets. */
 const COMMON = ['idle0', 'idle1', 'move0', 'move1', 'move2', 'move3', 'windup', 'attack', 'hurt', 'dead'];
@@ -948,7 +948,8 @@ function drawWolf(p, view, key, f) {
 }
 
 // ---------------------------------------------------------------------------
-// Iguana (A Iguana Maculada) — a giant iguana corrupted by the Baiacu Rei (64 × 64, a boss):
+// A Fera Maculada (kind `fera`) — a giant iguana corrupted by the Baiacu Rei, the Ato I boss
+// (64 × 64):
 // dull olive scales with dark bands, the iguana's round cheek shield, a crest of the puffer's
 // bone-white spines with dark tips, a swollen dewlap studded with spines, salt crystals breaking
 // out of the back and toxin veins glowing sea-teal (glow texels), long clawed sprawling legs and a
@@ -956,7 +957,7 @@ function drawWolf(p, view, key, f) {
 // ---------------------------------------------------------------------------
 
 /** Per pose: head offset, jaw opening, dewlap size, crest scale, body drop, swelling, glow, eyes, legs, tail. */
-function iguanaRig(key) {
+function feraRig(key) {
   const R = {
     head: [0, 0], jaw: 0, dew: 1, crest: 1, body: 0, swell: 0, glow: 3, eye: 'open', tail: 'rest',
     // feet: [dx, lift] for near front, far front, near hind, far hind
@@ -982,7 +983,7 @@ function iguanaRig(key) {
 }
 
 /** One spine of the crest: bone-white, its dark tip leaning back (`lean` px over its height). */
-function iguanaSpine(p, x, y, h, lean, glowTip) {
+function feraSpine(p, x, y, h, lean, glowTip) {
   // a puffer spine: a 2 px base tapering to a 1 px point, lit on its left, the tip dark
   for (let i = 0; i < h; i++) {
     const t = i / Math.max(1, h - 1);
@@ -1010,7 +1011,7 @@ function saltCrystals(p, x, y, size, glow) {
 }
 
 /** Scales over what is painted in `mat`: a staggered lattice of lit and shadowed scale edges. */
-function iguanaScales(p, x0, y0, x1, y1) {
+function feraScales(p, x0, y0, x1, y1) {
   for (let y = y0; y <= y1; y++) {
     for (let x = x0; x <= x1; x++) {
       if (p.get(x, y) !== M.FUR) continue;
@@ -1026,7 +1027,7 @@ function iguanaScales(p, x0, y0, x1, y1) {
  * A sprawling lizard leg (side view, facing left): from the shoulder or hip out to the elbow or
  * knee, down to the foot, long toes and bone claws pointing forward. Far legs are a step darker.
  */
-function iguanaLegSide(p, sx, sy, ex, ey, fx, fy, far, hind) {
+function feraLegSide(p, sx, sy, ex, ey, fx, fy, far, hind) {
   const d = far ? 1 : 0;
   thickLine(p, sx, sy, ex, ey, hind ? 6 : 5, M.FUR, (t, x, y) => Math.max(0, (y < (sy + ey) / 2 ? 3 : 2) - d));
   thickLine(p, ex, ey, fx, fy - 1, 4, M.FUR, (t, x) => Math.max(0, (x <= Math.min(ex, fx) + 1 ? 3 : 2) - d));
@@ -1039,13 +1040,13 @@ function iguanaLegSide(p, sx, sy, ex, ey, fx, fy, far, hind) {
 }
 
 /** The tail's centre line (side view), from the hip to the tip, by pose. */
-function iguanaTailPath(tail, bx, by) {
+function feraTailPath(tail, bx, by) {
   if (tail === 'raised') return [[bx, by], [bx + 5, by - 3], [bx + 8, by - 9], [bx + 9, by - 16], [bx + 7, by - 22], [bx + 3, by - 25], [bx - 1, by - 24]];
   if (tail === 'swipe') return [[bx, by], [bx + 5, by + 3], [bx + 9, by + 7], [bx + 12, by + 10], [bx + 13, by + 13]];
   return [[bx, by], [bx + 5, by + 1], [bx + 9, by - 1], [bx + 12, by - 5], [bx + 12, by - 10], [bx + 10, by - 14], [bx + 7, by - 15]];
 }
 
-function drawIguanaSide(p, R) {
+function drawFeraSide(p, R) {
   const G = 61;
   const bd = R.body, sw = R.swell;
   const [hdx, hdy] = R.head;
@@ -1057,8 +1058,8 @@ function drawIguanaSide(p, R) {
     for (let x = 16; x <= 46; x++) p.over(x, G - 2, M.FUR3, 1);
     p.end();
     p.begin(null);
-    iguanaScales(p, 12, G - 12, 60, G);
-    for (let x = 18; x <= 44; x += 3) iguanaSpine(p, x, G - 11, 3, 2, false);
+    feraScales(p, 12, G - 12, 60, G);
+    for (let x = 18; x <= 44; x += 3) feraSpine(p, x, G - 11, 3, 2, false);
     saltCrystals(p, 30, G - 11, 2, 1); saltCrystals(p, 40, G - 10, 1, 1);
     p.end();
     p.begin('all', 0);
@@ -1075,19 +1076,19 @@ function drawIguanaSide(p, R) {
   // far legs, behind everything
   p.begin(null);
   const L = R.legs;
-  iguanaLegSide(p, 27, by + 2, 30 + L.ff[0] * 0.5, by + 8 - L.ff[1], 29 + L.ff[0], G - L.ff[1], true, false);
-  iguanaLegSide(p, 40, by + 2, 37 + L.fh[0] * 0.5, by + 9 - L.fh[1], 38 + L.fh[0], G - L.fh[1], true, true);
+  feraLegSide(p, 27, by + 2, 30 + L.ff[0] * 0.5, by + 8 - L.ff[1], 29 + L.ff[0], G - L.ff[1], true, false);
+  feraLegSide(p, 40, by + 2, 37 + L.fh[0] * 0.5, by + 9 - L.fh[1], 38 + L.fh[0], G - L.fh[1], true, true);
   p.end();
   // the tail: banded, tapering, curled up behind
   p.begin(null);
-  const tp = iguanaTailPath(R.tail, 47, by - 1);
+  const tp = feraTailPath(R.tail, 47, by - 1);
   for (let i = 0; i + 1 < tp.length; i++) {
     const w = Math.max(1.4, 6.5 - i * 1.0);
     thickLine(p, tp[i][0], tp[i][1], tp[i + 1][0], tp[i + 1][1], w, M.FUR, (t) => ((i * 4 + Math.round(t * 4)) % 4 === 3 ? 1 : 2));
   }
   p.end();
   p.begin(null);
-  for (let i = 1; i + 1 < tp.length; i++) iguanaSpine(p, tp[i][0], Math.round(tp[i][1] - Math.max(1, 3 - i * 0.5)), Math.max(2, Math.round((4 - i * 0.5) * R.crest)), 1, false);
+  for (let i = 1; i + 1 < tp.length; i++) feraSpine(p, tp[i][0], Math.round(tp[i][1] - Math.max(1, 3 - i * 0.5)), Math.max(2, Math.round((4 - i * 0.5) * R.crest)), 1, false);
   p.end();
   // the body: chest, swollen belly, hips; the pale underside
   p.begin(null);
@@ -1097,7 +1098,7 @@ function drawIguanaSide(p, R) {
   for (let x = 18; x <= 47; x++) { p.over(x, by + 6 + sw, M.FUR3, 1); p.over(x, by + 5 + sw, M.FUR3, 2); }
   p.end();
   p.begin(null);
-  iguanaScales(p, 14, by - 9, 52, by + 8);
+  feraScales(p, 14, by - 9, 52, by + 8);
   // the dark bands across the back
   for (const bx of [28, 36, 43]) for (let y = by - 5; y <= by + 2; y++) if ((y & 1) === 0 || y > by - 2) p.over(bx + ((y >> 1) & 1), y, M.FUR2, 2);
   // toxin veins glowing through the flank
@@ -1109,7 +1110,7 @@ function drawIguanaSide(p, R) {
   const crestTop = (x) => { let y = by - 12 - sw; while (y < by && !p.get(x, y)) y++; return y; };
   for (let x = 23; x <= 48; x += 3) {
     const h = Math.round((x < 30 ? 6 : x < 40 ? 5 : 3) * R.crest);
-    iguanaSpine(p, x, crestTop(x), h, R.crest > 1.4 ? 0 : 1, R.glow >= 4 && (x % 6 === 0));
+    feraSpine(p, x, crestTop(x), h, R.crest > 1.4 ? 0 : 1, R.glow >= 4 && (x % 6 === 0));
   }
   saltCrystals(p, 31, crestTop(31) + 1, 3 + sw, R.glow);
   saltCrystals(p, 41, crestTop(41) + 1, 2 + sw, R.glow);
@@ -1117,8 +1118,8 @@ function drawIguanaSide(p, R) {
   p.end();
   // near legs
   p.begin('sides', 1);
-  iguanaLegSide(p, 21, by + 3, 18 + L.nf[0] * 0.5, by + 9 - L.nf[1], 20 + L.nf[0], G - L.nf[1], false, false);
-  iguanaLegSide(p, 44, by + 3, 49 + L.nh[0] * 0.5, by + 9 - L.nh[1], 45 + L.nh[0], G - L.nh[1], false, true);
+  feraLegSide(p, 21, by + 3, 18 + L.nf[0] * 0.5, by + 9 - L.nf[1], 20 + L.nf[0], G - L.nf[1], false, false);
+  feraLegSide(p, 44, by + 3, 49 + L.nh[0] * 0.5, by + 9 - L.nh[1], 45 + L.nh[0], G - L.nh[1], false, true);
   p.end();
   // neck and head
   const hx = 13 + hdx, hy = 39 + hdy + bd;
@@ -1150,20 +1151,20 @@ function drawIguanaSide(p, R) {
   for (const [dx, dy, sh] of [[3, 1, 4], [4, 1, 3], [3, 2, 3], [4, 2, 2], [2, 1, 3], [3, 0, 3]]) p.set(hx + dx, hy + dy, M.FUR3, sh);
   p.end();
   p.begin(null);
-  iguanaScales(p, hx - 10, hy - 5, hx + 8, hy + 2);
+  feraScales(p, hx - 10, hy - 5, hx + 8, hy + 2);
   // the eye: a toxin-teal glow with a dark slit, under a heavy brow
   const ex = hx - 3, ey = hy - 2;
   p.set(ex - 1, ey - 1, M.FUR2, 0); p.set(ex, ey - 1, M.FUR2, 0); p.set(ex + 1, ey - 1, M.FUR2, 1);
   if (R.eye === 'shut') { p.set(ex - 1, ey, M.FUR3, 2); p.set(ex, ey, M.FUR3, 2); p.set(ex + 1, ey, M.FUR3, 1); }
   else { p.set(ex - 1, ey, M.GLOW, Math.min(4, R.glow)); p.set(ex, ey, M.FUR2, 0); p.set(ex + 1, ey, M.GLOW, Math.max(1, R.glow - 1)); p.set(ex, ey + 1, M.GLOW, 2); }
   // head spines: a short crest from the brow back onto the neck
-  for (const [dx, h] of [[1, 2], [3, 3], [5, 3]]) iguanaSpine(p, hx + dx, hy - 4, Math.round(h * R.crest), 1, false);
+  for (const [dx, h] of [[1, 2], [3, 3], [5, 3]]) feraSpine(p, hx + dx, hy - 4, Math.round(h * R.crest), 1, false);
   saltCrystals(p, hx + 1, hy - 4, 1, R.glow - 1);
   p.end();
 }
 
 /** Facing the camera (front) or from behind (back). */
-function drawIguanaFront(p, R, back) {
+function drawFeraFront(p, R, back) {
   const G = 61, cx = 32;
   const bd = R.body, sw = R.swell;
   if (R.dead) {
@@ -1171,8 +1172,8 @@ function drawIguanaFront(p, R, back) {
     blob(p, cx, G - 6, 18, 5, M.FUR, { hi: 0.35, lo: -0.3 });
     p.end();
     p.begin(null);
-    iguanaScales(p, cx - 19, G - 12, cx + 19, G);
-    for (let x = cx - 12; x <= cx + 12; x += 3) iguanaSpine(p, x, G - 11, 3, 1, false);
+    feraScales(p, cx - 19, G - 12, cx + 19, G);
+    for (let x = cx - 12; x <= cx + 12; x += 3) feraSpine(p, x, G - 11, 3, 1, false);
     saltCrystals(p, cx - 6, G - 11, 2, 1); saltCrystals(p, cx + 7, G - 10, 1, 1);
     p.end();
     p.begin('all', 0);
@@ -1211,7 +1212,7 @@ function drawIguanaFront(p, R, back) {
   if (!back) for (let y = 49 + bd; y <= 53 + bd + sw; y++) for (let x = cx - 6; x <= cx + 6; x++) p.over(x, y, M.FUR3, x < cx ? 2 : 1); // the pale chest
   p.end();
   p.begin(null);
-  iguanaScales(p, cx - 16, 38 + bd, cx + 16, 55 + bd);
+  feraScales(p, cx - 16, 38 + bd, cx + 16, 55 + bd);
   for (const x of [cx - 8, cx + 7]) for (let y = 42 + bd; y <= 50 + bd; y += 2) p.over(x, y, M.FUR2, 1);
   crack(p, [[cx - 11, 48 + bd], [cx - 7, 50 + bd], [cx - 3, 49 + bd]], Math.min(4, R.glow));
   crack(p, [[cx + 3, 50 + bd], [cx + 7, 48 + bd], [cx + 11, 50 + bd]], Math.max(1, R.glow - 1));
@@ -1222,7 +1223,7 @@ function drawIguanaFront(p, R, back) {
   for (let i = 0; i < n; i++) {
     const y = (back ? 34 : 38) + bd + i * (back ? 2.2 : 1.4);
     const h = Math.round((back ? 6 - i * 0.45 : 6 - i * 0.6) * R.crest);
-    iguanaSpine(p, cx + (i % 2 ? 1 : -1), Math.round(y), Math.max(2, h), 0, R.glow >= 4 && i % 3 === 0);
+    feraSpine(p, cx + (i % 2 ? 1 : -1), Math.round(y), Math.max(2, h), 0, R.glow >= 4 && i % 3 === 0);
   }
   saltCrystals(p, cx - 9, 42 + bd - sw, 3 + sw, R.glow);
   saltCrystals(p, cx + 9, 43 + bd - sw, 2 + sw, R.glow);
@@ -1240,8 +1241,8 @@ function drawIguanaFront(p, R, back) {
     blob(p, cx, hy, 8, 5, M.FUR, { hi: 0.4, lo: -0.2 });
     p.end();
     p.begin(null);
-    iguanaScales(p, cx - 8, hy - 5, cx + 8, hy + 4);
-    for (const [dx, h] of [[-3, 3], [-1, 5], [1, 5], [3, 3]]) iguanaSpine(p, cx + dx, hy - 3, Math.round(h * R.crest), 0, false);
+    feraScales(p, cx - 8, hy - 5, cx + 8, hy + 4);
+    for (const [dx, h] of [[-3, 3], [-1, 5], [1, 5], [3, 3]]) feraSpine(p, cx + dx, hy - 3, Math.round(h * R.crest), 0, false);
     p.set(cx - 7, hy + 1, M.FUR3, 3); p.set(cx + 7, hy + 1, M.FUR3, 2);
     p.end();
     return;
@@ -1258,7 +1259,7 @@ function drawIguanaFront(p, R, back) {
   blob(p, hx, hy, 8, 5.5, M.FUR, { hi: 0.35, lo: -0.3 });
   p.end();
   p.begin(null);
-  iguanaScales(p, hx - 8, hy - 6, hx + 8, hy + 3);
+  feraScales(p, hx - 8, hy - 6, hx + 8, hy + 3);
   // the cheek shields
   for (const sgn of [-1, 1]) { p.set(hx + sgn * 7, hy + 1, M.FUR3, sgn < 0 ? 4 : 3); p.set(hx + sgn * 7, hy + 2, M.FUR3, 2); p.set(hx + sgn * 6, hy + 1, M.FUR3, 3); p.set(hx + sgn * 6, hy + 2, M.FUR3, 3); }
   // the snout and mouth
@@ -1278,14 +1279,14 @@ function drawIguanaFront(p, R, back) {
     else { p.set(ex, ey, M.GLOW, Math.min(4, R.glow)); p.set(ex - sgn, ey, M.FUR2, 0); }
   }
   // the head's own little crest, peeking over the brow
-  for (const [dx, h] of [[-2, 2], [0, 3], [2, 2]]) iguanaSpine(p, hx + dx, hy - 5, Math.round(h * R.crest), 0, false);
+  for (const [dx, h] of [[-2, 2], [0, 3], [2, 2]]) feraSpine(p, hx + dx, hy - 5, Math.round(h * R.crest), 0, false);
   p.end();
 }
 
-function drawIguana(p, view, key) {
-  const R = iguanaRig(key);
-  if (view === 'side') drawIguanaSide(p, R);
-  else drawIguanaFront(p, R, view === 'up');
+function drawFera(p, view, key) {
+  const R = feraRig(key);
+  if (view === 'side') drawFeraSide(p, R);
+  else drawFeraFront(p, R, view === 'up');
 }
 
 // ---------------------------------------------------------------------------
@@ -1712,9 +1713,9 @@ const KINDS = {
       [M.EYE]: eyeRamp('#c88a1a', '#f2c04a'),
     }, M.FUR),
   },
-  iguana: {
+  fera: {
     fw: 64, fh: 64, columns: [...COMMON, 'tailWind', 'tailSwipe', 'puff'], aliases: {},
-    spriteOptions: { blobSize: /** @type {[number, number]} */ ([2.8, 1.1]) }, draw: drawIguana,
+    spriteOptions: { blobSize: /** @type {[number, number]} */ ([2.8, 1.1]) }, draw: drawFera,
     ramps: () => makeRamps({
       // the hide: dull olive scales, the dark bands, the pale belly, dewlap and cheek shield
       [M.FUR]: ramp5(['#151a14', '#253024', '#3c4a36', '#5c6c4e', '#8a9874']),
@@ -1752,7 +1753,7 @@ const KINDS = {
 
 /**
  * Create an enemy sprite sheet (callers cache it: one sheet per kind is shared by every sprite).
- * @param {'slime'|'goblin'|'archer'|'shaman'|'bat'|'boar'|'dummy'|'golem'|'wolf'|'iguana'} kind
+ * @param {'slime'|'goblin'|'archer'|'shaman'|'bat'|'boar'|'dummy'|'golem'|'wolf'|'fera'} kind
  * @returns {{texture: THREE.Texture, canvas: HTMLCanvasElement, frameWidth: number, frameHeight: number,
  *   columns: number, rows: number, pixelsPerUnit: number, anchor: [number, number],
  *   animations: Record<string, {frames: {col:number,row:number}[], fps: number, loop: boolean}>,
