@@ -8,7 +8,7 @@ Caderno de Lore, NPCs e Quests*). Aqui fica só o que muda no código.
 | | |
 | --- | --- |
 | **Público** | Rodrigo e o parceiro de projeto; agentes de IA que forem implementar cada etapa. |
-| **Estado** | Plano, nada implementado. Primeiro teste de lore pronto: [Estrada da Costa](../levels/estrada-da-costa.md). |
+| **Estado** | **M1 (idioma) concluído em 2026-10-28** — veja a etapa A. O resto é plano. Primeiro teste de lore pronto: [Estrada da Costa](../levels/estrada-da-costa.md). |
 | **Relacionado** | [Onboarding](../../ai/AGENT_ONBOARDING.md) · [Playbooks](../../ai/TASK_PLAYBOOKS.md) · [Formato de campanha](../../specs/CAMPAIGN_FORMAT.md) · [Linguagem de história](../../specs/STORY_SCRIPT.md) · [I18N](../../specs/I18N.md) · [Módulo pixel](../../architecture/modules/pixel.md) |
 
 ---
@@ -67,6 +67,13 @@ Fora deste plano por enquanto: co-op online (a engine não tem rede) e classes a
 ## 4. As etapas
 
 ### A. Idiomas: inglês e português
+
+> **Concluído (M1, 2026-10-28).** `SOURCE_LANG = 'pt'` em `I18n.js`: português é fonte, fallback e
+> padrão; as 11 tabelas de interface têm `pt` e `en`; `ja` / `zh` saíram (tabelas, conteúdo, fontes
+> `@fontsource` CJK); seletor PT · EN na tela de título; ferramentas e testes de i18n seguem a
+> constante. Tradução automática feita para a Estrada da Costa (`public/i18n/en/`). **Ficou para
+> depois:** o código de layout CJK, que está dormente (KNOWN_ISSUES I18N-10), e as fases de
+> demonstração em inglês (I18N-11, decisão 6). O texto abaixo é o plano original.
 
 Hoje: `LANGS = { en, ja, zh }` em `src/engine/i18n/I18n.js`, `en` é a língua-fonte e o fallback.
 As tabelas da interface ficam em `src/engine/i18n/strings/*.js` e `src/game/*/strings.js` (cada uma

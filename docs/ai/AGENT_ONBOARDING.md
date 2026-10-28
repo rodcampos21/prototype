@@ -378,16 +378,17 @@ apply them step by step.
     ([CONVENTIONS.md §13](../development/CONVENTIONS.md#13-error-handling-and-logging),
     [KNOWN_ISSUES LVL-17](KNOWN_ISSUES.md#resolved-2026-10-01)). Check with
     `sandbox/game_levels.html?case=hostile` and its script `sandbox/game_levels.hostile.json`.
-17. **The UI is pixel art in whole art pixels, in three languages.** Size and place UI in art px
+17. **The UI is pixel art in whole art pixels, in two languages.** Size and place UI in art px
     of the pixel UI's 640 × 360 reference frame (`--px`; `group()`, `txt()`, the art kit — never `vw` /
     `clamp()` or a scale of your own), colours from G's palette only. Every word the player reads
-    is a string-table key (`t()`, with its `ja` and `zh` entries) or data translated **at display**
-    — prose by the key the data holds (`loc(key, english)`, the key read with `ContentKeys.js`'
-    readers, which the extractor reads the same way), names as terms (`term(name)`) — never
-    written into a level, campaign, story or save; names the code looks up stay English. After touching text or a
-    display site, run both i18n tours in ja and zh (0 misses). Load CJK glyphs with
-    `fonts.ensure` before measuring; never trust `document.fonts.check`. Check UI work at
-    1280 × 720, 1920 × 1080 and 1024 × 768 and with `--lang=ja` / `--lang=zh`
+    is a string-table key (`t()`, with its `pt` source and `en` translation) or data translated
+    **at display** — prose by the key the data holds (`loc(key, source)`, the key read with
+    `ContentKeys.js`' readers, which the extractor reads the same way), names as terms
+    (`term(name)`) — never written into a level, campaign, story or save; names the code looks up
+    stay as identities. Portuguese (`pt`, `SOURCE_LANG`) is the source and the default; English is
+    translated by the content tables. After touching text or a display site, check it in English
+    (`--lang=en`: 0 misses). Check UI work at 1280 × 720, 1920 × 1080 and 1024 × 768 and with
+    `--lang=en`
     ([PIXEL_UI.md](../specs/PIXEL_UI.md), [I18N.md](../specs/I18N.md),
     [KNOWN_ISSUES › UI and languages](KNOWN_ISSUES.md#ui-and-languages)).
 18. **Text keys live in the data; nobody types them.** Every translatable text carries a GUID

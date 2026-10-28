@@ -10,7 +10,7 @@
  *   npm run check -- [--page=game.html] [--query=autostart=1] [--out=name]
  *                    [--wait=4000] [--width=1600] [--height=900]
  *                    [--script=path/to/actions.json] [--fps=3000] [--headful] [--keep-cache] [--strict]
- *                    [--fonts=local|google|auto|google-fail|gstatic-fail] [--lang=en|ja|zh]
+ *                    [--fonts=local|google|auto|google-fail|gstatic-fail] [--lang=pt|en]
  *                    [--base=project] [--dist]
  *
  * --base serves the project under a sub-path (Vite's `base`, slashes added: --base=project is
@@ -25,7 +25,7 @@
  * same dist/ works at any path.
  *
  * Fonts and language (docs/specs/I18N.md §1, §5): --fonts (default local) and --lang (default: none,
- * i.e. English) are written into the page origin's localStorage ('luminati.fonts', 'luminati.lang') before
+ * i.e. Portuguese, the source) are written into the page origin's localStorage ('luminati.fonts', 'luminati.lang') before
  * its first script runs, once per run (page.evaluateOnNewDocument with a seeded marker), so `goto`
  * steps and tabs the page opens (the editor's play-test pop-up) inherit them and a page that saves
  * another language keeps it. local: the fonts built into dist/ (screenshots do not depend on the
@@ -155,7 +155,7 @@ import { fileURLToPath } from 'node:url';
  * @property {string[]} strictFailures with --strict: why it exits 1 besides page errors
  *   ("2 console errors", "1 eval step threw" …); empty otherwise
  * @property {string} fonts the --fonts mode seeded into the page ('local' by default)
- * @property {string|null} lang the --lang seeded into the page (null: none, English)
+ * @property {string|null} lang the --lang seeded into the page (null: none, Portuguese)
  * @property {string} base the sub-path the project was served under (--base; '/' without one)
  * @property {boolean} dist the build in dist/ was checked (--dist), not the sources
  */
@@ -191,7 +191,7 @@ const baseArg = args.base !== undefined ? `/${String(args.base).split('/').filte
 // --dist: the build in dist/ through `vite preview` instead of the dev server (header)
 const dist = args.dist !== undefined && !/^(0|false|no|off)$/i.test(String(args.dist));
 const langArg = args.lang !== undefined ? String(args.lang).toLowerCase() : null;
-if (langArg !== null && !['en', 'ja', 'zh'].includes(langArg)) { console.error('--lang must be en, ja or zh'); process.exit(2); }
+if (langArg !== null && !['pt', 'en'].includes(langArg)) { console.error('--lang must be pt or en'); process.exit(2); }
 /** @type {Step[]} */
 const script = args.script ? JSON.parse(fs.readFileSync(path.resolve(root, String(args.script)), 'utf8')) : [];
 

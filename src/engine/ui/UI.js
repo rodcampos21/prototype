@@ -158,7 +158,7 @@ export class UI {
     this.root = root;
 
     // ---- the pixel UI's root: language, strings, palette, filters, measure host, scale, fonts ----
-    /** @type {'en'|'ja'|'zh'} the page's language (docs/specs/I18N.md §1) */
+    /** @type {import('../i18n/I18n.js').LangCode} the page's language (docs/specs/I18N.md §1) */
     this.lang = setLang(lang !== undefined ? lang : resolveLang());
     registerCoreStrings();
     applyPalette(root);

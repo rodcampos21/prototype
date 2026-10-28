@@ -950,7 +950,7 @@ begin('runner: translations (I18N.md §4)');
   /** @type {string[]} */
   const toasts = [];
   g.ui.hud.toast = (msg) => { toasts.push(msg); };
-  setLang('ja');
+  setLang('en');
   // (a version-3 table: units by the GUIDs of the lines' `#line:` tags, names as terms — `Leave` has
   // another translation under another key)
   const K = (/** @type {string} */ s) => guidOf(`runtime-tr:${s}`);
@@ -989,7 +989,7 @@ begin('runner: translations (I18N.md §4)');
     eq('… and nothing shown untranslated', contentMisses(), []);
   } finally {
     setContentTables(null);
-    setLang('en');
+    setLang('pt');
   }
 }
 
@@ -1079,7 +1079,7 @@ begin('runner: content keys (I18N.md §4.2)');
   g.ui.endCard = { show(o) { cards.push(o); return Promise.resolve(); } };
   g.returnToTitle = () => {};
   registerCoreStrings();
-  setLang('ja');
+  setLang('en');
   const units = {
     [K('p0')]: { source: 'Good day.', target: 'こんにちは。' },
     [K('p1')]: { source: 'Which way?', target: 'どっち？' },
@@ -1110,7 +1110,7 @@ begin('runner: content keys (I18N.md §4.2)');
     eq('a talk: the plate a term, the title by the key its object holds, the line, the question and the options by their tags', [page[0]?.speaker, page[0]?.title, page[0]?.text, page.at(-1)?.text, page.at(-1)?.choices], ['ピップ', '渡し守の子', 'こんにちは。', 'どっち？', ['北', '南']]);
     await r.talk(anon);
     eq('a villager without a name: the UI\'s default (game.default.villager), its line by its key', [opens.at(-1)?.[0]?.speaker, opens.at(-1)?.[0]?.text], [t('game.default.villager'), 'ふむ。']);
-    ok('… which reads 村人', t('game.default.villager') === '村人', t('game.default.villager'));
+    ok('… which reads Villager (the UI in English)', t('game.default.villager') === 'Villager', t('game.default.villager'));
     await r.talk(wren);
     eq('an actor\'s talk: its script\'s key', opens.at(-1)?.[0]?.text, 'やあ、子よ。');
     r.state.setVar('n', 3);
@@ -1133,7 +1133,7 @@ begin('runner: content keys (I18N.md §4.2)');
     await r._exec({ kind: 'story', key: 'story:ford-open', nodes: r._script('event.ford-open').nodes }, { ownBusy: true });
     eq('a banner: title and subtitle by their two keys (the tag and <tag>.2)', banners.at(-1), ['浅瀬', 'ついに開いた']);
     await r._exec({ kind: 'event', key: 'event:millbrook.ev_end', nodes: le('ev_end').nodes }, { ownBusy: true });
-    eq('an ending without a title: the UI\'s default (story.ending.default), the level\'s name a term', cards.at(-1), { title: 'おわり', subtitle: 'テスト' });
+    eq('an ending without a title: the UI\'s default (story.ending.default), the level\'s name a term', cards.at(-1), { title: 'The End', subtitle: 'テスト' });
     await r._exec({ kind: 'event', key: 'event:millbrook.ev_end2', nodes: le('ev_end2').nodes }, { ownBusy: true });
     eq('an ending\'s title by its key', cards.at(-1)?.title, '灯の帰る家');
     // an ad-hoc script (`__game.story.run`: lines without tags) — no key: its English, a nokey miss
@@ -1196,7 +1196,7 @@ begin('runner: content keys (I18N.md §4.2)');
     eq('… a key that is no GUID is not kept', [st.quest('w').texts.s, Object.keys(st.quest('w').keys)], ['Old.', []]);
   } finally {
     setContentTables(null);
-    setLang('en');
+    setLang('pt');
   }
   // English: the same texts as before keys (no table: loc and term give the English)
   opens.length = 0;
@@ -1206,9 +1206,9 @@ begin('runner: content keys (I18N.md §4.2)');
   await r.talk(pip);
   eq('English: the plate, the title, the line and the options as written (no tag shown)', [opens.at(-1)?.[0]?.speaker, opens.at(-1)?.[0]?.title, opens.at(-1)?.[0]?.text, opens.at(-1)?.at(-1)?.choices], ['Pip', 'Ferry Boy', 'Good day.', ['North', 'South']]);
   await r._exec({ kind: 'event', key: 'event:millbrook.ev_end', nodes: le('ev_end').nodes }, { ownBusy: true });
-  eq('English: an ending without a title reads The End', cards.at(-1), { title: 'The End', subtitle: 'Test' });
+  eq('the source language: an ending without a title reads Fim (the UI in Portuguese)', cards.at(-1), { title: 'Fim', subtitle: 'Test' });
   await r.talk(anon);
-  eq('English: a villager without a name reads Villager', opens.at(-1)?.[0]?.speaker, 'Villager');
+  eq('the source language: a villager without a name reads Morador', opens.at(-1)?.[0]?.speaker, 'Morador');
 }
 
 begin('review fixes: what no window shows records no miss (I18N.md §4.2)');
@@ -1241,7 +1241,7 @@ begin('review fixes: what no window shows records no miss (I18N.md §4.2)');
   const want = (/** @type {string[]} */ list) => [...list].sort();
   // (a table with nothing these lines need: every lookup of a shown text is a miss)
   registerCoreStrings();
-  setLang('ja');
+  setLang('en');
   setContentTables({ terms: { Unrelated: '無関係' } });
   try {
     // a cutscene skipped while it waits: the lines after it are passed over (c0 c1 the says, c2 the
@@ -1284,7 +1284,7 @@ begin('review fixes: what no window shows records no miss (I18N.md §4.2)');
     eq('shown: its misses are recorded', [opens.length, misses()], [1, want([`${K('s0')} missing`, `${K('title')} missing`, 'term Pip'])]);
   } finally {
     setContentTables(null);
-    setLang('en');
+    setLang('pt');
   }
 }
 
@@ -1339,13 +1339,13 @@ begin('review fixes: a shop item keeps the name it was given by');
   eq('… a `take` toast names it so', toasts.at(-1), t('story.item.given', { item: "Ilse's Lantern", n: 1 }));
   r.giveNamed("Ilse's Lantern");
   // translated: the name given is the term (what the extractor lists for a shop's item)
-  setLang('ja');
+  setLang('en');
   setContentTables({ terms: { "Ilse's Lantern": 'イルゼのランタン', 'Ferry Lamp': '渡しのランプ' }, units: { [LAMP_KEY]: { source: 'A lamp for the ferry.', target: '渡しのためのランプ。' } } });
   try {
     eq('the journal (ja): the given name\'s term, no miss', [r.journalData().items.map((i) => [i.id, i.name]), contentMisses()], [[['lamp', '渡しのランプ'], ['ilse-s-lantern', 'イルゼのランタン']], []]);
   } finally {
     setContentTables(null);
-    setLang('en');
+    setLang('pt');
   }
   // the save
   const saved = JSON.parse(JSON.stringify(r.state.toJSON()));

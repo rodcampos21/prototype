@@ -43,6 +43,7 @@ import { normalizeCampaign, levelFile, levelVariants } from '../../src/game/camp
 import { buildStory, storyFile } from '../../src/game/campaign/StoryFormat.js';
 import { levelStrings, campaignStrings, scanLocCalls, commonTerms, keyConflicts } from '../../src/engine/i18n/ContentStrings.js';
 import { isTextKey, isCodeKey } from '../../src/engine/i18n/ContentKeys.js';
+import { SOURCE_LANG } from '../../src/engine/i18n/I18n.js';
 import {
   parseContentTable, parseContentIndex, isTableId, CONTENT_FORMAT, CONTENT_INDEX_FORMAT, CONTENT_INDEX_VERSION, CONTENT_KINDS, CONTENT_VERSION,
 } from '../../src/engine/i18n/ContentText.js';
@@ -58,13 +59,13 @@ export const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '
 export const CODE_DIRS = Object.freeze(['src/game', 'src/engine']);
 /** …minus these (the i18n modules define loc and show it in their docs). */
 export const CODE_SKIP = new Set(['src/engine/i18n']);
-/** Characters per English character a translation takes (content survey §6). */
-export const RATIOS = Object.freeze({ ja: 0.55, zh: 0.36 });
+/** Characters per source character a translation takes (Portuguese → English runs a little shorter). */
+export const RATIOS = Object.freeze({ en: 0.9 });
 /**
  * Where the UI string tables are (`registerStrings` modules, I18N.md §2, PIXEL_UI.md §8): every
  * module of these folders (the core namespaces) and every `strings.js` under `UI_FEATURE_ROOT` (a
  * feature's namespaces: src/game/combat/strings.js …). The glossary cross-check imports them in
- * Node and reads their `{ en, ja, zh }` exports.
+ * Node and reads their `{ pt, en }` exports (`SOURCE_LANG` the source).
  */
 export const UI_TABLE_DIRS = ['src/engine/i18n/strings'];
 /** The folder whose `strings.js` files hold the features' UI string tables. */
@@ -732,16 +733,16 @@ export function uiTableFiles(root = ROOT) {
 }
 
 /**
- * The UI string tables' English → translations (I18N.md §3: a name the UI and the content both show
- * must be translated alike). Every module of `uiTableFiles` is imported, and each export shaped
- * `{ en: { key: 'English' }, ja?: {…}, zh?: {…} }` (a `registerStrings` table, default or named)
- * contributes its string entries; a module that cannot be imported in Node is skipped with a note,
- * and `missing` lists the feature namespaces of `UI_FEATURE_FILES` not written yet.
+ * The UI string tables' source text → translations (I18N.md §3: a name the UI and the content both
+ * show must be translated alike). Every module of `uiTableFiles` is imported, and each export shaped
+ * `{ pt: { key: 'source' }, en?: {…} }` (a `registerStrings` table, default or named; `SOURCE_LANG`
+ * the source) contributes its string entries; a module that cannot be imported in Node is skipped
+ * with a note, and `missing` lists the feature namespaces of `UI_FEATURE_FILES` not written yet.
  * @param {string} [root]
  * @returns {Promise<{ names: Map<string, Map<string, string>>, modules: string[], notes: string[], missing: string[] }>}
  */
 export async function uiGlossary(root = ROOT) {
-  /** @type {Map<string, Map<string, string>>} English → lang → translation */
+  /** @type {Map<string, Map<string, string>>} source → lang → translation */
   const names = new Map();
   const modules = [];
   const notes = [];
@@ -750,13 +751,13 @@ export async function uiGlossary(root = ROOT) {
     try { mod = await import(pathToFileURL(path.join(root, file)).href); } catch (e) { notes.push(`${file}: not importable in Node (${e.message.split('\n')[0]}) — skipped`); continue; }
     modules.push(file);
     for (const v of Object.values(mod)) {
-      if (!v || typeof v !== 'object' || !v.en || typeof v.en !== 'object') continue;
-      for (const [key, en] of Object.entries(v.en)) {
-        if (typeof en !== 'string' || !en.trim()) continue;
-        let m = names.get(en);
-        if (!m) names.set(en, (m = new Map()));
+      if (!v || typeof v !== 'object' || !v[SOURCE_LANG] || typeof v[SOURCE_LANG] !== 'object') continue;
+      for (const [key, src] of Object.entries(v[SOURCE_LANG])) {
+        if (typeof src !== 'string' || !src.trim()) continue;
+        let m = names.get(src);
+        if (!m) names.set(src, (m = new Map()));
         for (const lang of Object.keys(v)) {
-          if (lang === 'en') continue;
+          if (lang === SOURCE_LANG) continue;
           const tr = v[lang]?.[key];
           if (typeof tr === 'string' && !m.has(lang)) m.set(lang, tr);
         }

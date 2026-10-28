@@ -393,14 +393,18 @@ testing Cinderwatch's three companions
 
 ## UI and languages
 
-The pixel UI and three languages follow [PIXEL_UI.md](../specs/PIXEL_UI.md),
-[I18N.md](../specs/I18N.md), and [I18N_GLOSSARY.md](../specs/I18N_GLOSSARY.md). Content text uses
-GUID keys held in the data and recorded English sources; names use terms. The rows below cover
-remaining limitations and common traps. The current component recipes and deliberate design
-choices are documented in PIXEL_UI.md.
+The pixel UI and its two languages — Portuguese (the source and default) and English — follow
+[PIXEL_UI.md](../specs/PIXEL_UI.md), [I18N.md](../specs/I18N.md), and
+[I18N_GLOSSARY.md](../specs/I18N_GLOSSARY.md). Content text uses GUID keys held in the data and
+recorded source texts; names use terms. The rows below cover remaining limitations and common
+traps. The rows about Japanese and Chinese (I18N-02, I18N-06 – I18N-09) describe code that is
+dormant since those languages were removed (2026-10-28). The current component recipes and
+deliberate design choices are documented in PIXEL_UI.md.
 
 | ID | Issue and impact | Status | Suggested direction |
 | --- | --- | --- | --- |
+| I18N-10 | **Dormant CJK layout code**: since Japanese and Chinese were removed, the UI's CJK paths (`isCJK`, the ja / zh type roles and Jersey aliases in `layout/type.js`, CJK line breaking in DialogBox, Journal, EndCard, logo.js, the CJK branches of the HUD, Banner, PartyPanel …) never run. They add code to read and maintain, but removing them touches the pixel layout of every component. | accepted | Remove them in one pass, with before/after screenshots of every UI page at the three sizes (plan stage A). |
+| I18N-11 | **The demo levels and campaigns are English in both languages**: their source text is English and they have no content tables (only the game's own Portuguese content is translated to English). The UI around them follows the chosen language. | by design | Translate them to Portuguese only if they stay in the game; else remove them (plan decision 6). |
 | I18N-01 | **A forced Google failure leaves expected console errors**: `?fonts=google-fail` leaves 1 console error and 1 failed request (en) or 2 (ja, zh); `gstatic-fail` 3 (en) or 9 (ja, zh). The modes exist to test the fallback; a run with them cannot pass `--strict`. | by design | Check the fallback with `window.__luminati.fonts.sources`, not with `--strict`. |
 | I18N-02 | **CJK glyphs differ between the two font sources**: Google serves newer Noto Sans JP / SC builds than `@fontsource` 5.3.0, so CJK screenshots differ by a few hundred pixels between `--fonts=google` and `local` (advances are the same; Latin and DotGothic16 are identical). | by design | The harness defaults to `--fonts=local`; compare CJK screenshots only within one source. |
 | I18N-03 | **A Google hang costs one slow load**: with Google unreachable but not refusing (a hang), the first load waits for the 2.5 s timeouts (≈ 3.8–4 s to play); the failure is then remembered for 24 h (`localStorage['luminati.fonts.fail']`) and later loads go straight to `dist/`. | accepted | — |

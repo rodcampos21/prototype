@@ -35,8 +35,7 @@ launcher in front of them:
 | **Sandboxes** | `sandbox/index.html` | One test page per engine module (dev server only). |
 
 Every texture, sprite, sound and music track is generated procedurally at runtime — there are no
-image or audio files to download. The UI fonts (Jersey 10, Jersey 15, Tiny5; DotGothic16 and Noto
-Sans JP in Japanese, Noto Sans SC in Chinese) load from Google Fonts first and, when that fails,
+image or audio files to download. The UI fonts (Jersey 10, Jersey 15, Tiny5) load from Google Fonts first and, when that fails,
 from the copies installed by npm (`@fontsource/*`) and included in the build. A locally served
 build can therefore run without an internet connection; it still needs its HTTP server. The game
 runs in English, Japanese and Simplified Chinese: choose on the title screen (**L**, then ← / → and Enter) or with `?lang=ja` / `?lang=zh`.
@@ -89,7 +88,7 @@ What gets installed ([`package.json`](../../package.json)):
 | --- | --- | --- |
 | `three` | ^0.186.1 | Rendering |
 | `lil-gui` | ^0.21.0 | The in-game debug panel |
-| `@fontsource/jersey-10`, `jersey-15`, `tiny5`, `dotgothic16`, `noto-sans-jp`, `noto-sans-sc` | ^5.3.0 | The game UI's fonts: the fallback when Google Fonts cannot be reached (Vite emits them into `dist/`, woff2 only) |
+| `@fontsource/jersey-10`, `jersey-15`, `tiny5` | ^5.3.0 | The game UI's fonts: the fallback when Google Fonts cannot be reached (Vite emits them into `dist/`, woff2 only) |
 | `@fontsource/cinzel`, `@fontsource/crimson-pro`, `@fontsource/pixelify-sans` | ^5.3.0 | The level editor (Cinzel) and a few sandbox pages; no longer used by the game UI |
 | `vite` (dev) | ^8.3.1 | Dev server, level-save API, production build |
 | `puppeteer-core` (dev) | ^25.12.0 | Only the headless check harness (`npm run check`); it drives your installed Chrome / Edge and downloads no browser |
