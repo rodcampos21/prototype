@@ -8,7 +8,7 @@
  * `sprite.setFrame(poses[name], row)`. `spriteOptions` holds only Sprite3D option keys; the game
  * spreads it into the sprite options (`{ ...CHARACTER_SPRITE_OPTS, ...sheet.spriteOptions, combatFx: true }`).
  *
- * Art: the monsters (slime, bat, boar, dummy, golem) are painted like the creatures of
+ * Art: the monsters (slime, bat, boar, wolf, dummy, golem) are painted like the creatures of
  * CharacterSprites.js — shaded parts in a (material, shade) label buffer, 5-tone ramps, the dark
  * plum silhouette outline, light from the upper left — through its `_painterKit`. The humanoids
  * (goblin, archer, shaman) are `createCharacterSheet(spec, { combat: true })` sheets. Glow texels
@@ -26,10 +26,12 @@ import { hash2 } from '../utils/math.js';
 const { Painter, resolvePainter, M, blob, quadGait, quadLeg, rampForKind, finishTexture, glowTexel, OUTLINE } = _painterKit;
 
 /**
- * Every enemy kind with a sheet (matches ObjectCatalog.ENEMY_KINDS; the `kind` of createEnemySheet).
- * @type {readonly ('slime'|'goblin'|'archer'|'shaman'|'bat'|'boar'|'dummy'|'golem')[]}
+ * Every enemy kind with a sheet (ObjectCatalog.ENEMY_KINDS, plus `wolf`: the Lobo-de-Capim of the
+ * Ato I bestiary, whose sheet comes before its gameplay — no ENEMY_DEFS entry or brain yet; the
+ * `kind` of createEnemySheet).
+ * @type {readonly ('slime'|'goblin'|'archer'|'shaman'|'bat'|'boar'|'dummy'|'golem'|'wolf')[]}
  */
-export const ENEMY_SHEET_KINDS = Object.freeze(['slime', 'goblin', 'archer', 'shaman', 'bat', 'boar', 'dummy', 'golem']);
+export const ENEMY_SHEET_KINDS = Object.freeze(['slime', 'goblin', 'archer', 'shaman', 'bat', 'boar', 'dummy', 'golem', 'wolf']);
 
 /** Columns 0–9 shared by the monster (non-humanoid) sheets. */
 const COMMON = ['idle0', 'idle1', 'move0', 'move1', 'move2', 'move3', 'windup', 'attack', 'hurt', 'dead'];
@@ -629,6 +631,258 @@ function drawBoar(p, view, key, f) {
 }
 
 // ---------------------------------------------------------------------------
+// Wolf (Lobo-de-Capim) — a lean grass wolf whose pelt is overlapping leaves: a leaf mane along
+// the neck and spine, a leafy brush of a tail, a straw belly and muzzle, amber eyes (32 × 24)
+// ---------------------------------------------------------------------------
+
+/** Per pose: head offset, body drop, leg gait override, mouth, ears flat, eye, tail lift. */
+const WOLF_POSES = {
+  idle0: { tail: 0 }, idle1: { head: [0, 1], tail: 1 },
+  move0: { walk: 0 }, move1: { walk: 1, body: -1, tail: 1 }, move2: { walk: 2 }, move3: { walk: 3, body: -1, tail: 1 },
+  windup: { head: [1, 3], body: 1, ears: 'flat', mouth: 'snarl', eye: 'angry', tail: -1, legs: [[1, 0], [1, 0], [-1, 0], [-1, 0]] },
+  attack: { head: [-3, -1], body: -1, mouth: 'open', eye: 'angry', tail: 2, legs: [[-3, 2], [-2, 1], [3, 0], [2, 0]] },
+  hurt: { head: [1, -1], ears: 'flat', eye: 'shut', tail: -1, legs: [[1, 0], [0, 0], [1, 0], [0, 0]] },
+  dead: { dead: true },
+};
+
+/**
+ * Leaf scales over what is painted: on a slanted lattice, a lit leaf tip and its dark lower edge,
+ * so the pelt reads as overlapping leaves rather than fur.
+ * @param {number} x0 @param {number} y0 @param {number} x1 @param {number} y1
+ */
+function leafScales(p, x0, y0, x1, y1) {
+  for (let y = y0; y <= y1; y++) {
+    for (let x = x0; x <= x1; x++) {
+      if (p.get(x, y) !== M.FUR) continue;
+      const k = (x + 2 * y) % 5;
+      const s = p.getShade(x, y);
+      if (k === 0) p.set(x, y, M.FUR, Math.min(4, s + 2));
+      else if (k === 2 && s > 0) p.set(x, y, M.FUR2, Math.max(1, s - 1));
+    }
+  }
+}
+
+/** A pointed leaf rising from (x, y): base, mid and tip leaning back by `lean`, in the mane's tones. */
+function maneLeaf(p, x, y, h, lean, tone) {
+  for (let i = 0; i < h; i++) {
+    const t = i / Math.max(1, h - 1);
+    const xx = x + Math.round(lean * t);
+    p.set(xx, y - i, i === h - 1 ? M.FUR : M.FUR2, i === h - 1 ? Math.min(4, tone + 1) : tone);
+    if (i === 0 && h > 2) p.set(xx + 1, y - i, M.FUR2, Math.max(0, tone - 1));
+  }
+}
+
+/** Wolf head (side view, facing left), (hx, hy) = the skull's centre. */
+function wolfHeadSide(p, hx, hy, P) {
+  const flat = P.ears === 'flat';
+  // ears: two leaf-shaped points (laid back when flat)
+  p.begin(null);
+  if (flat) { p.set(hx + 2, hy - 3, M.FUR2, 2); p.set(hx + 3, hy - 3, M.FUR, 3); p.set(hx + 4, hy - 3, M.FUR, 3); p.set(hx + 5, hy - 2, M.FUR2, 2); }
+  else {
+    // two tall leaf-shaped points, the near one in front
+    for (const [x0, lit] of [[hx + 2, 4], [hx, 3]]) {
+      p.set(x0, hy - 2, M.FUR2, 1); p.set(x0 + 1, hy - 2, M.FUR, lit - 1);
+      p.set(x0, hy - 3, M.FUR, lit - 1); p.set(x0 + 1, hy - 3, M.FUR2, 1);
+      p.set(x0 + 1, hy - 4, M.FUR, lit); p.set(x0 + 1, hy - 5, M.FUR, lit);
+    }
+  }
+  p.end();
+  p.begin(null);
+  blob(p, hx, hy, 3.6, 3, M.FUR, { hi: 0.35, lo: -0.3 });
+  // the long muzzle: straw on the underside, a dark nose at the tip
+  const open = P.mouth === 'open', snarl = P.mouth === 'snarl';
+  for (let x = hx - 6; x <= hx - 2; x++) {
+    p.set(x, hy, M.FUR, x === hx - 6 ? 2 : 3);
+    p.set(x, hy + 1, M.FUR, x === hx - 6 ? 1 : 2);
+    if (!open && x > hx - 6) p.set(x, hy + 2, M.FUR3, x < hx - 3 ? 2 : 1); // the straw chin
+  }
+  p.set(hx - 7, hy, M.NOSE, 2); p.set(hx - 7, hy + 1, M.NOSE, 1);
+  if (open) {
+    // jaw dropped: a dark mouth, white fangs, the lower jaw below
+    for (let x = hx - 6; x <= hx - 2; x++) { p.set(x, hy + 2, M.EYE, 0); p.set(x, hy + 3, M.FUR3, x < hx - 3 ? 2 : 1); }
+    p.set(hx - 5, hy + 2, M.BONE, 4); p.set(hx - 3, hy + 2, M.BONE, 3);
+  } else if (snarl) {
+    p.set(hx - 5, hy + 2, M.BONE, 4); p.set(hx - 4, hy + 1, M.EYE, 0); p.set(hx - 3, hy + 1, M.EYE, 0);
+  }
+  // cheek ruff: two leaf tips at the jaw
+  p.set(hx + 2, hy + 3, M.FUR2, 1); p.set(hx + 3, hy + 2, M.FUR2, 2); p.set(hx + 1, hy + 3, M.FUR, 2);
+  p.end();
+  // the amber eye under a leaf brow
+  p.begin(null);
+  const ex = hx - 2, ey = hy - 1;
+  if (P.eye === 'shut') { p.set(ex, ey, M.EYE, 0); p.set(ex + 1, ey, M.EYE, 0); }
+  else if (P.eye === 'dead') { p.set(ex, ey, M.EYE, 0); p.set(ex + 1, ey + 1, M.EYE, 0); p.set(ex + 1, ey - 1, M.EYE, 0); p.set(ex - 1, ey + 1, M.EYE, 0); }
+  else { p.set(ex, ey, M.EYE, 3); p.set(ex + 1, ey, M.EYE, 1); if (P.eye === 'angry') { p.set(ex, ey - 1, M.FUR2, 0); p.set(ex + 1, ey - 1, M.FUR2, 0); } }
+  p.end();
+}
+
+/** The tail: a leafy brush, `lift` raising it (−1 tucked … 2 straight out), straw at the tip. */
+function wolfTail(p, x, y, lift) {
+  // a brush hanging back and down (lift 2: straight out; −1: tucked under), 3 px deep, leaves
+  // sticking out of its top edge, straw at the tip
+  const drop = lift >= 2 ? [0, 0, 0, -1, -1] : lift >= 1 ? [0, 1, 1, 1, 2] : lift >= 0 ? [0, 1, 2, 3, 4] : [1, 2, 3, 5, 6];
+  for (let i = 0; i < drop.length; i++) {
+    const tx = x + i, ty = y + drop[i];
+    const tip = i === drop.length - 1;
+    for (let k = 0; k < 3; k++) {
+      if (tip && k === 2) continue;
+      p.set(tx, ty + k, tip ? M.FUR3 : k === 2 ? M.FUR2 : M.FUR, tip ? 3 - k : k === 0 ? 3 : k === 1 ? 2 : 1);
+    }
+    if (i % 2 === 1 && !tip) p.set(tx, ty - 1, M.FUR, 4);
+  }
+}
+
+function drawWolf(p, view, key, f) {
+  const P = WOLF_POSES[key];
+  const G = f.G;
+  const [hdx, hdy] = P.head ?? [0, 0];
+  const bd = P.body ?? 0;
+  if (view === 'side') {
+    if (P.dead) {
+      // on its side: the body flat on the ground, legs out toward the viewer, tail limp
+      p.begin(null);
+      wolfTail(p, 25, G - 4, -1);
+      blob(p, 17, G - 3, 8.5, 3, M.FUR, { hi: 0.35, lo: -0.3 });
+      p.end();
+      p.begin(null); leafScales(p, 9, G - 6, 26, G); for (let x = 11; x <= 22; x += 2) maneLeaf(p, x, G - 6, 2, 1, 2); p.end();
+      p.begin('all', 0);
+      for (const lx of [12, 15, 20, 23]) { p.set(lx, G - 1, M.FUR, 2); p.set(lx + 1, G, M.FUR2, 1); p.set(lx + 2, G, M.FUR2, 1); }
+      p.end();
+      wolfHeadSide(p, 8, G - 3, { eye: 'dead', ears: 'flat' });
+      return;
+    }
+    const gait = P.legs ? P.legs.map(([dx, lift]) => ({ dx, lift })) : quadGait({ walk: P.walk ?? -1 });
+    const bodyY = 11 + bd;
+    // tail and far legs (long and thin: a wolf stands tall)
+    p.begin(null);
+    wolfTail(p, 26, Math.round(bodyY - 2), P.tail ?? 0);
+    quadLeg(p, 12, 13 + bd, G, gait[1].lift, gait[1].dx, true, M.FUR2, M.FUR, 2);
+    quadLeg(p, 23, 13 + bd, G, gait[3].lift, gait[3].dx, true, M.FUR2, M.FUR, 2);
+    p.end();
+    // body: a deep chest, a tucked waist, the haunch; the neck rising to the head; straw belly
+    p.begin(null);
+    blob(p, 13, bodyY, 4.4, 3.4, M.FUR, { hi: 0.45, lo: -0.2 });
+    blob(p, 19.5, bodyY + 0.2, 5.5, 2.3, M.FUR, { hi: 0.45, lo: -0.2 });
+    blob(p, 24, bodyY - 0.2, 3, 2.8, M.FUR, { hi: 0.45, lo: -0.2 });
+    const hx = 7 + hdx, hy = Math.round(bodyY - 5) + hdy;
+    for (let t = 0; t <= 1.0001; t += 0.125) {
+      const nx = Math.round(12 + (hx + 2 - 12) * t), ny = Math.round(bodyY - 1 + (hy + 1 - (bodyY - 1)) * t);
+      for (let k = -1; k <= 1; k++) p.set(nx + k, ny, M.FUR, k < 0 ? 3 : k === 0 ? 2 : 1);
+      p.set(nx, ny + 1, M.FUR, 2);
+    }
+    for (let x = 10; x <= 25; x++) p.over(x, Math.round(bodyY + (x < 16 ? 3 : 2)), M.FUR3, x < 16 ? 2 : 1);
+    for (let y = Math.round(bodyY - 1); y <= Math.round(bodyY + 2); y++) p.over(10, y, M.FUR3, 2); // the straw throat
+    p.end();
+    p.begin(null);
+    leafScales(p, 8, Math.round(bodyY - 5), 28, Math.round(bodyY + 3));
+    // the mane: leaves rising along the back of the neck and the spine, longest at the shoulders
+    const tops = [[11, 3], [13, 3], [15, 2], [17, 2], [19, 2], [21, 1], [23, 1]];
+    for (const [x, h] of tops) {
+      let y = Math.round(bodyY - 6);
+      while (y < bodyY && !p.get(x, y)) y++;
+      maneLeaf(p, x, y, h, 1, x < 15 ? 2 : 1);
+    }
+    p.end();
+    // near legs
+    p.begin('sides', 1);
+    quadLeg(p, 11, 13 + bd, G, gait[0].lift, gait[0].dx, false, M.FUR2, M.FUR, 2);
+    quadLeg(p, 22, 13 + bd, G, gait[2].lift, gait[2].dx, false, M.FUR2, M.FUR, 2);
+    p.end();
+    wolfHeadSide(p, hx, hy, P);
+    return;
+  }
+  const cx = 16;
+  const back = view === 'up';
+  if (P.dead) {
+    p.begin(null);
+    blob(p, cx, G - 3, 9, 3, M.FUR, { hi: 0.35, lo: -0.3 });
+    p.end();
+    p.begin(null); leafScales(p, cx - 9, G - 6, cx + 9, G); for (let x = cx - 6; x <= cx + 5; x += 2) maneLeaf(p, x, G - 6, 2, 1, 2); p.end();
+    p.begin('all', 0);
+    for (const [lx, d] of [[6, -1], [8, -1], [24, 1], [26, 1]]) { p.set(lx, G - 1, M.FUR, 2); p.set(lx + d, G, M.FUR2, 1); }
+    if (!back) { p.set(cx - 2, G - 4, M.EYE, 0); p.set(cx - 1, G - 3, M.EYE, 0); p.set(cx + 2, G - 4, M.EYE, 0); p.set(cx + 1, G - 3, M.EYE, 0); }
+    p.end();
+    return;
+  }
+  const walkL = P.walk === 0 || P.walk === 1 ? 1 : 0, walkR = P.walk === 2 || P.walk === 3 ? 1 : 0;
+  const lift = [walkL, walkR];
+  const spread = key === 'windup' ? 1 : 0;
+  if (back) {
+    // from behind: ears over the shoulders, the haunches, the leaf ridge down the spine, the tail
+    p.begin(null);
+    for (const sgn of [-1, 1]) { const ex = cx + sgn * 3 - (sgn > 0 ? 1 : 0); p.set(ex, 2 + bd, M.FUR, 4); p.set(ex, 3 + bd, M.FUR, 3); p.set(ex + sgn, 3 + bd, M.FUR2, 2); p.set(ex, 4 + bd, M.FUR2, 2); }
+    blob(p, cx, 6.5 + bd, 3.6, 2.6, M.FUR, { hi: 0.4, lo: -0.1 });
+    p.end();
+    p.begin(null);
+    for (const [k, lx] of [[0, 12], [1, 18]]) quadLeg(p, lx, 15 + bd, G, lift[k], 0, false, M.FUR2, M.FUR, 2);
+    p.end();
+    p.begin('below', 1);
+    blob(p, cx, 12 + bd, 5.6, 4.4, M.FUR, { hi: 0.45, lo: -0.25 });
+    p.end();
+    p.begin(null);
+    leafScales(p, cx - 7, 4 + bd, cx + 7, 17 + bd);
+    for (let y = 6 + bd; y <= 13 + bd; y += 2) maneLeaf(p, cx - 1 + ((y >> 1) & 1), y, 2, 0, 2);
+    p.end();
+    p.begin('all', 1);
+    const tl = P.tail ?? 0;
+    for (let i = 0; i < 6; i++) {
+      const ty = 14 + bd + (tl < 0 ? i : tl >= 1 ? -i * 0.5 : i * 0.5);
+      const tip = i >= 4;
+      for (let k = -1; k <= 1; k++) p.set(cx + k, Math.round(ty), tip ? M.FUR3 : k === 1 ? M.FUR2 : M.FUR, tip ? 3 - (k + 1) : k < 0 ? 3 : 2);
+    }
+    p.end();
+    return;
+  }
+  // facing the camera: long forelegs, a narrow chest with a straw bib, the head above on its neck
+  p.begin(null);
+  // (the haunches peek out wider behind the shoulders)
+  blob(p, cx, 13 + bd, 7, 3.2, M.FUR, { hi: 0.3, lo: -0.4, maxShade: 2 });
+  p.end();
+  p.begin('sides', 1);
+  quadLeg(p, 12 - spread, 14 + bd, G, lift[0], 0, false, M.FUR2, M.FUR, 2);
+  quadLeg(p, 18 + spread, 14 + bd, G, lift[1], 0, false, M.FUR2, M.FUR, 2);
+  p.end();
+  p.begin(null);
+  blob(p, cx, 13 + bd, 5.4, 4, M.FUR, { hi: 0.45, lo: -0.2 });
+  for (let y = 11 + bd; y <= 12 + bd; y++) for (let x = cx - 2; x <= cx + 1; x++) p.over(x, y, M.FUR3, x < cx ? 3 : 2); // the straw throat
+  p.end();
+  p.begin(null); leafScales(p, cx - 8, 9 + bd, cx + 8, 17 + bd); p.end();
+  const hy = 8 + hdy + bd;
+  const hx = cx + Math.sign(hdx);
+  // the ruff: leaf tips fanning round the throat
+  p.begin(null);
+  for (const [dx, dy, s] of [[-4, 2, 2], [-4, 3, 1], [-3, 4, 2], [4, 2, 1], [4, 3, 1], [3, 4, 1], [-2, 5, 2], [2, 5, 1]]) p.set(hx + dx, hy + dy, M.FUR2, s);
+  p.end();
+  p.begin('all', 1);
+  blob(p, hx, hy, 3.3, 2.8, M.FUR, { hi: 0.35, lo: -0.3 });
+  const flat = P.ears === 'flat';
+  for (const sgn of [-1, 1]) {
+    const ex = hx + sgn * 2 - (sgn > 0 ? 1 : 0);
+    if (flat) { p.set(ex + sgn, hy - 2, M.FUR, 3); p.set(ex + sgn * 2, hy - 2, M.FUR2, 2); }
+    else { p.set(ex, hy - 3, M.FUR, sgn < 0 ? 3 : 2); p.set(ex, hy - 4, M.FUR, 3); p.set(ex, hy - 5, M.FUR, 4); p.set(ex + sgn, hy - 3, M.FUR2, 1); p.set(ex + sgn, hy - 2, M.FUR, 2); }
+  }
+  p.end();
+  p.begin(null);
+  leafScales(p, hx - 3, hy - 2, hx + 3, hy);
+  // the muzzle toward the viewer: straw, a dark nose, the mouth
+  for (let y = hy + 1; y <= hy + 3; y++) for (let x = hx - 2; x <= hx + 1; x++) {
+    if (y === hy + 3 && (x === hx - 2 || x === hx + 1)) continue;
+    p.set(x, y, y === hy + 1 ? M.FUR : M.FUR3, y === hy + 1 ? 3 : x < hx ? 2 : 1);
+  }
+  p.set(hx - 1, hy + 1, M.NOSE, 2); p.set(hx, hy + 1, M.NOSE, 1);
+  if (P.mouth === 'open') { p.set(hx - 1, hy + 4, M.EYE, 0); p.set(hx, hy + 4, M.EYE, 0); p.set(hx - 2, hy + 3, M.BONE, 4); p.set(hx + 1, hy + 3, M.BONE, 4); }
+  else if (P.mouth === 'snarl') { p.set(hx - 2, hy + 3, M.BONE, 4); p.set(hx + 1, hy + 3, M.BONE, 3); }
+  p.end();
+  p.begin(null);
+  const ey = hy - 1;
+  for (const ex of [hx - 2, hx + 1]) {
+    if (P.eye === 'shut') { p.set(ex, ey, M.EYE, 0); }
+    else { p.set(ex, ey, M.EYE, 3); if (P.eye === 'angry') p.set(ex + (ex < hx ? -1 : 1), ey - 1, M.FUR2, 0); }
+  }
+  p.end();
+}
+
+// ---------------------------------------------------------------------------
 // Straw dummy on a post with a painted target (16 × 24)
 // ---------------------------------------------------------------------------
 
@@ -1037,6 +1291,21 @@ const KINDS = {
       [M.EYE]: eyeRamp('#b8321e', '#e06a3a'),
     }, M.FUR),
   },
+  wolf: {
+    fw: 32, fh: 24, columns: COMMON, aliases: {},
+    spriteOptions: { blobSize: /** @type {[number, number]} */ ([1.4, 0.6]) }, draw: drawWolf,
+    ramps: () => makeRamps({
+      // the pelt: deep forest-leaf green (dark enough to read on grass: COMBAT.md §10.3), lit leaf tips
+      [M.FUR]: ramp5(['#0e1a10', '#18301a', '#26462a', '#3d6634', '#86a64c']),
+      // the leaves' shadowed edges, the mane and the paws
+      [M.FUR2]: ramp5(['#060c08', '#0c1810', '#142618', '#1f3a22', '#2f5430']),
+      // straw: belly, muzzle, the tail's tip
+      [M.FUR3]: ramp5(['#6a5426', '#9a7e3c', '#c8a85a', '#e2c87e', '#f4e2a8']),
+      [M.NOSE]: ramp5(['#120c0a', '#1e1612', '#30241c', '#463428', '#5c4636']),
+      [M.BONE]: ramp5(['#8a8272', '#b8ae98', '#ddd4bc', '#f2ead6', '#ffffff']),
+      [M.EYE]: eyeRamp('#c88a1a', '#f2c04a'),
+    }, M.FUR),
+  },
   dummy: {
     fw: 16, fh: 24, columns: [...COMMON, 'hurt2'], aliases: {},
     spriteOptions: { blobSize: /** @type {[number, number]} */ ([0.7, 0.35]) }, draw: drawDummy,
@@ -1059,7 +1328,7 @@ const KINDS = {
 
 /**
  * Create an enemy sprite sheet (callers cache it: one sheet per kind is shared by every sprite).
- * @param {'slime'|'goblin'|'archer'|'shaman'|'bat'|'boar'|'dummy'|'golem'} kind
+ * @param {'slime'|'goblin'|'archer'|'shaman'|'bat'|'boar'|'dummy'|'golem'|'wolf'} kind
  * @returns {{texture: THREE.Texture, canvas: HTMLCanvasElement, frameWidth: number, frameHeight: number,
  *   columns: number, rows: number, pixelsPerUnit: number, anchor: [number, number],
  *   animations: Record<string, {frames: {col:number,row:number}[], fps: number, loop: boolean}>,
