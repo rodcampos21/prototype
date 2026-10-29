@@ -271,14 +271,196 @@ function paintBoulder(seed, moss = false) {
   return finish(pc, hf, { normalStrength: 2.2 });
 }
 
+/**
+ * Tent canvas: weathered linen with a fine weave, a stitched seam and a few stains. 32×32 px
+ * (2×2 units), seamless.
+ */
+function paintCanvas(seed) {
+  const W = 32;
+  const H = 32;
+  const rng = new RNG(seed);
+  const pc = new PixelCanvas(W, H);
+  pc.wrap = true;
+  const hf = new Float32Array(W * H);
+  const ramp = ['#7d6f5c', '#a39379', '#c4b394', '#dacaa8', '#ebdfc2'];
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      const weave = ((x + y) & 1) * 0.025;
+      const n = fbm2(x / 10, y / 10, { octaves: 2, seed, period: 3.2 }) * 0.7 + hash2(x, y, seed) * 0.3 + weave;
+      const t = clamp((n - 0.5) * 0.9 + 0.66 + (bayer4(x, y) - 0.5) * 0.12, 0, 0.999);
+      pc.set(x, y, ramp[1 + Math.floor(t * 4)]);
+      hf[y * W + x] = 0.5 + weave + n * 0.1;
+    }
+  }
+  // a stitched seam across the cloth (a dark fold with stitches on its lit lip)
+  for (let x = 0; x < W; x++) {
+    pc.set(x, 15, ramp[0]);
+    pc.set(x, 16, x % 3 === 0 ? ramp[0] : ramp[4]);
+    hf[15 * W + x] = 0.3;
+  }
+  // water stains: soft darker blotches
+  for (let k = 0; k < 3; k++) {
+    const cx = rng.int(0, W - 1);
+    const cy = rng.int(0, H - 1);
+    const r = rng.range(2, 3.5);
+    for (let y = -4; y <= 4; y++) {
+      for (let x = -4; x <= 4; x++) {
+        if (Math.hypot(x, y * 1.3) > r || hash2(cx + x, cy + y, seed + k) < 0.25) continue;
+        pc.set(cx + x, cy + y, shadeColor(pc.get(cx + x, cy + y), -0.12));
+      }
+    }
+  }
+  return finish(pc, hf, { normalStrength: 1.4 });
+}
+
+/**
+ * The cult's banner: a sea-blue field with a gold trim, a cream pufferfish crowned with spikes and
+ * three waves below it, cut into a swallowtail at the foot. 20×36 px (1.25×2.25 units), alpha; the
+ * top rows are the sleeve the crossbar runs through. Painted to be mapped whole onto the cloth.
+ * `field`: the cloth's five tones, darkest first (the sea blue; `banner_fish_red` the return mast's
+ * red, seen from afar).
+ * @param {number} seed
+ * @param {string[]} [field]
+ */
+function paintBannerFish(seed, field = ['#0f1f3d', '#1a3157', '#24467a', '#305c97', '#4a7bb5']) {
+  const W = 20;
+  const H = 36;
+  const pc = new PixelCanvas(W, H);
+  const hf = new Float32Array(W * H).fill(0);
+  const blue = field;
+  const gold = PALETTE.gold;
+  const cream = ['#8a7a5c', '#c2ad84', '#e3d2a8', '#f4ead0'];
+  const tail = 8;
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      // swallowtail: a V cut out of the last `tail` rows
+      const cut = y - (H - tail);
+      if (cut >= 0 && Math.abs(x - (W - 1) / 2) < cut * 1.3) continue;
+      const fold = Math.sin((x / W) * Math.PI * 3 + 0.6) * 0.5 + 0.5;
+      const n = hash2(x, y, seed);
+      pc.set(x, y, blue[clamp(Math.floor(1.2 + fold * 1.6 + n * 0.35), 0, 3)]);
+      hf[y * W + x] = 0.4 + fold * 0.2;
+    }
+  }
+  // sleeve at the top, gold trim down the sides and along the tails
+  for (let x = 0; x < W; x++) {
+    pc.set(x, 0, blue[0]);
+    pc.set(x, 1, blue[2]);
+    pc.set(x, 2, blue[0]);
+    pc.set(x, 3, gold[3]);
+  }
+  for (let y = 3; y < H; y++) {
+    for (const x of [1, W - 2]) if (pc.getAlpha(x, y) > 0) pc.set(x, y, gold[y % 4 === 0 ? 2 : 3]);
+    for (const x of [0, W - 1]) if (pc.getAlpha(x, y) > 0) pc.set(x, y, blue[0]);
+  }
+  for (let y = H - tail; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      if (pc.getAlpha(x, y) === 0) continue;
+      const edge = pc.getAlpha(x - 1, y) === 0 || pc.getAlpha(x + 1, y) === 0 || y === H - 1;
+      if (edge) pc.set(x, y, gold[2]);
+    }
+  }
+  // the pufferfish swimming right: a fan tail, a round outlined body with a pale belly, spikes on
+  // its back and belly, a big eye and pursed lips
+  const cx = 11.5;
+  const cy = 14.5;
+  const RX = 4.8;
+  const RY = 4.2;
+  for (let y = 9; y <= 20; y++) {
+    for (let x = 2; x <= 6; x++) {
+      if (Math.abs(y + 0.5 - cy) > (7 - x) * 0.9 + 0.6) continue;
+      pc.set(x, y, x === 2 || Math.abs(y + 0.5 - cy) > (7 - x) * 0.9 - 0.4 ? cream[0] : cream[2]);
+    }
+  }
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      const dx = (x + 0.5 - cx) / RX;
+      const dy = (y + 0.5 - cy) / RY;
+      const d = Math.hypot(dx, dy);
+      if (d > 1) continue;
+      const light = clamp(0.8 - dx * 0.2 + dy * 0.25 - d * 0.25, 0, 0.999);
+      pc.set(x, y, d > 0.9 ? cream[0] : cream[1 + Math.floor(light * 3)]);
+      hf[y * W + x] = 0.7 + (1 - d) * 0.3;
+    }
+  }
+  // spikes: short gold strokes standing out of the back and the belly
+  for (const k of [-0.95, -0.55, -0.15, 0.25, 0.65]) {
+    for (const s of [-1, 1]) {
+      const a = s * (Math.PI / 2) + k * s * 0.9;
+      const ex = Math.cos(a);
+      const ey = Math.sin(a);
+      pc.set(Math.floor(cx + ex * (RX + 0.4)), Math.floor(cy + ey * (RY + 0.4)), gold[2]);
+      pc.set(Math.floor(cx + ex * (RX + 1.4)), Math.floor(cy + ey * (RY + 1.4)), gold[3]);
+    }
+  }
+  // the eye (white with a dark pupil) and the lips at the snout
+  pc.set(13, 12, cream[3]); pc.set(14, 12, OUTLINE); pc.set(13, 13, cream[3]); pc.set(14, 13, OUTLINE);
+  pc.set(16, 15, OUTLINE); pc.set(17, 14, gold[2]); pc.set(17, 15, gold[2]);
+  // three waves under the fish
+  for (let row = 0; row < 3; row++) {
+    const y = 22 + row * 2;
+    for (let x = 3; x < W - 3; x++) {
+      if (((x + row) & 3) === 0) pc.set(x, y - 1, cream[1]);
+      else if (((x + row) & 3) !== 2) pc.set(x, y, row === 1 ? cream[2] : blue[4]);
+    }
+  }
+  return finish(pc, hf, { alpha: true, normalStrength: 1.2, wrap: false });
+}
+
+/**
+ * Surubin's map: parchment with burnt edges and an ink sketch — a coastline with the sea hatched,
+ * the stream climbing inland, the clearing ringed, dotted trails to three marks and a few trees.
+ * 24×16 px (1.5×1 units), mapped whole onto the sheet.
+ */
+function paintMapParchment(seed) {
+  const W = 24;
+  const H = 16;
+  const pc = new PixelCanvas(W, H);
+  const hf = new Float32Array(W * H).fill(0.5);
+  const paper = ['#8a6a44', '#b58f5c', '#d3b07a', '#e6cb98', '#f2dfb4'];
+  const ink = '#3a2a1e';
+  const inkLight = '#6b5038';
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      const edge = Math.min(x, y, W - 1 - x, H - 1 - y);
+      const n = hash2(x, y, seed) * 0.4 + fbm2(x / 6, y / 6, { octaves: 2, seed }) * 0.6;
+      const t = clamp(n * 0.8 + 0.35 - (edge === 0 ? 0.45 : edge === 1 ? 0.15 : 0), 0, 0.999);
+      pc.set(x, y, paper[Math.floor(t * paper.length)]);
+    }
+  }
+  // the coast on the left, the sea hatched beyond it
+  const coast = (y) => 4 + Math.round(Math.sin(y * 0.7 + 1) * 1.2);
+  for (let y = 1; y < H - 1; y++) {
+    pc.set(coast(y), y, ink);
+    for (let x = 1; x < coast(y); x++) if ((x + y * 2) % 4 === 0) pc.set(x, y, inkLight);
+  }
+  // the stream from the coast up to the clearing and on to the north-east
+  for (const [x, y] of [[5, 10], [6, 10], [7, 9], [8, 9], [9, 9], [10, 8], [11, 8], [13, 7], [14, 6], [15, 6], [16, 5], [17, 4], [18, 3]]) pc.set(x, y, '#3f5f7a');
+  // the clearing (a ring) with the camp's dot
+  for (const [dx, dy] of [[-1, -1], [0, -1], [1, -1], [-1, 1], [0, 1], [1, 1], [-2, 0], [2, 0]]) pc.set(12 + dx, 8 + dy, ink);
+  pc.set(12, 8, '#a8322a');
+  // dotted trails to three marks: forest (west-south), reeds (north-east), quarry (east)
+  for (const [x, y] of [[11, 10], [10, 11], [9, 12], [15, 9], [17, 10], [19, 11], [14, 5]]) pc.set(x, y, inkLight);
+  for (const [x, y] of [[8, 13], [20, 12], [15, 3]]) {
+    pc.set(x - 1, y - 1, ink); pc.set(x + 1, y - 1, ink); pc.set(x, y, ink); pc.set(x - 1, y + 1, ink); pc.set(x + 1, y + 1, ink);
+  }
+  // trees sketched as little carets
+  for (const [x, y] of [[7, 3], [9, 4], [20, 7], [22, 9], [17, 13]]) { pc.set(x, y - 1, inkLight); pc.set(x - 1, y, inkLight); pc.set(x + 1, y, inkLight); }
+  return finish(pc, hf, { normalStrength: 0.6, wrap: false });
+}
+
 const PAINTERS = {
   birch: paintBirch, produce: paintProduce, sail: paintSail, leaf_litter: paintLeafLitter, ash: paintAsh,
   boulder: (seed) => paintBoulder(seed, false), boulder_moss: (seed) => paintBoulder(seed, true),
+  canvas: paintCanvas, banner_fish: (seed) => paintBannerFish(seed),
+  banner_fish_red: (seed) => paintBannerFish(seed, ['#3a0e10', '#5e1a1a', '#8c2a24', '#ad3a2e', '#cf5a42']),
+  map_parchment: paintMapParchment,
 };
 
 /**
  * Names of the prop textures a PropTextureSet paints (keys of `PAINTERS`).
- * @typedef {'birch'|'produce'|'sail'|'leaf_litter'|'ash'|'boulder'|'boulder_moss'} PropTextureName
+ * @typedef {'birch'|'produce'|'sail'|'leaf_litter'|'ash'|'boulder'|'boulder_moss'|'canvas'|'banner_fish'
+ *   |'banner_fish_red'|'map_parchment'} PropTextureName
  */
 
 /**

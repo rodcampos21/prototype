@@ -1,0 +1,66 @@
+{
+  "format": "luminati-story",
+  "version": 1,
+  "items": {
+    "madeira": {
+      "name": "Madeira",
+      "text": "Toras cortadas na mata. A base de qualquer obra do acampamento.",
+      "textKeys": {
+        "text": "BABDC6A9027F9C6630B2AFBE578A5CBC"
+      }
+    },
+    "pedra": {
+      "name": "Pedra",
+      "text": "Pedra boa, quebrada dos veios claros das rochas. Para alicerces e paredes.",
+      "textKeys": {
+        "text": "A8735159FBFDA8950DCECB46A63C9D44"
+      }
+    },
+    "ervas": {
+      "name": "Ervas",
+      "text": "Folhas e flores miúdas que crescem perto da água. O Surubin diz que curam, se o Rei quiser.",
+      "textKeys": {
+        "text": "A74D58FF698ACB80271C0F2F16FD2AD4"
+      }
+    }
+  },
+  "quests": {
+    "resgate": {
+      "title": "O resgate",
+      "text": "Alguém grita por socorro na estrada da costa.",
+      "stages": [
+        {
+          "id": "cercado",
+          "text": "Salve o forasteiro cercado na clareira."
+        },
+        {
+          "id": "juntos",
+          "text": "Siga com Surubin pela estrada ao norte."
+        }
+      ],
+      "textKeys": {
+        "text": "79CFF22F8243E1705D9904E98C108A20",
+        "stages": {
+          "cercado": "1CF4FCBF041505321C644FB6F2C6279F",
+          "juntos": "8811FE8752F63C1EF9CE6029EB6CADE5"
+        }
+      }
+    },
+    "alicerces": {
+      "title": "Os alicerces",
+      "text": "O acampamento precisa da sua primeira obra.",
+      "stages": [
+        {
+          "id": "coletar",
+          "text": "Junte madeira, pedra e comida para a primeira obra do acampamento."
+        }
+      ],
+      "textKeys": {
+        "text": "B78A8ACAE8559E9DA24730368D3851D7",
+        "stages": {
+          "coletar": "211DBDC22986AF26C23EAB074D33516E"
+        }
+      }
+    }
+  }
+}

@@ -583,7 +583,7 @@ When the story changes, the game re-checks every `when` / `unless`:
   bench, barrel, crate, crate stack, flower box, signpost, fence, bridge, waterfall, lamppost, wall
   torch, campfire, point light, and the interior furniture (bed, table, chair, shelf, hearth,
   counter, rug, staircase, wardrobe, wall window, grain sacks — a hearth's fire and light come and
-  go with it). Props (and particle areas) with the same `when` / `unless` pair
+  go with it) and the camp props (tent, map table, banner, stake — their swaying cloth with them). Props (and particle areas) with the same `when` / `unless` pair
   are built as one **story group**, merged into the level's own batches like any other prop (the
   same draw calls as without the condition; on a big level its shadow proxies too), where the
   group owns vertex ranges; a group that comes or goes shows / hides its meshes — its ranges
@@ -635,6 +635,13 @@ rests past one. The game setting the clock (a continued game's saved hour, a new
 and going into or out of a level with its own hour are not time passing: no day, no `time` events.
 `rest` in a level with its own hour (an inn's room, `environment.clock: false`) keeps that hour and
 moves the campaign's clock to the morning outside.
+
+**The morning.** When the clock passes 5:00 going forward (or a rest takes the player to the
+morning) every flag whose name starts with `res.` is cleared: the flags a gathered `resource` set
+(OBJECT_CATALOG.md *resource*), so what was chopped, broken or picked grows back. Do not give a flag
+of your own that prefix. An atlas journey moves the clock on by its hours as time passing
+(CAMPAIGN_FORMAT.md §4.1); the variable `expeditions.<level>` counts the expeditions the map made
+to a level.
 
 ### 9.7 The party
 

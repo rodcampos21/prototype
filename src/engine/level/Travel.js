@@ -30,6 +30,7 @@ export const LIVE_STORY_TYPES = new Set([
   'house', 'windmill', 'well', 'waterfall', 'critters', 'emitter',
   'enemy', 'chest', 'waystone',
   'bed', 'table', 'chair', 'shelf', 'hearth', 'counter', 'rug', 'staircase', 'wardrobe', 'wallWindow', 'sacks',
+  'tent', 'mapTable', 'banner', 'stake', 'resource',
 ]);
 
 /**
@@ -134,7 +135,7 @@ export function applyStory(level, holds, { live = false } = {}) {
 /**
  * The story flags / variables a level's object fields read or write: every object's `when` /
  * `unless`, exits' `requires` (the flag rule: one bare name is that flag), events' `if` (a
- * condition as scripts write it) (read); villagers' `flag` (set). Scripts are read by
+ * condition as scripts write it) (read); villagers' and resources' `flag` (set). Scripts are read by
  * `levelStoryRefs` (StoryChecks.js).
  * @param {Level} level
  * @returns {{ reads: Set<string>, sets: Set<string> }}
@@ -152,6 +153,8 @@ export function storyFlags(level) {
       }
     }
     if (o?.type === 'npc' && text(o.flag)) sets.add(text(o.flag));
+    // (a resource sets its flag when it is gathered: Game.harvest)
+    if (o?.type === 'resource' && o.opts?.stage !== 'spent' && text(o.flag)) sets.add(text(o.flag));
   }
   return { reads, sets };
 }

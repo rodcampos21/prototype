@@ -5,20 +5,80 @@
   "source": "campaigns/culto-ao-baiacu-rei",
   "extends": [],
   "terms": {
+    "A clareira do riacho. O estandarte do Rei já tremula aqui.": "The clearing by the stream. The King's banner already flies here.",
+    "A fogueira do acampamento brilha no escuro. O Surubin deixou ela acesa.": "The camp's fire glows in the dark. Surubin left it burning.",
+    "A subida pela encosta é íngreme. Lá em cima, o vento muda.": "The climb up the slope is steep. Up there, the wind changes.",
+    "A trilha deixa o riacho e entra na sombra das árvores.": "The trail leaves the stream and goes into the shade of the trees.",
+    "Acampamento Abandonado": "Abandoned Camp",
+    "As botas afundam na lama da margem.": "Boots sink into the mud of the bank.",
+    "Bosque dos Carvalhos": "Oak Grove",
+    "Carvalhos velhos, um riacho com duas pontes, pedras musgosas e uma clareira de flores. A trilha some ao norte.": "Old oaks, a stream with two bridges, mossy stones and a flower glade. The trail fades to the north.",
     "Clareira": "Clearing",
+    "Clareira das Flores": "Flower Glade",
     "Clareira do Riacho": "The Stream Clearing",
+    "Comida": "Food",
+    "Corte Antigo": "Old Cutting",
+    "Couro": "Hide",
     "Criatura da mata": "Forest Creature",
+    "Criatura da noite": "Night creature",
     "Culto ao Baiacu Rei": "Cult of the Pufferfish King",
+    "Entre as árvores, aparece o estandarte azul.": "Through the trees, the blue banner comes into view.",
+    "Ervas": "Herbs",
     "Estrada da Costa": "The Coast Road",
+    "Já conhecemos cada trilha dela. À noite, porém, ninguém volta igual.": "We know every trail in it now. At night, though, no one comes back the same.",
+    "Lascas de pedra estalam sob as botas.": "Stone chips crack under the boots.",
+    "Madeira": "Wood",
+    "Marcas de garra num carvalho, ao norte da mata. De noite, ouço uivos de lá.": "Claw marks on an oak, north of the woods. At night I hear howling from there.",
+    "Mata da Clareira": "Clearing Woods",
+    "Minério": "Ore",
+    "O cheiro da fogueira fica para trás. Na frente, só musgo.": "The smell of the campfire falls behind. Ahead, only moss.",
+    "O mapa do Surubin": "Surubin's Map",
     "O resgate": "The Rescue",
+    "O riacho conhecido. Falta pouco.": "The familiar stream. Not far now.",
+    "Os alicerces": "The Foundations",
+    "Os marinheiros falam de uma mata velha a oeste daqui. Madeira boa, e caça.": "The sailors speak of old woods west of here. Good timber, and game.",
+    "Osso": "Bone",
+    "Pedra": "Stone",
+    "Pedras Musgosas": "Mossy Stones",
+    "Pedreira da Encosta": "Hillside Quarry",
     "Praia dos Destroços": "Wreckage Beach",
+    "Riacho": "Stream",
+    "Riacho da Mata": "Woodland Stream",
+    "Riacho dos Juncos": "Reed Stream",
+    "Rio acima, o barulho da água cresce entre os juncos.": "Upstream, the sound of water grows among the reeds.",
+    "Rumo a Marina": "To Marina",
+    "Subindo o riacho, dizem, os juncos crescem mais alto que um homem. Peixe e ervas.": "Up the stream, they say, the reeds grow taller than a man. Fish and herbs.",
     "Surubin": "Surubin",
+    "Terra Selvagem": "The Wild Land",
+    "Toca das Bestas": "Beasts' Den",
+    "Trilha das Garras": "Claw Trail",
+    "Uma pedreira antiga na encosta. Pedra para as obras. Quem será que a cortou primeiro?": "An old quarry on the hillside. Stone for the building. Who could have cut it first?",
     "Uma voz": "A voice"
   },
   "units": {
+    "0B64BFEB276D1193708A24B075E1B709": {
+      "source": "Marcas de garra desse tamanho? Vou pôr um ponto ali, com um ponto de interrogação bem grande.",
+      "target": "Claw marks that big? I'll put a mark there, with a very big question mark."
+    },
     "0D5D362E43CD5C26FA16E16559129DDE": {
       "source": "CULTO AO BAIACU REI",
       "target": "CULT OF THE PUFFERFISH KING"
+    },
+    "0E8ADE6E1F537EE691272A7F09057F6A": {
+      "source": "Há madeira para cortar, pedra para quebrar e ervas para colher. Eles brilham entre as árvores, e o mapa marca cada um. O que for tirado hoje volta a crescer amanhã.",
+      "target": "There is wood to chop, stone to break and herbs to pick. They glint among the trees, and the map marks each one. Whatever is taken today grows back tomorrow."
+    },
+    "1B9E581671AFBC8396B75F69947A14A4": {
+      "source": "Passei a noite desenhando. Por enquanto é pouco: a costa, o riacho, a nossa clareira.",
+      "target": "I spent the night drawing. It's little for now: the coast, the stream, our clearing."
+    },
+    "1CF4FCBF041505321C644FB6F2C6279F": {
+      "source": "Salve o forasteiro cercado na clareira.",
+      "target": "Save the stranger surrounded in the clearing."
+    },
+    "1E24F3CAE4A315DD38E74154C3D8A1A2": {
+      "source": "Árvores velhas fecham o céu. O ar é úmido e cheira a musgo e a bicho.",
+      "target": "Old trees close over the sky. The air is damp and smells of moss and animals."
     },
     "2AE9DE18F7CF05A23E15B608DCD8B06A": {
       "source": "Faz tempo que eu não tenho para onde voltar.",
@@ -27,6 +87,10 @@
     "2B30D062DDD6F77C1125D31633D5F813": {
       "source": "Uma estação. Depois, sigo meu caminho.",
       "target": "One season. Then I go my own way."
+    },
+    "2BD8886A7FE57C7B3B079FC8C5664DCD": {
+      "source": "Toca das Bestas. Soa melhor do que deve ser.",
+      "target": "The Beasts' Den. It sounds nicer than it probably is."
     },
     "2E2FFB9DA250D0F49ADF4F470ECD726C": {
       "source": "Estrada da Costa",
@@ -44,6 +108,14 @@
       "source": "Ah. O Rei também manda lições, ${player}.",
       "target": "Ah. The King sends lessons too, ${player}."
     },
+    "3C874CD442539F0B1258BC60D3DDEF67": {
+      "source": "Algo para mostrar ao Surubin: um caixote com a marca do Rei.",
+      "target": "Something to show Surubin: a crate bearing the King's mark."
+    },
+    "003F44FDB1A01E8431669B5BA56735BC": {
+      "source": "Nenhuma colônia do culto chegou tão longe. Pelo menos, não que a Capital saiba.",
+      "target": "No colony of the cult ever came this far. At least, not that the Capital knows of."
+    },
     "4F5F4977629D6FA7E41A004158FC0EE6": {
       "source": "Na Capital dizem que esta terra engole homens. Eu prefiro acreditar que ela só tem fome de fé.",
       "target": "In the Capital they say this land swallows men. I'd rather believe it's only hungry for faith."
@@ -56,9 +128,29 @@
       "source": "A Capital espera uma colônia. Um abrigo para os fiéis que virão. Sozinho, eu não consigo.",
       "target": "The Capital expects a colony. A shelter for the faithful still to come. I can't do it alone."
     },
+    "5FAF2E7CF2073943DC911CA2EE884F0A": {
+      "source": "O que vai em cada um a gente decide juntos, quando tiver madeira e pedra para isso.",
+      "target": "What goes on each we'll decide together, once we have the wood and stone for it."
+    },
     "6A9F91C3CBC5A0CD4D4176A3B46A5D55": {
       "source": "E... obrigado a você também, cavaleiro.",
       "target": "And... thank you too, knight."
+    },
+    "6A33D5BBF4BA1C75FEB6E096C4C9BEED": {
+      "source": "Alguém tirou madeira daqui muito antes do Surubin chegar a esta terra.",
+      "target": "Someone took wood from here long before Surubin came to this land."
+    },
+    "6C1DDDD6F12D079054D756F2005CCFA7": {
+      "source": "Toca das Bestas. Soa melhor do que deve ser.",
+      "target": "The Beasts' Den. It sounds nicer than it probably is."
+    },
+    "6C2E4C62344BFDE54B668367F4D2BBD1": {
+      "source": "Madeira da mata, pedra da encosta, comida do riacho. Com isso a gente ergue a primeira obra.",
+      "target": "Wood from the forest, stone from the slope, food from the stream. With that we raise our first building."
+    },
+    "06F4690F91E3CCB7D54A435E1991F55C": {
+      "source": "Ao norte da mata, um carvalho com marcas de garra. Fundas. A trilha some depois dele.",
+      "target": "North of the woods, an oak with claw marks. Deep ones. The trail fades out past it."
     },
     "7E18399571CCDB6DD7F5C16B9F8996A2": {
       "source": "Por Ele eu atravessaria dois.",
@@ -75,6 +167,10 @@
     "9E54FAAFCBAA19E1ED81F84B54052396": {
       "source": "O mar daqui tem outro cheiro. Mais verde. Mais... selvagem.",
       "target": "The sea smells different here. Greener. More... wild."
+    },
+    "9ED5C1C6FACE6AAAC18B0F5A25B9B0E6": {
+      "source": "À noite eu ouço a mata. Não sei se é bicho ou vento. Prefiro achar que é vento.",
+      "target": "At night I hear the forest. I can't tell if it's beasts or the wind. I'd rather think it's the wind."
     },
     "13AA3BD02CF765A0558AD46BDA96605A": {
       "source": "Que as marés nos guiem. E que guiem você também, cavaleiro, mesmo que você não acredite nelas.",
@@ -100,13 +196,57 @@
       "source": "Ó Rei das Profundezas, me guarda! Socorro!",
       "target": "O King of the Deep, protect me! Help!"
     },
+    "50FEC008CAED6CEBAE86C28031B9C9A1": {
+      "source": "Marcas fundas de garra descem o tronco de um carvalho velho. Há pelos escuros presos na casca.",
+      "target": "Deep claw marks run down the trunk of an old oak. Dark hairs are caught in the bark."
+    },
+    "55BB8E24E5168CC3633C7AC190DF81D3": {
+      "source": "Surubin se debruça sobre a mesa e risca árvores velhas, o riacho com as duas pontes, as pedras musgosas e a clareira das flores.",
+      "target": "Surubin leans over the table and sketches old trees, the stream with its two bridges, the mossy stones and the flower glade."
+    },
+    "061A87F467859C3E96D8F9D223747E0B": {
+      "source": "Voltar ao acampamento",
+      "target": "Return to camp"
+    },
+    "66E44818AD5ED4F28AFC20E4774B5531": {
+      "source": "Mata da Clareira",
+      "target": "Clearing Woods"
+    },
+    "79CFF22F8243E1705D9904E98C108A20": {
+      "source": "Alguém grita por socorro na estrada da costa.",
+      "target": "Someone is crying for help on the coast road."
+    },
     "79D27A63ABBC1C1B1333D469CCB249C0": {
       "source": "${player}. Você está segurando esse cajado de cabeça para baixo.",
       "target": "${player}. You're holding that staff upside down."
     },
+    "82A456C9F7417673A34E1390BE292A24": {
+      "source": "Mata da Clareira",
+      "target": "Clearing Woods"
+    },
+    "82A456C9F7417673A34E1390BE292A24.2": {
+      "source": "Terra Selvagem",
+      "target": "The Wild Land"
+    },
+    "88A0F7BD19DE43313ACB50D7C665CE1F": {
+      "source": "Surubin anota alguma coisa num canto do mapa e cobre com a mão.",
+      "target": "Surubin jots something in a corner of the map and covers it with his hand."
+    },
+    "93A5AD262F607F2EF0E1FD69A1857D6D": {
+      "source": "Mata da Clareira",
+      "target": "Clearing Woods"
+    },
+    "94F0CFD2275C4539769E32B932298946": {
+      "source": "A Mata da Clareira foi explorada. O Surubin vai querer ouvir tudo.",
+      "target": "The Clearing Woods have been explored. Surubin will want to hear everything."
+    },
     "196E454FAE990BAB634279532ACD0D01": {
       "source": "A clareira fica subindo o riacho. Lá a gente acende um fogo e espera a tempestade passar.",
       "target": "The clearing is up the stream. We can light a fire there and wait out the storm."
+    },
+    "211DBDC22986AF26C23EAB074D33516E": {
+      "source": "Junte madeira, pedra e comida para a primeira obra do acampamento.",
+      "target": "Gather wood, stone and food for the camp's first building."
     },
     "433F68BDA66984E5F80BDDC242AC98AD": {
       "source": "Que as marés nos guiem.",
@@ -124,13 +264,17 @@
       "source": "Terra Selvagem",
       "target": "The Wild Land"
     },
+    "901A06F220152547E4E0383B5D18195F": {
+      "source": "Marcas de garra desse tamanho? Vou pôr um ponto ali, com um ponto de interrogação bem grande.",
+      "target": "Claw marks that big? I'll put a mark there, with a very big question mark."
+    },
     "931EB8DE5BD2880BFAB37884EACC1AC2": {
       "source": "Adepto do Culto ao Baiacu Rei",
       "target": "Adept of the Cult of the Pufferfish King"
     },
-    "973A9BFFFCFFC0680E4CE731B5BB08A8": {
-      "source": "Fim do teste: a fogueira",
-      "target": "End of the test: the campfire"
+    "942F97722F809E6490C5112B1D01A1ED": {
+      "source": "Quando quiser sair, é só escolher um ponto no mapa, ali na mesa. Cada trilha que você andar entra no desenho.",
+      "target": "Whenever you want to head out, just pick a spot on the map, there on the table. Every trail you walk goes into the drawing."
     },
     "1324E8EF9FFA2E48C0D9A1EC93F406AF": {
       "source": "Ajudou! Ele mandou você, não mandou?",
@@ -148,13 +292,53 @@
       "source": "Já dormi sob muitos tetos. Nenhum me ensinou nada.",
       "target": "I've slept under many roofs. None of them taught me anything."
     },
+    "06682D745286B09ECA16604F02B6B0B8": {
+      "source": "Uma tenda velha, rasgada de cima a baixo. O fogo ao lado está frio há muitas estações.",
+      "target": "An old tent, torn from top to bottom. The fire beside it has been cold for many seasons."
+    },
+    "8227E4C2C3C47E032BE6C61692A0A5C9": {
+      "source": "E ali, as primeiras estacas. Três lugares para as nossas primeiras obras.",
+      "target": "And there, the first stakes. Three places for our first buildings."
+    },
+    "8811FE8752F63C1EF9CE6029EB6CADE5": {
+      "source": "Siga com Surubin pela estrada ao norte.",
+      "target": "Go with Surubin along the road to the north."
+    },
+    "9686A1668E1C10AD3F66BF7BE0E0607D": {
+      "source": "Bom dia, ${player}! Veja: o estandarte do Rei. A primeira coisa de pé nesta terra.",
+      "target": "Good morning, ${player}! Look: the King's banner. The first thing standing in this land."
+    },
+    "9696B27DCE2F99BF74212811C5B99EDE": {
+      "source": "A mata à noite é outra. Muitos olhos entre as árvores.",
+      "target": "The woods are another place at night. Many eyes among the trees."
+    },
     "31039B4CB3C235B2A7D322878D92C83A": {
       "source": "Você não precisa acreditar no Rei. Só precisa acreditar que um teto é melhor que a estrada.",
       "target": "You don't need to believe in the King. You only need to believe a roof is better than the road."
     },
+    "086117AAB314E7D0179E0A5B2116483F": {
+      "source": "Um mastro com o peixe do Rei numa flâmula vermelha marca a trilha de volta ao acampamento. Dá para vê-lo de longe.",
+      "target": "A mast with the King's fish on a red banner marks the trail back to camp. It can be seen from afar."
+    },
     "163089DC247CC04A57D0EAF1B06749F1": {
       "source": "Estrada da Costa",
       "target": "The Coast Road"
+    },
+    "451441B6420204F624E7A7FA16708CCA": {
+      "source": "O mapa de Surubin: a costa, o riacho e a clareira marcada em vermelho. Três trilhas pontilhadas levam a nomes que ninguém daqui confirmou ainda.",
+      "target": "Surubin's map: the coast, the stream and the clearing marked in red. Three dotted trails lead to names nobody here has confirmed yet."
+    },
+    "463980D54382FD3484496120E013570C": {
+      "source": "Na mata há um acampamento abandonado. Num caixote, um peixe de espinhos com uma coroa.",
+      "target": "There is an abandoned camp in the woods. On a crate, a spiny fish wearing a crown."
+    },
+    "913526F742CD68146F4BAD4B9143B2E7": {
+      "source": "Mata da Clareira",
+      "target": "Clearing Woods"
+    },
+    "600504110D260F8982DBEE520689133C": {
+      "source": "Mata da Clareira",
+      "target": "Clearing Woods"
     },
     "933937049E187531F5CCA8F13CAC48C1": {
       "source": "Faz tempo que eu não tenho para onde voltar.",
@@ -164,6 +348,10 @@
       "source": "Cuidado com a língua, cavaleiro. O Rei provê, e proverá muito mais àqueles que o seguem.",
       "target": "Mind your tongue, knight. The King provides, and will provide far more to those who follow Him."
     },
+    "A7B4007CE9E2164775B4D6AB419BFA7A": {
+      "source": "Adepto do Culto ao Baiacu Rei",
+      "target": "Adept of the Cult of the Pufferfish King"
+    },
     "A7C6F1C6825BF7F4F17E35944180A740": {
       "source": "Se o seu Rei mandar o jantar, eu fico.",
       "target": "If your King sends dinner, I'll stay."
@@ -172,17 +360,33 @@
       "source": "O cavaleiro olha a fogueira por um tempo, cansado da longa jornada e de não avançar na busca.",
       "target": "The knight stares into the fire for a while, weary of the long journey and of getting nowhere in his search."
     },
+    "A64A0292B6461A93DF197B7E34CB09AD": {
+      "source": "Ao norte, um carvalho com marcas de garra. Fundas. A trilha some depois dele.",
+      "target": "To the north, an oak with claw marks. Deep ones. The trail fades out past it."
+    },
     "A68C2F382DB845D099AFD3F2F5D1CD5A": {
       "source": "Então deixa eu te oferecer outra coisa. Vou desenhar um mapa desta terra: cada trilha, cada ruína.",
       "target": "Then let me offer you something else. I'm going to draw a map of this land: every trail, every ruin."
+    },
+    "A74D58FF698ACB80271C0F2F16FD2AD4": {
+      "source": "Folhas e flores miúdas que crescem perto da água. O Surubin diz que curam, se o Rei quiser.",
+      "target": "Leaves and tiny flowers that grow near the water. Surubin says they heal, if the King wills it."
     },
     "A00326075BFD2072B929BF0452BE0215": {
       "source": "Terra Selvagem",
       "target": "The Wild Land"
     },
+    "A8735159FBFDA8950DCECB46A63C9D44": {
+      "source": "Pedra boa, quebrada dos veios claros das rochas. Para alicerces e paredes.",
+      "target": "Good stone, broken from the pale veins of the rocks. For foundations and walls."
+    },
     "AAC2D839EFF7BFDE720D2924E19DC227": {
       "source": "A estrada de terra segue a costa sob a tempestade. O vento traz sal, chuva e algo mais.",
       "target": "The dirt road follows the coast under the storm. The wind carries salt, rain and something else."
+    },
+    "AB0030FF5F3FB7CAA5A54F3065B61469": {
+      "source": "Terra Selvagem",
+      "target": "The Wild Land"
     },
     "B0B324088035FB6075C266BE1743AA24": {
       "source": "Aqui! Por favor!",
@@ -192,9 +396,33 @@
       "source": "Que bom que o seu deus te ajudou.",
       "target": "Good thing your god helped you."
     },
+    "B78A8ACAE8559E9DA24730368D3851D7": {
+      "source": "O acampamento precisa da sua primeira obra.",
+      "target": "The camp needs its first building."
+    },
+    "B728E2F963AB1669CCF78F41AB45917E": {
+      "source": "Algo para contar ao Surubin: marcas de garra ao norte da mata.",
+      "target": "Something to tell Surubin: claw marks north of the woods."
+    },
+    "B6990787E25B6BB2A7B94ADD0756493D": {
+      "source": "O sol nasce sobre a clareira. Onde ontem havia só a fogueira, agora tremula um estandarte azul.",
+      "target": "The sun rises over the clearing. Where last night there was only the fire, a blue banner now flutters."
+    },
+    "BABDC6A9027F9C6630B2AFBE578A5CBC": {
+      "source": "Toras cortadas na mata. A base de qualquer obra do acampamento.",
+      "target": "Logs cut in the woods. The base of any building in the camp."
+    },
+    "C1D0B8E2C984E944ADEAE94CC2BC5581": {
+      "source": "Você voltou inteiro! Me conta da mata, que eu desenho enquanto você fala.",
+      "target": "You came back in one piece! Tell me about the woods, and I'll draw while you talk."
+    },
     "C06C425C6577E20139837755B80D5F97": {
       "source": "Cuidado! Elas estão por toda parte!",
       "target": "Look out! They're everywhere!"
+    },
+    "C50AC3505CF43D6D90B4AE0B0990F561": {
+      "source": "No meio, raízes trançadas no chão formam um desenho. Parece feito de propósito.",
+      "target": "In the middle, roots woven into the ground form a pattern. It looks deliberate."
     },
     "C1381373B17EF5139DC1F5619163CDA9": {
       "source": "Prazer, Surubin. Sou ${player}. Que bom que o seu deus te ajudou.",
@@ -204,6 +432,18 @@
       "source": "Terra Selvagem",
       "target": "The Wild Land"
     },
+    "CCF8A00B0D34DA560260077173CB6109": {
+      "source": "Sete pedras em roda, gastas pelo tempo. Ninguém as pôs aqui por acaso.",
+      "target": "Seven stones in a ring, worn by time. No one put them here by chance."
+    },
+    "CDD2B078C443E0BA633BE9A4B6F66570": {
+      "source": "Mata da Clareira",
+      "target": "Clearing Woods"
+    },
+    "CEE61C628C7987BBB68BDC4FC0B65AB0": {
+      "source": "Adiante, a trilha some entre as árvores, rumo ao norte. O cheiro é de bicho grande.",
+      "target": "Ahead, the trail fades among the trees, heading north. It smells of a big animal."
+    },
     "D2EA291AC90A4233F01ABC08432A43EB": {
       "source": "Terra Selvagem",
       "target": "The Wild Land"
@@ -212,9 +452,17 @@
       "source": "O Rei das Profundezas mandou você, ${player}. Tenho certeza.",
       "target": "The King of the Deep sent you, ${player}. I'm sure of it."
     },
+    "D1072F955428AD5AA994C6497229EDE9": {
+      "source": "No caixote, uma marca queimada na madeira: um peixe de espinhos, igual ao do estandarte, mas com uma coroa que o Surubin não desenha.",
+      "target": "On the crate, a mark burned into the wood: a spiny fish like the one on the banner, but with a crown Surubin never draws."
+    },
     "D1970C2BC3C03F8586EF9C371BC79489": {
       "source": "Agora tem. O Rei acolhe aqueles que o seguem.",
       "target": "Now you do. The King shelters those who follow Him."
+    },
+    "DAE8253E918CDE9959D25FACB4219DA7": {
+      "source": "E os golpes riscados nas pedras?",
+      "target": "And the strokes carved in the stones?"
     },
     "DBCA6E00C2C4AD9B6662489E0122B9A0": {
       "source": "Precisamos sair dessa chuva. Vi uma clareira subindo o riacho. Você vem?",
@@ -236,6 +484,10 @@
       "source": "Sou Surubin, adepto do Culto ao Baiacu Rei. Vim de Marina para trazer a fé a esta terra.",
       "target": "I am Surubin, adept of the Cult of the Pufferfish King. I came from Marina to bring the faith to this land."
     },
+    "E2D73AA4F36F3DD39E0A726DED947CD4": {
+      "source": "Mata da Clareira",
+      "target": "Clearing Woods"
+    },
     "E3CDFB9AB9C67A9A2034E64231BFA30B": {
       "source": "Um rapaz de vestes encharcadas, cercado por criaturas da mata, segura um cajado como quem nunca usou um.",
       "target": "A young man in soaked robes, surrounded by forest creatures, holds a staff like someone who has never used one."
@@ -243,6 +495,34 @@
     "E42BAE9BF4785DA548DCFF4F850D183F": {
       "source": "Salve o forasteiro cercado na clareira.",
       "target": "Save the stranger cornered in the clearing."
+    },
+    "E85A97A33A6A32D2EDC38DBEFBFD8DFA": {
+      "source": "Mata da Clareira",
+      "target": "Clearing Woods"
+    },
+    "E86F81E2437128E9198B925533809DF5": {
+      "source": "Tocos cortados a machado, cobertos de musgo. Os cortes são retos e antigos.",
+      "target": "Stumps cut by an axe, covered in moss. The cuts are straight, and old."
+    },
+    "E727C4DA961E7A8A9646DCB5E21EE36C": {
+      "source": "O estandarte ficou bonito, não ficou? Azul como o mar de Marina.",
+      "target": "The banner turned out nice, didn't it? Blue as the sea of Marina."
+    },
+    "E896AED9F1E4867ED508290D53CE6AD5": {
+      "source": "Junte madeira, pedra e comida para a primeira obra do acampamento.",
+      "target": "Gather wood, stone and food for the camp's first building."
+    },
+    "E3116E49177C3871BB7B076E210B1E45": {
+      "source": "Quando eu ouvir falar deles, você vai ser o primeiro a saber. Prometido.",
+      "target": "When I hear of them, you'll be the first to know. I promise."
+    },
+    "EAAD5A479706217A7AA6F0630F6EF1E6": {
+      "source": "Terra Selvagem",
+      "target": "The Wild Land"
+    },
+    "ECC343D52B99A514F4965AF8948C1D9A": {
+      "source": "Uma coroa? O Rei não usa coroa nos nossos estandartes. Nunca usou.",
+      "target": "A crown? The King wears no crown on our banners. He never has."
     },
     "EF4AB603323B2D394B521845BF093BD1": {
       "source": "Até a chuva passar.",
@@ -259,6 +539,14 @@
     "F353EAD949536F72C787C4180E19E47C": {
       "source": "Siga com Surubin pela estrada ao norte.",
       "target": "Follow the road north with Surubin."
+    },
+    "FB3D827387F627D17AAB3181578A1C6C": {
+      "source": "Pronto. A Mata da Clareira está no mapa. Viu? Já parece um lugar de verdade.",
+      "target": "There. The Clearing Woods are on the map. See? It already looks like a real place."
+    },
+    "FDECB95A7038F3908BA0C9307AE492A5": {
+      "source": "Mas os marinheiros falavam de uma mata a oeste, de juncos subindo o riacho e de uma pedreira na encosta. Madeira, comida e pedra. Tudo o que um começo precisa.",
+      "target": "But the sailors spoke of a forest to the west, of reeds up the stream and of a quarry on the slope. Wood, food and stone. Everything a beginning needs."
     }
   }
 }

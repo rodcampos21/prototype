@@ -8,6 +8,8 @@
  * window.__props: { renderer, scene, camera, factory, textures, results, setNight(bool),
  *                   frame(name | {x, z, dist, yaw, pitch}), info(), check() }
  * Query: ?night=1  ?view=house|trees|market|bridge|windmill|campfire|overview  ?mode=gallery  ?merge=1
+ * ?mode=camp: the camp props (props/CampProps.js) at both stages; views `camp`, `campFirst`,
+ * `campGrown`, `campTent`, `campBanner`, `campTable`, `campStakes`
  * ?mode=interior: three furnished rooms (a home, an inn, a mill — props/Furniture.js) and a gallery of
  * every furniture option; views `interior`, `roomHome`, `roomInn`, `roomMill`, `gBeds`, `gRow2`,
  * `gRow2b`, `gRow3`, `gHearth`, `gTables`
@@ -346,8 +348,31 @@ function buildInterior() {
   [1, 2, 3, 4].forEach((n, i) => fur(`gSacks${n}`, 'sacks', -4.5 + i * 2.2, 19, { count: n, seed: n }));
 }
 
+/**
+ * The camp props (props/CampProps.js) on a grass plane (?mode=camp): the first camp's tent, banner,
+ * map table, stakes and plot in front, the grown camp's stages behind.
+ */
+function buildCamp() {
+  const g = new MeshBuilder(textures, {});
+  g.box('grass', [40, 0.02, 28], { at: [0, -0.01, 0], faces: { py: {}, ny: false, pz: false, nz: false, px: false, nx: false } });
+  g.box('dirt_path', [10, 0.02, 7], { at: [-2, 0.0, 4], faces: { py: {}, ny: false, pz: false, nz: false, px: false, nx: false } });
+  scene.add(g.build('campGround').group);
+  // the first camp (front row)
+  add('cTent', factory.tent(-6, 0, 3, { rotation: 0.35 }));
+  add('cBanner', factory.banner(-1.5, 0, 2.2));
+  add('cTable', factory.mapTable(2.5, 0, 3.5, { rotation: -0.2 }));
+  add('cStake', factory.stake(6, 0, 5));
+  add('cPlot', factory.stake(10, 0, 3, { kind: 'plot', width: 4, depth: 3 }));
+  add('cFire', factory.campfire(-2.5, 0, 6, { seat: true }));
+  // the camp grown (back row)
+  add('cPavilion', factory.tent(-6, 0, -6, { stage: 'pavilion', rotation: 0.2 }));
+  add('cMast', factory.banner(0, 0, -5.5, { stage: 'mast' }));
+  add('cPlotWide', factory.stake(7, 0, -6, { kind: 'plot', width: 6, depth: 4, rotation: 0.3 }));
+}
+
 if (MODE === 'gallery') buildGallery();
 else if (MODE === 'interior') buildInterior();
+else if (MODE === 'camp') buildCamp();
 else buildLot();
 // ?merge=1 → batch every static prop mesh into one mesh per material (PropFactory.mergeStatic)
 const merged = params.get('merge') === '1' ? factory.mergeStatic(results) : null;
@@ -532,8 +557,17 @@ const VIEWS = {
   gHearth: { x: 4, z: 14.2, y: 1.2, dist: 11, yaw: 0, pitch: 30 },
   gStairs: { x: -11, z: 19, y: 0.8, dist: 12, yaw: 0, pitch: 38 },
   gTables: { x: 11, z: 9.3, y: 0.6, dist: 12, yaw: 0, pitch: 38 },
+  // ?mode=camp
+  camp: { x: 1, z: 0, y: 0.5, dist: 34, yaw: 0, pitch: 32 },
+  campFirst: { x: -1.5, z: 3.5, y: 1, dist: 18, yaw: 0, pitch: 30 },
+  campGrown: { x: -2, z: -5.5, y: 1.5, dist: 20, yaw: 0, pitch: 28 },
+  campTent: { x: -6, z: 3, y: 1, dist: 9, yaw: 0.2, pitch: 26 },
+  campBanner: { x: -1.5, z: 2.2, y: 2, dist: 9, yaw: 0, pitch: 18 },
+  campTable: { x: 2.5, z: 3.5, y: 0.8, dist: 5, yaw: 0, pitch: 45 },
+  campStakes: { x: 8.5, z: 4, y: 0.4, dist: 10, yaw: 0, pitch: 34 },
 };
-let view = { ...VIEWS[params.get('view') || (MODE === 'interior' ? 'interior' : 'overview')] };
+const DEFAULT_VIEW = { interior: 'interior', camp: 'camp' };
+let view = { ...VIEWS[params.get('view') || DEFAULT_VIEW[MODE] || 'overview'] };
 const target = new THREE.Vector3();
 function applyCamera() {
   const p = view.pitch * DEG2RAD;

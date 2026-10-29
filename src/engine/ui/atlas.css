@@ -1,0 +1,51 @@
+/* ------------------------------------------------------------------------------------------ */
+/* The atlas (AtlasScreen.js): the cartographer's map over the veiled scene                     */
+/* ------------------------------------------------------------------------------------------ */
+
+.lu-atlas {
+  position: absolute;
+  inset: 0;
+  z-index: 7;
+  overflow: hidden;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.18s steps(3), visibility 0s 0.18s;
+}
+.lu-atlas.is-open {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transition: opacity 0.18s steps(3), visibility 0s;
+}
+.lu-atlas__veil { position: absolute; left: 0; top: 0; image-rendering: pixelated; pointer-events: none; }
+/* the window drops in by two art pixels */
+.lu-root .lu-atlas__window { transform: translateY(calc(var(--px) * -2)); transition: transform 0.18s steps(2); }
+.lu-atlas.is-open .lu-atlas__window { transform: none; }
+.lu-root .lu-atlas canvas.frame,
+.lu-root .lu-atlas canvas.orn,
+.lu-root .lu-atlas__shadow,
+.lu-root .lu-atlas__sheet,
+.lu-root .lu-atlas__over,
+.lu-root .lu-atlas__label { pointer-events: none; }
+/* the place marks: buttons laid over their art */
+.lu-root .lu-atlas__place,
+.lu-root .lu-atlas__go {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+.lu-root .lu-atlas__place:focus-visible,
+.lu-root .lu-atlas__go:focus-visible { outline: none; }
+/* a rumour sits lighter on the sheet; the chosen place a step up */
+.lu-root .lu-atlas__place.is-rumor { opacity: 0.85; }
+.lu-root .lu-atlas__place.is-sel { opacity: 1; }
+.lu-root .lu-atlas__place:not(.is-sel):hover canvas { filter: brightness(1.06); }
+/* the selection ring breathes in two hard steps */
+.lu-root .lu-atlas__ring { animation: lu-atlas-ring 1.1s steps(1) infinite; }
+@keyframes lu-atlas-ring { 50% { opacity: 0.6; } }
+.lu-atlas:not(.is-open) .lu-atlas__ring { animation-play-state: paused; }
+.lu-root .lu-atlas__go:hover canvas:first-child { filter: brightness(1.18); }

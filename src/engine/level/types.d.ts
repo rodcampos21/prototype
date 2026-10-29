@@ -409,6 +409,12 @@ export interface ObjectTypeDef {
    */
   story?: boolean;
   /**
+   * Camp type (tent, mapTable, banner, stake — props/CampProps.js; resource — props/ResourceProps.js):
+   * the Baiacu campaign's camp and expeditions; Starfall Vale's coverage skips it, the campaign's
+   * generator covers it.
+   */
+  camp?: boolean;
+  /**
    * Interior type (bed, table, chair, shelf, hearth, counter, rug, staircase, wardrobe, wallWindow,
    * sacks — the furniture of rooms, props/Furniture.js): Starfall Vale's coverage skips it, the
    * interiors demo's generator covers it.

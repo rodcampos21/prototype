@@ -324,6 +324,11 @@ Flames, glows and foliage animate on the GPU from `globalUniforms` (`uTime`, `uC
 | `wardrobe(x, y, z, opts)` | `kind 'wardrobe' \| 'drawers', width 1.4` (drawers 1.2), `rotation, seed` | Box (width + 0.08) × 0.64 (drawers 0.54). |
 | `wallWindow(x, y, z, opts)` | `(x, y, z)` = the wall face at floor height, local +Z into the room; `panes 1` (1–3 casements, 1 wide), `sill 0.9, glow 'daylight' \| 'warm', curtains 'red' \| 'linen' \| 'none', beam` (on unless `false`), `flowers, rotation` | No collider, no light. Panes: `window_inside` with its own emissive colour per glow — daylight `{ day 1.15, night 0.03 }` (`#dcecff`), warm `{ day 0.95, night 1.1 }` (`#ffc070`); `beam`: a black, additive, depth-write-off `light_beam` material (emissive only, no shadow) `{ day 0.32 / 0.36, night 0 }` on two sheets from the opening to the floor and the lit patch — one more program (transparent) on a level that has one. |
 | `sacks(x, y, z, opts)` | `count 3` (1–4), `rotation, seed` | Box (min(count, 3) × 0.52 + 0.1) × 0.66. |
+| `tent(x, y, z, opts)` | `stage 'worn' \| 'pavilion', rotation, seed` | The camp's tent, door on local +Z: a patched A-frame 2.4 × 2.8, or a wall tent 3.2 × 3.6 with a swaying pennant. Box colliders over the canvas. |
+| `mapTable(x, y, z, opts)` | `rotation, seed` | A trestle table with Surubin's map (`map_parchment`), an inkpot, a quill and a candle stub. Box 1.8 × 1.0; `interact` 0.55 in front (local +Z). |
+| `banner(x, y, z, opts)` | `stage 'pole' \| 'mast', rotation, seed` | The cult's banner (`banner_fish`) on a crossbar, the cloth a separate swaying mesh. Circle 0.42 (mast 0.5). |
+| `stake(x, y, z, opts)` | `kind 'ribbon' \| 'plot', width 4, depth 3, rotation, seed` | One stake with a swaying ribbon (circle 0.12), or a roped building plot of width × depth (no collider). |
+| `clothMaterial(name)` | a library or extra texture name | Cached double-sided Lambert with wind sway (`applyWind`), alpha-tested when the texture has alpha; the sway weight per vertex is the builder's `sway`. |
 | `dispose()` | | Frees factory-owned geometries, materials, depth materials, flame materials, per-instance materials still alive and `extra` textures. It never touches `TextureLibrary` textures. |
 
 The interior furniture (`bed` … `sacks`, [`props/Furniture.js`](../../../src/engine/world/props/Furniture.js),
@@ -333,6 +338,13 @@ face), local +Z is the front and a wall piece's back is on local −Z. The footp
 `interiorFootprint` in `ObjectCatalog.js` (picking, the 2D map, the level checks) and checked against
 the builders by `sandbox/props.html?mode=interior` (`__props.furnitureCheck()`). Their textures are
 the library's on-demand furniture set ([pixel.md](pixel.md)); a level without furniture paints none.
+
+The camp props (`tent`, `mapTable`, `banner`, `stake`, [`props/CampProps.js`](../../../src/engine/world/props/CampProps.js),
+the catalog's `camp: true` types, [OBJECT_CATALOG.md § Camp](../../specs/OBJECT_CATALOG.md#camp))
+belong to the Baiacu campaign's camp, which grows into a town: a prop that changes with it takes
+`opts.stage` (the lists `TENT_STAGES` / `BANNER_STAGES` in `ObjectCatalog.js` — change both; an
+unknown stage builds the first). Their textures (`canvas`, `banner_fish`, `map_parchment`) are
+`PropTextureSet` extras, painted on first use; their cloth sways through `clothMaterial`.
 
 Seeding: `factory.rng(kind, x, z, seed)` combines the factory seed, the prop kind, the position and `opts.seed`. The same level therefore produces the same props, and a new `opts.seed` gives a variation. The editor's Place tool rolls a new seed after each placement.
 

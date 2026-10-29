@@ -926,6 +926,15 @@ export class PlayerCombat {
     this._lastRow = row;
   }
 
+  /**
+   * Show one of the sheet's combat poses outside an action (a resource struck: Game.harvest, which
+   * holds `player.action` meanwhile).
+   * @param {string} name 'wind' | 'slash' | 'follow' …
+   */
+  showPose(name) {
+    this._pose(name);
+  }
+
   /** Re-apply the pose row after a camera turn (per frame, while an action runs). */
   refreshPose() {
     if (!this.action || this._lastCol < 0) return;

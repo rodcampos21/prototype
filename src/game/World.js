@@ -280,6 +280,12 @@ export class World {
      */
     this._fireList = [];
     /**
+     * Every return mast (a stake of kind `mast`: where an expedition goes home from), with its live
+     * story group (or null): always on the maps.
+     * @type {{ position: THREE.Vector3, group: StoryGroup|null }[]}
+     */
+    this._returnList = [];
+    /**
      * Waterfalls: { id, x, z, width, dir: [fx, fz], anchor (foot of the fall, in the pool), top,
      * splash (spray bursts + the roar in the ambience) } — every one, there or not: a live story
      * fall also has `hidden` (a getter, true while its group is absent: no spray bursts).
@@ -870,9 +876,11 @@ export class World {
 
   /**
    * The points of interest the maps draw (Game._setupMaps): one marker per interactable (doors,
-   * signs, wells, chests, waystones, a campaign's Space exits …) and per campfire, in that order. A
-   * live story prop's marker reads `hidden` from its group (true while the group is absent: the
-   * minimap and the world map skip it), so it comes and goes with the story without a repaint.
+   * signs, wells, chests, waystones, a campaign's Space exits, resources to gather — `res_tree`,
+   * `res_stone`, `res_herbs` by the resource's kind …), per campfire and per return mast, in that
+   * order. A live story prop's marker reads `hidden` from its group (true while the group is absent:
+   * the minimap and the world map skip it), so it comes and goes with the story without a repaint —
+   * a resource gathered leaves the maps until it grows back.
    * @returns {{ x: number, z: number, kind: string, hidden?: boolean }[]}
    */
   mapMarkers() {
@@ -886,8 +894,15 @@ export class World {
       if (g) Object.defineProperty(m, 'hidden', { get: () => !g.present, enumerable: true });
       out.push(m);
     };
-    for (const it of this.interactables) mark(it.position.x, it.position.z, it.kind, groupOf.get(it));
+    // (a Space exit at a return mast is the mast's: its flag stands for both)
+    const atMast = (it) => it.kind === 'exit' && this._returnList.some((r) => Math.hypot(r.position.x - it.position.x, r.position.z - it.position.z) < 3);
+    for (const it of this.interactables) {
+      if (atMast(it)) continue;
+      const kind = it.kind === 'resource' ? `res_${/** @type {any} */ (it.object)?.opts?.kind ?? 'tree'}` : it.kind;
+      mark(it.position.x, it.position.z, kind, groupOf.get(it));
+    }
     for (const f of this._fireList) mark(f.position.x, f.position.z, 'fire', f.group);
+    for (const r of this._returnList) mark(r.position.x, r.position.z, 'return', r.group);
     return out;
   }
 
@@ -988,6 +1003,30 @@ export class World {
             this._interact(obj.id, b.anchor, { radius: 1.35, label: 'Read', kind: 'sign', text: { ...plate, ...pages } });
           }
           break;
+        case 'mapTable':
+          // (a campaign's hub: Space opens the atlas — Game._interact —; elsewhere its text)
+          if (lines.length) {
+            const pos = b.interact?.position ?? b.anchor;
+            this._interact(obj.id, pos, { radius: 1.2, label: 'Examine', kind: 'mapTable', prompt: new THREE.Vector3(obj.x, b.anchor.y + 1.9, obj.z), text: { speaker: '', ...pages } });
+          }
+          break;
+        case 'stake':
+          // (a return mast: on the maps, so the way home is found on a big map)
+          if (/** @type {any} */ (obj).opts?.kind === 'mast') this._returnList.push({ position: b.anchor.clone(), group: g });
+          break;
+        case 'resource': {
+          // a full resource is gathered with Space (Game.harvest); a spent one is scenery
+          const ro = /** @type {any} */ (obj).opts ?? {};
+          if (ro.stage === 'spent') break;
+          const kind = ro.kind === 'stone' || ro.kind === 'herbs' ? ro.kind : 'tree';
+          const y = b.anchor.y;
+          this._interact(obj.id, new THREE.Vector3(obj.x, y, obj.z), {
+            kind: 'resource', label: kind === 'tree' ? 'Chop' : kind === 'stone' ? 'Break' : 'Gather',
+            radius: kind === 'herbs' ? 1.1 : 1.45, prompt: new THREE.Vector3(obj.x, y + (kind === 'tree' ? 2.0 : 1.3), obj.z),
+            text: { speaker: '', lines: [] }, object: obj,
+          });
+          break;
+        }
         case 'well': {
           if (!lines.length) break;
           const y = b.anchor.y;

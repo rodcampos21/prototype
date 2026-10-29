@@ -100,7 +100,25 @@ export const EVENT_TRIGGERS = [
  * Editor palette categories, in display order ('Interior': the furniture of rooms, `interior: true`;
  * 'Combat': the combat-only types, COMBAT.md §14).
  */
-export const OBJECT_CATEGORIES = ['Buildings', 'Nature', 'Lights', 'Props', 'Interior', 'Structures', 'Water', 'Characters', 'Markers', 'Combat'];
+export const OBJECT_CATEGORIES = ['Buildings', 'Nature', 'Lights', 'Props', 'Camp', 'Interior', 'Structures', 'Water', 'Characters', 'Markers', 'Combat'];
+
+/**
+ * The stages of the camp props that change as the camp grows (`opts.stage`, props/CampProps.js —
+ * change both): the first is the camp's first, a later one is appended when its art is made.
+ */
+export const TENT_STAGES = ['worn', 'pavilion'];
+/** @see TENT_STAGES */
+export const BANNER_STAGES = ['pole', 'mast'];
+/** What a `stake` is (`opts.kind`): one stake with a ribbon, the return mast of a big map, or a roped building plot. */
+export const STAKE_KINDS = ['ribbon', 'mast', 'plot'];
+/**
+ * What a `resource` is (`opts.kind`, props/ResourceProps.js): a tree to chop, a stone to break, a
+ * bush of herbs to pick. Its stages (`opts.stage`): `full`, gathered with Space, and `spent`, what
+ * is left (a stump, rubble, bare twigs) until it grows back.
+ */
+export const RESOURCE_KINDS = ['tree', 'stone', 'herbs'];
+/** @see RESOURCE_KINDS */
+export const RESOURCE_STAGES = ['full', 'spent'];
 
 /** Quilt colours of a `bed` (`opts.blanket`; the texture `quilt_<colour>`, props/Furniture.js BLANKETS). */
 export const BLANKET_COLORS = ['red', 'blue', 'green', 'ochre', 'plum'];
@@ -275,6 +293,58 @@ export const OBJECT_TYPES = {
     label: 'Signpost', category: 'Props', placement: 'point', kind: 'prop', glyph: '⚑', color: '#c9a45c', radius: 0.3, rotatable: true,
     defaults: { rotation: 0, speaker: 'Signpost', text: ['↑ Somewhere nice'], opts: { boards: 2 } },
     fields: [ROT, { key: 'opts.boards', label: 'Boards', type: 'int', min: 1, max: 3 }, { key: 'speaker', label: 'Speaker', type: 'text', i18n: true }, { ...TEXT, label: 'Sign text' }],
+  },
+
+  // ------------------------------------------------------------------ Camp
+  // `camp: true` (props/CampProps.js): the camp of the Baiacu campaign, which grows into a town — a
+  // prop that changes with it takes `opts.stage`. Covered by the campaign's generator, not by
+  // Starfall Vale.
+  tent: {
+    label: 'Tent', category: 'Camp', placement: 'point', kind: 'prop', camp: true, glyph: '⌂', color: '#d8c9a3', radius: 1.8, rotatable: true, snap: 0.5,
+    help: 'The door faces the rotation. Worn: a patched A-frame (the first camp). Pavilion: a wall tent with a pennant (the camp grown).',
+    defaults: { rotation: 0, opts: { stage: 'worn', seed: 1 } },
+    fields: [ROT, { key: 'opts.stage', label: 'Stage', type: 'select', options: TENT_STAGES }, SEED],
+  },
+  mapTable: {
+    label: 'Map table', category: 'Camp', placement: 'point', kind: 'prop', camp: true, glyph: '▦', color: '#c9a46a', radius: 1.0, rotatable: true, snap: 0.25,
+    help: 'A trestle table with a map; read from the front (the rotation). Interactive once “Text when examined” is filled in.',
+    defaults: { rotation: 0, text: [], opts: { seed: 1 } },
+    fields: [ROT, TEXT, SEED],
+  },
+  banner: {
+    label: 'Banner', category: 'Camp', placement: 'point', kind: 'prop', camp: true, glyph: '⚑', color: '#305c97', radius: 0.6, rotatable: true,
+    help: 'The pufferfish banner, swaying in the wind; the cloth faces the rotation. Pole: a rough pole in a cairn. Mast: a tall mast on a plinth.',
+    defaults: { rotation: 0, opts: { stage: 'pole', seed: 1 } },
+    fields: [ROT, { key: 'opts.stage', label: 'Stage', type: 'select', options: BANNER_STAGES }, SEED],
+  },
+  stake: {
+    label: 'Stake', category: 'Camp', placement: 'point', kind: 'prop', camp: true, glyph: '↥', color: '#b0703f', radius: 0.4, rotatable: true, snap: 0.25,
+    help: 'Ribbon: one stake with a red ribbon (where an expedition starts and ends). Mast: the return mast of a big map, a tall pole with the fish on a red banner, marked on the maps. Plot: a roped building plot of width × depth, walkable.',
+    defaults: { rotation: 0, opts: { kind: 'ribbon', width: 4, depth: 3, seed: 1 } },
+    fields: [
+      ROT,
+      { key: 'opts.kind', label: 'Kind', type: 'select', options: STAKE_KINDS },
+      { key: 'opts.width', label: 'Plot width', type: 'number', min: 1.5, max: 10, step: 0.5, help: 'Plots only.' },
+      { key: 'opts.depth', label: 'Plot depth', type: 'number', min: 1.5, max: 10, step: 0.5, help: 'Plots only.' },
+      SEED,
+    ],
+  },
+  resource: {
+    label: 'Resource', category: 'Camp', placement: 'point', kind: 'prop', camp: true, glyph: '✦', color: '#9cbf5a', radius: 0.6, rotatable: true, snap: 0.25,
+    help: 'Something to gather with Space: a tree to chop, a stone to break, herbs to pick. Struck “Hits” times it gives “Amount” of its item and sets its flag; give it “unless: <flag>” and a spent twin “when: <flag>”. Flags starting with res. are cleared every morning: it grows back.',
+    defaults: { rotation: 0, item: 'madeira', amount: 2, hits: 3, flag: '', opts: { kind: 'tree', stage: 'full', tree: 'oak', height: 4, seed: 1 } },
+    fields: [
+      ROT,
+      { key: 'opts.kind', label: 'Kind', type: 'select', options: RESOURCE_KINDS },
+      { key: 'opts.stage', label: 'Stage', type: 'select', options: RESOURCE_STAGES, help: 'Full: gathered with Space. Spent: what is left until it grows back.' },
+      { key: 'item', label: 'Item given', type: 'text', help: 'A story item id (madeira, pedra, ervas).' },
+      { key: 'amount', label: 'Amount', type: 'int', min: 1, max: 20 },
+      { key: 'hits', label: 'Hits', type: 'int', min: 1, max: 8 },
+      { key: 'flag', label: 'Flag when gathered', type: 'text', help: 'Blank: res.<level>.<id>.' },
+      { key: 'opts.tree', label: 'Tree kind', type: 'select', options: TREE_KINDS, help: 'Trees only.' },
+      { key: 'opts.height', label: 'Tree height', type: 'number', min: 2.5, max: 6, step: 0.1, help: 'Trees only.' },
+      SEED,
+    ],
   },
 
   // ------------------------------------------------------------------ Interior (furniture of rooms)
@@ -807,6 +877,9 @@ export function objectBounds(obj) {
   else if (obj.type === 'marketStall') { hw = (obj.opts?.width ?? 3) / 2 + 0.2; hd = 0.9; }
   else if (obj.type === 'bench') { hw = (obj.opts?.length ?? 1.8) / 2; hd = 0.35; }
   else if (obj.type === 'flowerbox') { hw = (obj.opts?.length ?? 1.2) / 2; hd = 0.25; }
+  else if (obj.type === 'tent') { const big = obj.opts?.stage === 'pavilion'; hw = big ? 2.4 : 1.3; hd = big ? 2.2 : 2.3; }
+  else if (obj.type === 'mapTable') { hw = 0.95; hd = 0.55; }
+  else if (obj.type === 'stake' && obj.opts?.kind === 'plot') { hw = optNum(obj.opts?.width, 4, 1.5, 10) / 2 + 0.1; hd = optNum(obj.opts?.depth, 3, 1.5, 10) / 2 + 0.1; }
   else if (obj.type === 'waterfall') { hw = (obj.width ?? 2) / 2; hd = 0.3; }
   else if (obj.type === 'emitter') { hw = (obj.size?.[0] ?? 8) / 2; hd = (obj.size?.[2] ?? 8) / 2; }
   else if (obj.type === 'critters') { hw = hd = obj.radius ?? 2.5; }
@@ -1140,6 +1213,16 @@ export function isCombatType(type) {
  */
 export function isCampaignType(type) {
   return isOwnKey(OBJECT_TYPES, type) && !!(/** @type {ObjectTypeDef} */ (OBJECT_TYPES[type]).campaign);
+}
+
+/**
+ * Is `type` one of the camp types (`camp: true`: tent, mapTable, banner, stake — the Baiacu
+ * campaign's camp; its generator covers them, Starfall Vale does not)?
+ * @param {string} type any string (unknown types are not camp types)
+ * @returns {boolean}
+ */
+export function isCampType(type) {
+  return isOwnKey(OBJECT_TYPES, type) && !!(/** @type {ObjectTypeDef} */ (OBJECT_TYPES[type]).camp);
 }
 
 /**

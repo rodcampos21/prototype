@@ -121,3 +121,87 @@ export type PartySound = 'menuOpen' | 'menuClose' | 'menuMove' | 'menuSelect';
  * arrow. Absent or empty: the maps draw exactly what they drew before.
  */
 export type MapPartyDots = ReadonlyArray<{ x: number; z: number }>;
+
+// -------------------------------------------------------------------------------------------------
+// The atlas (AtlasScreen; created by UI.useAtlas)
+// -------------------------------------------------------------------------------------------------
+
+/** A feature of the sketch as the screen draws it (map units; already filtered by the story). */
+export interface AtlasSketchFeature {
+  kind: string;
+  points?: [number, number][];
+  at?: [number, number];
+  /** a label's text, translated */
+  name?: string;
+}
+
+/** What `atlasSheet` paints: the sheet's size in art px, the map's size in units, the features. */
+export interface AtlasSheetSpec {
+  w: number;
+  h: number;
+  size: [number, number];
+  sketch: AtlasSketchFeature[];
+  seed?: number;
+}
+
+/** A place on the map as the screen shows it (texts translated). */
+export interface AtlasViewPlace {
+  id: string;
+  name: string;
+  x: number;
+  y: number;
+  icon: string;
+  state: 'rumor' | 'known' | 'explored' | 'home';
+  /** the state's word ('Boato', 'Descoberto' …) */
+  stateLabel: string;
+  /** the cartographer's note ('' none) */
+  note: string;
+  /** what is found there ([] none or not known yet) */
+  yields: string[];
+  /** the journey's lines ('1 h de caminhada', 'Chegada às 9:30'); [] for the camp */
+  travel: string[];
+  /** a warning under the journey (arriving at night) — '' none */
+  warn: string;
+  /** can the player travel there from here */
+  go: boolean;
+  /** why not, when `go` is false ('' none: the camp) */
+  why: string;
+}
+
+/** AtlasScreen.open()'s data. */
+export interface AtlasView {
+  title: string;
+  subtitle: string;
+  /** the clock line ('Dia 2 · 7:45') and the day's progress (0–1, midnight to midnight) */
+  clock: string;
+  dayFrac: number;
+  size: [number, number];
+  sketch: AtlasSketchFeature[];
+  places: AtlasViewPlace[];
+  /** the place selected at first (the last one travelled to, else the first not the camp) */
+  selected?: string;
+  texts: { travel: string; close: string; choose: string; journey: string; yields: string; note: string; here: string; unknown: string };
+}
+
+/** One end of a journey on the card: the place's mark (atlas icon and state) and the hour there. */
+export interface JourneyEnd {
+  icon: string;
+  state: 'rumor' | 'known' | 'explored' | 'home';
+  time: string;
+}
+
+/** JourneyCard.open()'s data (every text translated). */
+export interface JourneyView {
+  /** 'On the way to' / 'Back to' */
+  kicker: string;
+  /** the destination */
+  name: string;
+  /** one line of the road ('' none) */
+  line: string;
+  from: JourneyEnd;
+  to: JourneyEnd;
+  /** the arrival falls at night ('' it does not) */
+  warn: string;
+  /** the skip hint's label */
+  skip: string;
+}

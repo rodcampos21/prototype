@@ -412,7 +412,11 @@ device pixels. The default label is `t('dialog.prompt.talk')`.
   bridges, trees, wells and windmill when the game passes the level (`renderPixelMap(…, {
   objects: true })`), else the painted map in art pixels (`resampleMap`). Each frame: the wash, the
   wedge (64 steps), the vignette, the markers in G's order (pushed aside from the arrow; foes
-  outside as edge pips) and an 8-facing 9 × 9 arrow.
+  outside as edge pips) and an 8-facing 9 × 9 arrow. A campaign's expedition adds the return
+  mast's red flag (`return`; out of the window a 5 × 5 red diamond on the edge toward it, so the
+  way home is never lost) and the resources to gather as small pluses in the colour of what they
+  give (`res_tree` amber, `res_stone` pale grey, `res_herbs` pink; `RESOURCE_COLORS`), which leave
+  the map while gathered.
 - **World map**: an `mc` L window (lattice, beads 6, trio, sides) on the tactics veil, sized to
   its content and to the screen so `fitScale` stays 1 (narrower at 1024 × 768, never scaled).
   Header at +17: WORLD MAP (small) ◆ the title (head) and the subtitle (line, on the title's
@@ -422,7 +426,8 @@ device pixels. The default label is `t('dialog.prompt.talk')`.
   first), else its compact form (two lines in the small role; in English at an even `--px` the
   line role, whose font-pixel outline leaves Tiny5's C open — 'GINDERWATGH' under a one-art-px
   outline), else the centre. Ink, line pitch and the legend's width follow `fpx`. Laid out on `open()` only (a load stores the map; the first open costs ≈ 200 ms).
-- **Legend**: a column of 92 to 150, rows 13 apart with 11 × 11 chips, then YOU ARE IN with the
+- **Legend**: a column of 92 to 150, rows 13 apart with 11 × 11 chips (*Caminho de volta* and
+  *Recurso para coletar* only while the map shows such markers), then YOU ARE IN with the
   region (name role, up to 3 lines), the key hints at the foot. The window opens with a stepped
   fade and rises 2 px.
 
@@ -597,7 +602,7 @@ shrink; the roles are `roles()`)
 |---|---|
 | HUD | `HUD.js`, `Banner.js`, `Fader.js`, `DebugPanel.js`, `hud.css`, `strings/hud.js` |
 | Dialogue | `DialogBox.js`, `InteractPrompt.js`, `dialog.css`, `strings/dialog.js` |
-| Maps | `Minimap.js`, `map.css`, `strings/map.js` |
+| Maps | `Minimap.js`, `map.css`, `strings/map.js`; the atlas: `AtlasScreen.js`, `art/atlas.js`, `atlas.css`; the journey card: `JourneyCard.js`, `journey.css` (both strings in `src/game/campaign/strings.js`) |
 | Title | `TitleScreen.js`, `CharacterCreation.js`, `title.css`, `game.html` (loading screen), `strings/title.js` |
 | Combat UI | `CombatHUD.js`, `BossBar.js`, `Announcer.js`, `DeathScreen.js`, `combat.css`; the combat strings in `CombatSystem.js`, `PlayerCombat.js`, `Waystones.js`, `Chests.js`, `bindings.js`; `src/game/combat/strings.js` |
 | World labels | `WorldLabels.js`, `worldfx.css`, `strings/worldfx.js` |
@@ -666,6 +671,46 @@ All additions are additive. Components and their callers share the following int
 - Keys: typing goes to the field; ↑ ↓ / Tab move between the name and the class; ← → choose the
   class while it has the focus; Enter confirms. Gamepad: d-pad ← → class, A / Start confirm. The
   window stops every key from reaching the game.
+
+**Atlas: CampaignRuntime provides its content.**
+- `AtlasScreen.js` (in `atlas.css`), made by `UI.useAtlas(AtlasScreen)` the first time a campaign's
+  hub map table opens it (`Game.openAtlas`; [CAMPAIGN_FORMAT.md §4.1](CAMPAIGN_FORMAT.md#41-the-atlas)).
+  It sits at z 7 like the journal and takes the input first while open (`UI.update`); the caller
+  holds `busy`, so play waits under it.
+- `open(view)` takes `CampaignRuntime.atlasView()` (`AtlasView`, `types.d.ts`): translated title,
+  subtitle, clock line and the day's fraction, the map size, the sketch features the story has
+  drawn, the places (`id name x y icon state stateLabel note yields travel warn go why`), the
+  place chosen first and the UI words. It resolves with the id of the place to travel to, or null.
+- G's family around a thing of the world: a window `win` size L (lattice, beads, crown) 580 × 308;
+  inside, the parchment 380 × 228 is the map's own art (`art/atlas.js`, deterministic, its own
+  inks, not the navy and gold): mottled paper dithered in three tones, a torn and scorched edge,
+  folds, a cup ring; the sea washed with scalloped waves, the shore with ripple lines, the stream,
+  the dashed road, trees, hills and reeds inside their outlines, the wreck, the Baiacu Rei, the
+  compass rose. Names lie on scraps of clean paper (`labelScrap`). Each place's mark (`placeMark`,
+  19 × 19) shows its state: a dashed pencil ring with "?" (rumour), the icon in an inked ring
+  (known), the same with a red wax seal (explored), the camp in a red double ring (home). The chosen
+  place gets the red ring (`selectRing`, breathing in two steps) and a dotted red route from the
+  camp (`routeLine`; sparser for a place with no road). The panel on the right: the name (name
+  role, g4), the state's sign and word, *Viagem* (walk time, arrival, the night warning in hp3),
+  *O que há lá* (kw), the note (tx2), and the *Viajar* plate with its Enter keycap — or why not.
+- Keys (the game's actions): ← → ↑ ↓ the nearest place that way, confirm travels, cancel closes; a
+  press within 250 ms of opening is ignored. Pointer: hovering chooses, a click on the chosen place
+  or on the plate travels, a click outside closes.
+
+**Journey card: CampaignRuntime opens it during an atlas journey.**
+- `JourneyCard.js` (in `journey.css`), made by `UI.useJourney(JourneyCard)`; z 8 like the fader and
+  made after it, so it lies on the fader's black. `CampaignRuntime.travel` opens it once the fader
+  is out (`_openJourney`), builds the level meanwhile, then awaits `done()` (the walk played,
+  `JOURNEY_SECONDS` 2.4 s, or skipped) and `close()` (a 0.26 s fade) before fading in.
+- `open(view, { seconds })` takes a `JourneyView` (`types.d.ts`): the kicker (*A caminho de* /
+  *De volta a*), the destination, one road line, both ends (`icon`, `state`, `time`), the night
+  warning, the skip label. Layout in G's frame: a stepped band shade, the kicker (small, g4), the
+  name (head, g5, outlined) between gold hairlines with a gem — it settles by two art px —, the line
+  (line, tx1), the route at y 204 from the place left's mark to the destination's (`placeMark`)
+  with the dots gilt up to the walking ◆ (24 steps), the hours under the marks (the arrival in hp3
+  at night), the warning breathing in two steps, *Enter Pular* at the bottom right.
+- Keys: confirm or cancel skips (ignored for 300 ms). The walk follows the wall clock, so a frame
+  stalled by the build does not hold it back.
 
 **Controls legend.**
 - `HUD.setControls(rows)` rows are `{ keys, label, pad?, id? }`. Callers pass translated labels.

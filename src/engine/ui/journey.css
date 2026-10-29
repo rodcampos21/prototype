@@ -1,0 +1,36 @@
+/* ------------------------------------------------------------------------------------------ */
+/* The journey card (JourneyCard.js): over the fader's black while a journey loads               */
+/* ------------------------------------------------------------------------------------------ */
+
+.lu-journey {
+  position: absolute;
+  inset: 0;
+  /* the fader's layer: made after it, so it lies on top */
+  z-index: 8;
+  overflow: hidden;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.24s steps(3), visibility 0s 0.24s;
+}
+.lu-journey.is-open {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.3s steps(3), visibility 0s;
+}
+/* the name settles by two art px, the line and the route follow */
+.lu-root .lu-journey__name,
+.lu-root .lu-journey__kicker { translate: 0 calc(var(--px) * -2); transition: translate 0.3s steps(2); }
+.lu-journey.is-open .lu-journey__name,
+.lu-journey.is-open .lu-journey__kicker { translate: none; }
+.lu-root .lu-journey__line,
+.lu-root .lu-journey__route,
+.lu-root .lu-journey__mark,
+.lu-root .lu-journey__warn { opacity: 0; transition: opacity 0.3s steps(3) 0.25s; }
+.lu-journey.is-open .lu-journey__line,
+.lu-journey.is-open .lu-journey__route,
+.lu-journey.is-open .lu-journey__mark,
+.lu-journey.is-open .lu-journey__warn { opacity: 1; }
+/* a night arrival's warning breathes in two hard steps */
+.lu-journey.is-open .lu-journey__warn { animation: lu-journey-warn 1.2s steps(1) 0.6s infinite; }
+@keyframes lu-journey-warn { 50% { opacity: 0.6; } }

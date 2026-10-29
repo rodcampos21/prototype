@@ -1885,7 +1885,10 @@ export class Party {
       return g.ui.dialog.open(opts);
     };
     const line = t(TALK_LINES[(hashString(m.id) + visits) % TALK_LINES.length]);
-    const choice = await say([{ text: line, choices: TALK_CHOICES.map((k) => t(k)) }]);
+    // (no *Tactics…* where the campaign closes the panel: `party.menu: false`)
+    const keys = g.partyMenuAllowed === false ? TALK_CHOICES.slice(1) : TALK_CHOICES;
+    const picked = await say([{ text: line, choices: keys.map((k) => t(k)) }]);
+    const choice = typeof picked === 'number' ? TALK_CHOICES.indexOf(keys[picked]) : picked;
     if (choice === 0) {
       g.togglePartyMenu(true, m.id, { force: true });
     } else if (choice === 1) {

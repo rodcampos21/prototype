@@ -1224,6 +1224,11 @@ Extras beyond the contract
   `hearth`, `counter`, `rug`, `staircase`, `wardrobe`, `wallWindow`, `sacks`
   (`props/Furniture.js`; the catalog's `interior: true` types) — see
   [world.md §4.2](../architecture/modules/world.md#42-factory-methods).
+- *Added 2026-10-28 (additive):* the camp methods `tent`, `mapTable`, `banner`, `stake`
+  (`props/CampProps.js`; the catalog's `camp: true` types, `opts.stage` for what changes as the camp
+  grows) and the helper `clothMaterial(name)` (double-sided cloth that sways in the wind); the extra
+  textures `canvas`, `banner_fish`, `map_parchment` — see
+  [world.md §4.2](../architecture/modules/world.md#42-factory-methods).
 
 ### Known limitations
 - **Draw calls per house.** Houses are 10–13 draw calls: 2-story brick houses with a sign reach 13 because every texture is its own material, and chimney_stone and sign_board each add one.
