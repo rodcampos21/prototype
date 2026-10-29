@@ -8,8 +8,10 @@ import { iconCanvas, CORE_ICONS, GOLD_ICON } from './art/icons/core.js';
 import { group, put, win, key, keyHints, section, place, U } from './layout/layout.js';
 import { onScale, currentScale } from './UiScale.js';
 import { currentFonts } from './FontLoader.js';
+import { InventoryPanel } from './InventoryPanel.js';
 import './ui.css';
 import './story.css';
+import './inventory.css';
 
 /**
  * @import { JournalData, JournalQuest, JournalItem, JournalTab, JournalCodexEntry, JournalCodexRow } from './types.js'
@@ -60,8 +62,14 @@ import './story.css';
  * by the constructor.
  */
 
-/** The tabs in order; the Códex only when the data carries one (`JournalData.codex`). */
-const TABS = /** @type {const} */ (['quests', 'items', 'codex']);
+/**
+ * The tabs in order; the Códex only when the data carries one (`JournalData.codex`). With an
+ * inventory (`JournalData.inventory`: a campaign's backpack) the Backpack and Equipment tabs
+ * (InventoryPanel.js) take the Items tab's place.
+ */
+const TABS = /** @type {const} */ (['quests', 'items', 'pack', 'gear', 'codex']);
+/** The tabs the inventory panel draws. @param {string} tb */
+const isPanel = (tb) => tb === 'pack' || tb === 'gear';
 
 /** The window at G's size (A's L window at the tactics panel's place and size), the narrowest it reflows to, in art px. */
 const WW0 = 608, WH0 = 328, WW_MIN = 480;
@@ -427,7 +435,7 @@ const str = (v) => (v === undefined || v === null ? '' : String(v));
  * Normalise untrusted journal data (any shape) into clean arrays.
  * @param {JournalData} data
  * @returns {{ quests: Required<JournalQuest>[], items: Required<JournalItem>[], gold: number,
- *   codex: Required<JournalCodexEntry>[] | null }}
+ *   codex: Required<JournalCodexEntry>[] | null, inventory: import('./types.js').InventoryData | null }}
  */
 function clean(data) {
   const d = data && typeof data === 'object' ? data : {};
@@ -470,7 +478,9 @@ function clean(data) {
       kills: unlocked && Number.isFinite(kills) ? Math.max(0, kills) : 0,
     };
   }) : null;
-  return { quests, items, gold: Number.isFinite(g) ? Math.max(0, Math.floor(g)) : 0, codex };
+  // (the inventory is cleaned by the panel that draws it)
+  const inventory = d.inventory && typeof d.inventory === 'object' ? d.inventory : null;
+  return { quests, items, gold: Number.isFinite(g) ? Math.max(0, Math.floor(g)) : 0, codex, inventory };
 }
 
 /** A Códex number as shown: four digits at least (0001). @param {number} no */
@@ -540,7 +550,10 @@ export class Journal {
     this._tab = 'quests';
     this._data = clean({});
     /** selected entry id per tab (kept across setData while it still exists) */
-    this._sel = { quests: '', items: '', codex: '' };
+    this._sel = { quests: '', items: '', pack: '', gear: '', codex: '' };
+    /** The Backpack and Equipment tabs' content (a campaign with an inventory). */
+    this._inv = new InventoryPanel();
+    this._inv.onSound = (name) => this._sound(name);
     /** @type {ListEntry[]} entries of the shown list, in order */
     this._entries = [];
     this._index = -1;
@@ -586,12 +599,19 @@ export class Journal {
 
   /** True between open() and close(). */
   get isOpen() { return this._open; }
-  /** The tabs the data has: Quests and Items, and the Códex when it carries one. @returns {JournalTab[]} */
-  get tabs() { return TABS.filter((tb) => tb !== 'codex' || !!this._data.codex); }
-  /** The tab shown ('quests' | 'items' | 'codex'). */
+  /**
+   * The tabs the data has: Quests, then Items — or Backpack and Equipment with an inventory —, and
+   * the Códex when it carries one.
+   * @returns {JournalTab[]}
+   */
+  get tabs() {
+    const inv = !!this._data.inventory;
+    return TABS.filter((tb) => (tb === 'codex' ? !!this._data.codex : tb === 'items' ? !inv : isPanel(tb) ? inv : true));
+  }
+  /** The tab shown ('quests' | 'items' | 'pack' | 'gear' | 'codex'). */
   get tab() { return this._tab; }
-  /** The selected entry's id on the current tab ('' when the list is empty). */
-  get selectedId() { return this._entries[this._index]?.id ?? ''; }
+  /** The selected entry's id on the current tab ('' when the list is empty; a cell's on the inventory's tabs). */
+  get selectedId() { return isPanel(this._tab) ? this._inv.selectedId : this._entries[this._index]?.id ?? ''; }
 
   /**
    * Replace the journal's contents (any time; re-rendered at once while open, else on open). The
@@ -650,6 +670,17 @@ export class Journal {
       this.close();
       if (this.onClose) this.onClose();
       return true;
+    }
+    // (the inventory's tabs: Q / E switch tabs, the arrows move over the cells)
+    if (isPanel(this._tab)) {
+      if (pressed('camLeft')) this._cycleTab(-1);
+      else if (pressed('camRight')) this._cycleTab(1);
+      else {
+        for (const dir of /** @type {const} */ (['left', 'right', 'up', 'down'])) {
+          if (pressed(dir)) { if (this._inv.move(dir)) this._sound('blip'); break; }
+        }
+      }
+      return false;
     }
     if (pressed('camLeft') || pressed('left')) this._cycleTab(-1);
     else if (pressed('camRight') || pressed('right')) this._cycleTab(1);
@@ -741,6 +772,17 @@ export class Journal {
 
     this._header(g);
     put(g, hairline(R - L, 'both', k.dm1), L, RULE);
+    // the inventory's tabs: the panel fills the window under the header (no list, no detail box)
+    if (isPanel(this._tab)) {
+      g.classList.remove('is-empty');
+      this._list = null;
+      this._detail = null;
+      this._entries = [];
+      this._index = -1;
+      this._selArt = null;
+      this._inv.build(g, G, /** @type {'pack'|'gear'} */ (this._tab), this._data.inventory);
+      return;
+    }
     // (an empty tab: no columns — its empty state centred under the header: `_emptyState`)
     const empty = !this._rowsOf(this._tab).length;
     g.classList.toggle('is-empty', empty);
@@ -855,7 +897,7 @@ export class Journal {
       hw = hints.length ? keyHints(foot, hints, R, HY - 5.5, { align: 'right', color: k.tx2, drop: true, cls: 'lu-journal__hint' }) : 0;
       if (R - hw >= tabsEnd + 12) break;
     }
-    const gold = box(head, 'div', `lu-journal__gold${this._tab === 'items' ? ' is-on' : ''}`, WX, WY);
+    const gold = box(head, 'div', `lu-journal__gold${this._tab === 'items' || this._tab === 'pack' ? ' is-on' : ''}`, WX, WY);
     const gn = this._data.gold.toLocaleString('en-US');
     const unit = s('gold');
     const nw = measure(gn, 'num'), uw = measure(unit, 'tiny');

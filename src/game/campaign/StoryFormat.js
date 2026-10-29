@@ -49,10 +49,23 @@ export function isStoryFileName(s) {
 /** The path of a story file inside the campaign folder. @param {string} name a story file name */
 export const storyFile = (name) => `story/${name}`;
 
+/** The equipment slots (the inventory window's order): CAMPAIGN_FORMAT.md §4.2. */
+export const EQUIP_SLOTS = /** @type {const} */ (['weapon', 'body', 'head', 'hands', 'feet', 'accessory']);
+/** @typedef {typeof EQUIP_SLOTS[number]} EquipSlot */
+/** What an equipment item may add to (`bonus`). */
+export const EQUIP_STATS = /** @type {const} */ (['hp', 'mp', 'atk', 'def']);
+/** @typedef {typeof EQUIP_STATS[number]} EquipStat */
+/** An item's icon name (the UI's item icons; an unknown one shows a gem). */
+const ICON_NAME = /^[a-z0-9][a-z0-9-]{0,31}$/;
+
 /**
- * @typedef {{ name: string, text: string, key: boolean, textKey?: string }} StoryItem
+ * @typedef {{ name: string, text: string, key: boolean, textKey?: string, pack?: true, icon?: string,
+ *   slot?: EquipSlot, bonus?: Partial<Record<EquipStat, number>> }} StoryItem
  *   key: a key item (the journal lists it apart; `take` never takes it unless named); textKey: its
- *   text's content key (the file's `textKeys.text`, docs/specs/I18N.md §4.2; absent: none)
+ *   text's content key (the file's `textKeys.text`, docs/specs/I18N.md §4.2; absent: none); pack: a
+ *   gathered resource — carried in the backpack, counted by its limit, stored in the camp's stock
+ *   at home; icon: its icon in the inventory and the resource bar; slot / bonus: an equipment item
+ *   (where it is worn, what it adds — shown, not applied yet)
  * @typedef {{ id: string, text: string, textKey?: string }} QuestStage
  * @typedef {{ text: string, done: string, textKey?: string }} QuestGoal  `done`: a condition as scripts write it (`parseCondition`: `done: gold` reads the purse); the journal ticks the goal while it holds
  * @typedef {{ title: string, text: string, stages: QuestStage[], goals: QuestGoal[], textKey?: string }} StoryQuest
@@ -133,7 +146,26 @@ export function addStoryJSON(story, raw, file, warnings) {
     const o = isPlain(v) ? v : { name: v };
     const ik = cleanTextKeysOf('item', o.textKeys);
     if (ik.dropped) warnings.push(where(`item "${id}": ${ik.dropped} malformed or unknown text key(s) dropped`));
-    story.items[id] = { name: text(o.name).trim() || titleCase(id), text: text(o.text), key: o.key === true, ...(ik.keys?.text ? { textKey: ik.keys.text } : {}) };
+    // (the backpack, the icon and the equipment slot: CAMPAIGN_FORMAT.md §4.2)
+    if (o.pack != null && typeof o.pack !== 'boolean') warnings.push(where(`item "${id}": "pack" must be true or false — ignored`));
+    const icon = text(o.icon).trim();
+    if (o.icon != null && !ICON_NAME.test(icon)) warnings.push(where(`item "${id}": "icon" must be an icon name (a–z, 0–9, -) — ignored`));
+    const slot = text(o.slot);
+    if (o.slot != null && !EQUIP_SLOTS.includes(/** @type {any} */ (slot))) warnings.push(where(`item "${id}": "${show(o.slot)}" is not a slot (${EQUIP_SLOTS.join(', ')}) — ignored`));
+    /** @type {Partial<Record<EquipStat, number>>} */
+    const bonus = {};
+    for (const [k, n] of entries(o.bonus)) {
+      if (!EQUIP_STATS.includes(/** @type {any} */ (k)) || !Number.isInteger(n) || Math.abs(n) > 9999) { warnings.push(where(`item "${id}": bonus "${k}" must be one of ${EQUIP_STATS.join(', ')} with a whole number — dropped`)); continue; }
+      if (n) bonus[/** @type {EquipStat} */ (k)] = n;
+    }
+    story.items[id] = {
+      name: text(o.name).trim() || titleCase(id), text: text(o.text), key: o.key === true,
+      ...(o.pack === true ? { pack: true } : {}),
+      ...(icon && ICON_NAME.test(icon) ? { icon } : {}),
+      ...(EQUIP_SLOTS.includes(/** @type {any} */ (slot)) ? { slot: /** @type {EquipSlot} */ (slot) } : {}),
+      ...(Object.keys(bonus).length ? { bonus } : {}),
+      ...(ik.keys?.text ? { textKey: ik.keys.text } : {}),
+    };
   }
   for (const [id, v] of entries(r.quests)) {
     if (!isStoryName(id)) { warnings.push(where(`quests: "${id}" is not a quest id — dropped`)); continue; }

@@ -19,6 +19,9 @@ const table = {
     'journal.title': 'Diário',
     'tab.quests': 'Missões',
     'tab.items': 'Itens',
+    /** a campaign with a backpack: these two take the Items tab's place (InventoryPanel.js) */
+    'tab.pack': 'Mochila',
+    'tab.gear': 'Equipamento',
     'tab.codex': 'Códex',
     'group.active': 'Em andamento',
     'group.concluded': 'Encerradas',
@@ -67,6 +70,8 @@ const table = {
     'journal.title': 'Journal',
     'tab.quests': 'Quests',
     'tab.items': 'Items',
+    'tab.pack': 'Backpack',
+    'tab.gear': 'Equipment',
     'tab.codex': 'Codex',
     'group.active': 'Active',
     'group.concluded': 'Concluded',

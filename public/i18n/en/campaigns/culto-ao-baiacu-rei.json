@@ -12,21 +12,26 @@
     "Acampamento Abandonado": "Abandoned Camp",
     "As botas afundam na lama da margem.": "Boots sink into the mud of the bank.",
     "Bosque dos Carvalhos": "Oak Grove",
+    "Botas de estrada": "Road boots",
     "Carvalhos velhos, um riacho com duas pontes, pedras musgosas e uma clareira de flores. A trilha some ao norte.": "Old oaks, a stream with two bridges, mossy stones and a flower glade. The trail fades to the north.",
     "Clareira": "Clearing",
     "Clareira das Flores": "Flower Glade",
     "Clareira do Riacho": "The Stream Clearing",
     "Comida": "Food",
     "Corte Antigo": "Old Cutting",
+    "Cota de viagem": "Travelling mail",
     "Couro": "Hide",
     "Criatura da mata": "Forest Creature",
     "Criatura da noite": "Night creature",
     "Culto ao Baiacu Rei": "Cult of the Pufferfish King",
+    "Elmo amassado": "Dented helm",
     "Entre as árvores, aparece o estandarte azul.": "Through the trees, the blue banner comes into view.",
     "Ervas": "Herbs",
+    "Espada de viagem": "Travelling sword",
     "Estrada da Costa": "The Coast Road",
     "Já conhecemos cada trilha dela. À noite, porém, ninguém volta igual.": "We know every trail in it now. At night, though, no one comes back the same.",
     "Lascas de pedra estalam sob as botas.": "Stone chips crack under the boots.",
+    "Luvas de couro": "Leather gloves",
     "Madeira": "Wood",
     "Marcas de garra num carvalho, ao norte da mata. De noite, ouço uivos de lá.": "Claw marks on an oak, north of the woods. At night I hear howling from there.",
     "Mata da Clareira": "Clearing Woods",
@@ -547,6 +552,26 @@
     "FDECB95A7038F3908BA0C9307AE492A5": {
       "source": "Mas os marinheiros falavam de uma mata a oeste, de juncos subindo o riacho e de uma pedreira na encosta. Madeira, comida e pedra. Tudo o que um começo precisa.",
       "target": "But the sailors spoke of a forest to the west, of reeds up the stream and of a quarry on the slope. Wood, food and stone. Everything a beginning needs."
+    },
+    "1E0878C150E3C30571847EB5541DC912": {
+      "source": "Uma espada simples, de lâmina reta. Já viu mais estrada do que batalha.",
+      "target": "A plain sword with a straight blade. It has seen more road than battle."
+    },
+    "AF50F87912EA01154E85C2474BAD0C65": {
+      "source": "Couro e anéis de ferro, remendados mais de uma vez.",
+      "target": "Leather and iron rings, patched more than once."
+    },
+    "1A59F2BD7667280946BB31CF22ECF024": {
+      "source": "Um elmo simples, com um amassado do lado esquerdo que ninguém lembra de onde veio.",
+      "target": "A plain helm with a dent on the left side that nobody remembers getting."
+    },
+    "7B4FD68A0AA05E3ADC1C1A74FAA24A26": {
+      "source": "Gastas nos dedos de tanto segurar rédea e espada.",
+      "target": "Worn at the fingers from holding reins and sword."
+    },
+    "D641615831C1C664F7E8280AB813BF72": {
+      "source": "Solas grossas, feitas para andar. E andaram.",
+      "target": "Thick soles, made for walking. And they walked."
     }
   }
 }

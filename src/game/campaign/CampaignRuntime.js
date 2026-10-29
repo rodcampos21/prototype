@@ -837,6 +837,8 @@ export class CampaignRuntime {
       await g.ui.fader.fadeIn(FADE_IN);
       // (the name a term, the subtitle by the key the level holds — I18N.md §4.2, §4.8)
       if (banner) g.ui.banner.show(term(level.name), loc(textKeyOf(level, 'subtitle'), level.subtitle), { duration: 3.2 });
+      // home again: the backpack goes into the camp's stock (CAMPAIGN_FORMAT.md §4.2), saved at once
+      if (g.story?.atHome && Object.keys(g.story.storePack()).length) this.save();
       // the story: the new level's `arrive` events
       g.story?.onArrive();
       return true;

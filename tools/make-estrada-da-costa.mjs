@@ -1102,15 +1102,30 @@ const campaignRaw = {
   // (Surubin only travels with the knight from the rescue to the camp: no tactics panel)
   party: { menu: false },
   atlas,
+  // the backpack (Caderno, *Coleta em várias expedições*: about 4 expeditions per building — 8 a
+  // trip, to balance; the silo doubles it) and the knight's basic gear (*O equipamento do cavaleiro*)
+  inventory: {
+    pack: 8,
+    grow: [{ when: 'obra.silo', pack: 16 }],
+    equipment: { weapon: 'espada-de-viagem', body: 'cota-de-viagem', head: 'elmo-amassado', hands: 'luvas-de-couro', feet: 'botas-de-estrada' },
+  },
   story: ['main.json'],
 };
 
-// ---- story/main.json: the items (what the resources give; the journal shows them) ---------------
+// ---- story/main.json: the items (what the resources give, in the backpack; the knight's gear) ----
 const STORY_MAIN = {
+  // the buildings' flags the campaign reads before C03 sets them (the silo doubles the backpack)
+  vars: { 'obra.silo': 0 },
   items: {
-    madeira: { name: 'Madeira', text: 'Toras cortadas na mata. A base de qualquer obra do acampamento.' },
-    pedra: { name: 'Pedra', text: 'Pedra boa, quebrada dos veios claros das rochas. Para alicerces e paredes.' },
-    ervas: { name: 'Ervas', text: 'Folhas e flores miúdas que crescem perto da água. O Surubin diz que curam, se o Rei quiser.' },
+    madeira: { name: 'Madeira', text: 'Toras cortadas na mata. A base de qualquer obra do acampamento.', pack: true, icon: 'wood' },
+    pedra: { name: 'Pedra', text: 'Pedra boa, quebrada dos veios claros das rochas. Para alicerces e paredes.', pack: true, icon: 'stone' },
+    ervas: { name: 'Ervas', text: 'Folhas e flores miúdas que crescem perto da água. O Surubin diz que curam, se o Rei quiser.', pack: true, icon: 'herbs' },
+    // (shown in the inventory's slots; equipping and the bonuses come later)
+    'espada-de-viagem': { name: 'Espada de viagem', text: 'Uma espada simples, de lâmina reta. Já viu mais estrada do que batalha.', icon: 'sword', slot: 'weapon', bonus: { atk: 2 } },
+    'cota-de-viagem': { name: 'Cota de viagem', text: 'Couro e anéis de ferro, remendados mais de uma vez.', icon: 'armor', slot: 'body', bonus: { def: 2 } },
+    'elmo-amassado': { name: 'Elmo amassado', text: 'Um elmo simples, com um amassado do lado esquerdo que ninguém lembra de onde veio.', icon: 'helm', slot: 'head', bonus: { def: 1 } },
+    'luvas-de-couro': { name: 'Luvas de couro', text: 'Gastas nos dedos de tanto segurar rédea e espada.', icon: 'gloves', slot: 'hands', bonus: { def: 1 } },
+    'botas-de-estrada': { name: 'Botas de estrada', text: 'Solas grossas, feitas para andar. E andaram.', icon: 'boots', slot: 'feet', bonus: { def: 1 } },
   },
   quests: {
     // QP01 (the coast road) and QP03 (the camp's first building); the scripts write the same texts

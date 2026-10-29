@@ -1,10 +1,15 @@
 {
   "format": "luminati-story",
   "version": 1,
+  "vars": {
+    "obra.silo": 0
+  },
   "items": {
     "madeira": {
       "name": "Madeira",
       "text": "Toras cortadas na mata. A base de qualquer obra do acampamento.",
+      "pack": true,
+      "icon": "wood",
       "textKeys": {
         "text": "BABDC6A9027F9C6630B2AFBE578A5CBC"
       }
@@ -12,6 +17,8 @@
     "pedra": {
       "name": "Pedra",
       "text": "Pedra boa, quebrada dos veios claros das rochas. Para alicerces e paredes.",
+      "pack": true,
+      "icon": "stone",
       "textKeys": {
         "text": "A8735159FBFDA8950DCECB46A63C9D44"
       }
@@ -19,8 +26,70 @@
     "ervas": {
       "name": "Ervas",
       "text": "Folhas e flores miúdas que crescem perto da água. O Surubin diz que curam, se o Rei quiser.",
+      "pack": true,
+      "icon": "herbs",
       "textKeys": {
         "text": "A74D58FF698ACB80271C0F2F16FD2AD4"
+      }
+    },
+    "espada-de-viagem": {
+      "name": "Espada de viagem",
+      "text": "Uma espada simples, de lâmina reta. Já viu mais estrada do que batalha.",
+      "icon": "sword",
+      "slot": "weapon",
+      "bonus": {
+        "atk": 2
+      },
+      "textKeys": {
+        "text": "1E0878C150E3C30571847EB5541DC912"
+      }
+    },
+    "cota-de-viagem": {
+      "name": "Cota de viagem",
+      "text": "Couro e anéis de ferro, remendados mais de uma vez.",
+      "icon": "armor",
+      "slot": "body",
+      "bonus": {
+        "def": 2
+      },
+      "textKeys": {
+        "text": "AF50F87912EA01154E85C2474BAD0C65"
+      }
+    },
+    "elmo-amassado": {
+      "name": "Elmo amassado",
+      "text": "Um elmo simples, com um amassado do lado esquerdo que ninguém lembra de onde veio.",
+      "icon": "helm",
+      "slot": "head",
+      "bonus": {
+        "def": 1
+      },
+      "textKeys": {
+        "text": "1A59F2BD7667280946BB31CF22ECF024"
+      }
+    },
+    "luvas-de-couro": {
+      "name": "Luvas de couro",
+      "text": "Gastas nos dedos de tanto segurar rédea e espada.",
+      "icon": "gloves",
+      "slot": "hands",
+      "bonus": {
+        "def": 1
+      },
+      "textKeys": {
+        "text": "7B4FD68A0AA05E3ADC1C1A74FAA24A26"
+      }
+    },
+    "botas-de-estrada": {
+      "name": "Botas de estrada",
+      "text": "Solas grossas, feitas para andar. E andaram.",
+      "icon": "boots",
+      "slot": "feet",
+      "bonus": {
+        "def": 1
+      },
+      "textKeys": {
+        "text": "D641615831C1C664F7E8280AB813BF72"
       }
     }
   },
