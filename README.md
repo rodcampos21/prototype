@@ -9,6 +9,16 @@ The game plays in **English, Japanese and Simplified Chinese**.
 
 ![Emberfall village at golden hour](docs/assets/screenshots/emberfall-golden-hour.jpg)
 
+## Play online
+
+**Culto ao Baiacu Rei** plays in the browser, nothing to install:
+[rodcampos21.github.io/prototype](https://rodcampos21.github.io/prototype/) (add `?lang=en` for
+English). The site is the build of `main`, published by
+[the Pages workflow](.github/workflows/deploy-pages.yml) on every push to it; its front page opens
+the game (the launcher is `launcher.html`, the editor `editor.html`). Saved games stay in the
+player's browser: another browser or device starts afresh, and clearing the site's data or a
+private window loses the save.
+
 ## Quick start
 
 Use **Node.js 24** (recommended; the development dependencies require at least 22.12) and npm.
