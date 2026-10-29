@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<title>Luminati sandbox — shark boss</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  html, body { margin: 0; height: 100%; background: #0b0d14; overflow: hidden; }
+  #app { position: fixed; inset: 0; }
+  #panel {
+    position: fixed; right: 10px; top: 10px; width: 270px; max-height: calc(100% - 20px); overflow: auto;
+    font: 12px/1.35 Georgia, serif; color: #f1e4c6; text-shadow: 0 1px 2px #000;
+    background: rgba(10, 10, 18, 0.72); border: 1px solid rgba(201, 164, 92, 0.7); padding: 8px 10px; border-radius: 3px;
+  }
+  #panel h2 { font-size: 12px; margin: 8px 0 4px; letter-spacing: 0.08em; text-transform: uppercase; color: #e9c77e; font-weight: 600; }
+  #panel h2:first-child { margin-top: 0; }
+  #panel .grid { display: flex; flex-wrap: wrap; gap: 3px; }
+  #panel button {
+    font: 11px Georgia, serif; color: #f1e4c6; background: rgba(40, 34, 52, 0.9); border: 1px solid rgba(201, 164, 92, 0.55);
+    border-radius: 2px; padding: 2px 6px; cursor: pointer;
+  }
+  #panel button:hover { background: rgba(70, 58, 84, 0.95); }
+  #panel button.on { background: rgba(120, 92, 40, 0.95); border-color: #e9c77e; }
+  #panel pre { margin: 0; font: 11px/1.3 Consolas, monospace; white-space: pre-wrap; color: #d9d0ba; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="panel" data-input-ignore>
+  <h2>Shark boss</h2>
+  <pre id="state">…</pre>
+  <h2>Simulação</h2>
+  <div class="grid" id="sim"></div>
+  <h2>Pose</h2>
+  <div class="grid" id="poses"></div>
+  <h2>Direção</h2>
+  <div class="grid" id="dirs"></div>
+  <h2>Câmera e luz</h2>
+  <div class="grid" id="cam"></div>
+  <pre>Q / E giram a câmera, roda do mouse dá zoom.</pre>
+</div>
+<script type="module" src="./shark_boss.js"></script>
+</body>
+</html>

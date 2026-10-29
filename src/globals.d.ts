@@ -72,6 +72,8 @@ interface Window {
   __story?: import('../sandbox/story_ui.js').StoryUIHandle;
   /** sandbox/combat_fx.js: quads, markers, audio, input, setView(name), runChecks(), renderTrack() … */
   __cfx?: import('../sandbox/combat_fx.js').CfxHandle;
+  /** sandbox/shark_boss.js: the shark boss fight (shark, knight, setPose(name, dir), setSim(on) …). */
+  __shark?: import('../sandbox/shark_boss.js').SharkHandle;
   /** sandbox/combat_audio.js: the combat audio QA (results, identity(), compare(url) …). */
   __caudio?: import('../sandbox/combat_audio.js').CaudioHandle;
   /** sandbox/editor3d.js: vp, state, view(), frames(n), hoverWorld, clickWorld, strokeWorld … */
