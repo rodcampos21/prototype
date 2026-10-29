@@ -28,7 +28,7 @@ const FACINGS = ['down', 'up', 'left', 'right'];
 const PREFIX = 'luminati.campaign.';
 export const SAVE_VERSION = 2;
 /** The top-level keys of a save this engine reads (the rest are kept in `extra`). */
-const KNOWN = new Set(['version', 'story', 'level', 'at', 'via', 'time', 'weather', 'combat', 'opened', 'cleared', 'visited', 'chapter', 'savedAt', 'playTime', 'player']);
+const KNOWN = new Set(['version', 'story', 'level', 'at', 'via', 'time', 'weather', 'combat', 'opened', 'cleared', 'visited', 'chapter', 'savedAt', 'playTime', 'player', 'weatherLock']);
 /** The longest name a player may give their character (characters, after trimming). */
 export const PLAYER_NAME_MAX = 16;
 
@@ -113,6 +113,11 @@ export class CampaignState {
     /** Hour of day (null: the level's start time). @type {number|null} */
     this.time = null;
     this.weather = 'clear';
+    /**
+     * The weather the story holds (`weather rain` in a script, until `weather auto`): while set, the
+     * maps' weather pools roll nothing ('' = none; Game.weatherLock, WeatherRoll.js).
+     */
+    this.weatherLock = '';
     /** @type {CombatProgress|null} */
     this.combat = null;
     /** @type {Record<string, string[]>} level id → chests opened there */
@@ -179,6 +184,7 @@ export class CampaignState {
       ...(this.via ? { via: this.via } : {}),
       time: this.time,
       weather: this.weather,
+      ...(this.weatherLock ? { weatherLock: this.weatherLock } : {}),
       combat: this.combat,
       opened: { ...this.opened },
       cleared: { ...this.cleared },
@@ -216,6 +222,7 @@ export class CampaignState {
     }
     if (num(d.time) !== null) s.time = ((d.time % 24) + 24) % 24;
     if (['clear', 'rain', 'snow'].includes(d.weather)) s.weather = d.weather;
+    if (['clear', 'rain', 'snow'].includes(d.weatherLock)) s.weatherLock = d.weatherLock;
     if (isPlain(d.combat)) {
       const c = d.combat;
       const n = (v, lo, hi) => Math.min(hi, Math.max(lo, num(v) ?? lo));

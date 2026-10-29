@@ -614,6 +614,25 @@ export function campaignStrings(campaign, levels, story = null, o = {}) {
       c.unit(textKeyOf(ch, 'title'), ch?.title, 'title', 'campaign.chapter.title', `${dir}/campaign.json › chapter ${ch?.id} › title`, ch?.subtitle ? { next: short(ch.subtitle) } : {});
       c.unit(textKeyOf(ch, 'subtitle'), ch?.subtitle, 'title', 'campaign.chapter.subtitle', `${dir}/campaign.json › chapter ${ch?.id} › subtitle`, ch?.title ? { prev: short(ch.title) } : {});
     }
+    // the atlas (CAMPAIGN_FORMAT.md §4.1): its texts are terms — the title, the place names and what
+    // is found there, the labels of the sketch, the cartographer's notes, the journey card's lines
+    const at = isPlain(campaign.atlas) ? campaign.atlas : null;
+    if (at) {
+      const where = `${dir}/campaign.json › atlas`;
+      c.term(at.title, 'title', 'campaign.atlas.title', `${where} › title`);
+      c.term(at.subtitle, 'title', 'campaign.atlas.subtitle', `${where} › subtitle`);
+      for (const p of Array.isArray(at.places) ? at.places : []) {
+        c.term(p?.name, 'name', 'campaign.atlas.place', `${where} › place ${p?.id} › name`);
+        for (const y of Array.isArray(p?.yields) ? p.yields : []) c.term(y, 'name', 'campaign.atlas.yield', `${where} › place ${p?.id} › yields`);
+        for (const s of ['rumor', 'known', 'explored']) c.term(own(isPlain(p?.notes) ? p.notes : {}, s), 'line', 'campaign.atlas.note', `${where} › place ${p?.id} › notes.${s}`);
+        const road = isPlain(p?.road) ? p.road : {};
+        for (const s of ['there', 'back', 'night']) {
+          const lines = own(road, s);
+          for (const l of Array.isArray(lines) ? lines : []) c.term(l, 'line', 'campaign.atlas.road', `${where} › place ${p?.id} › road.${s}`);
+        }
+      }
+      for (const f of Array.isArray(at.sketch) ? at.sketch : []) if (f?.kind === 'label') c.term(f.name, 'name', 'campaign.atlas.label', `${where} › sketch label`);
+    }
   }
   /** @type {ContentString[]} */
   const out = [...c.out];

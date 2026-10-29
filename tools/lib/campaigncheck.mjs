@@ -580,10 +580,13 @@ export function checkCampaign(campaign, readLevel, { strict = false, levelChecks
     for (const o of level.objects ?? []) {
       const where = `${file} › ${o?.type} ${o?.id}`;
       for (const [field, v, rule] of conditionFields(o)) useCondition(v, `${where} › ${field}`, rule);
-      if (o?.type === 'npc' && text(o.flag)) {
-        note(writes, text(o.flag), `${where} › flag`);
-        note(levelWrites, text(o.flag), `${where} › flag`);
-        d.writes.add(text(o.flag));
+      // (a villager's `flag` is set after talking; a full resource's when it is gathered — its own,
+      // else res.<level>.<id>: Game.harvest)
+      const setFlag = o?.type === 'npc' ? text(o.flag) : o?.type === 'resource' && o.opts?.stage !== 'spent' ? text(o.flag) || `res.${base}.${o.id}` : '';
+      if (setFlag) {
+        note(writes, setFlag, `${where} › flag`);
+        note(levelWrites, setFlag, `${where} › flag`);
+        d.writes.add(setFlag);
       }
       if (o?.type === 'npc' && text(o.actor)) usedActors.add(text(o.actor));
       for (const [field, v] of scriptFields(o)) {
@@ -595,6 +598,26 @@ export function checkCampaign(campaign, readLevel, { strict = false, levelChecks
       }
     }
     levelData.set(id, d);
+  }
+  // the atlas (CAMPAIGN_FORMAT.md §4.1): every place with a road is a journey from the hub's map
+  // table (a travel of the hub's file); its conditions and its sketch's are reads
+  const atlas = campaign.atlas;
+  if (atlas) {
+    const hub = levelData.get(atlas.home);
+    for (const p of atlas.places) {
+      if (hub && p.level && p.level !== atlas.home) hub.travels.push({ level: p.level, entrance: p.entrance, where: `campaign.json › atlas place "${p.id}"` });
+      for (const f of /** @type {const} */ (['rumor', 'known', 'explored'])) {
+        if (!p[f]) continue;
+        checkCondition(p[f], 'flag', `campaign.json: atlas place "${p.id}": ${f}`);
+        useCondition(p[f], `campaign.json › atlas place "${p.id}" › ${f}`);
+      }
+    }
+    for (const [k, f] of atlas.sketch.entries()) {
+      if (!f.when) continue;
+      checkCondition(f.when, 'flag', `campaign.json: atlas sketch[${k}]: when`);
+      useCondition(f.when, `campaign.json › atlas sketch[${k}] › when`);
+    }
+    if (atlas.entrance && !entranceIn(atlas.home, atlas.entrance).has.length) err(`campaign.json: atlas: the hub "${atlas.home}" has no entrance "${atlas.entrance}" in any of its files`);
   }
   // level scripts' travels: an entrance that exists somewhere (the level itself: storyIssues)
   for (const d of levelData.values()) {

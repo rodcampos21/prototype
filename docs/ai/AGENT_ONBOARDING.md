@@ -92,9 +92,10 @@ the play-through bot recruits them (`sandbox/combat_play.js`, `party: false` pla
 **The game** this repository now builds is the campaign *Culto ao Baiacu Rei*,
 `public/campaigns/culto-ao-baiacu-rei/`, what `game.html` plays without a query (Portuguese source
 text, English by its content table). It opens with the **character creation** (`player.create`:
-a name and a class) and so far holds one level, *Estrada da Costa* (the Ato I prologue, 40 × 30,
-1 villager who joins the party, 1 enemy group, 1 chest, 5 story events;
-[design note](../design/levels/estrada-da-costa.md)), **generated** with `campaign.json` by
+a name and a class) and so far holds two levels: *Estrada da Costa* (the Ato I prologue, C01,
+40 × 30, 1 villager who joins the party, 1 enemy group, 1 chest, 5 story events) and *Clareira do
+Riacho* (the campfire, C02, 26 × 22; [design note](../design/levels/estrada-da-costa.md)),
+**generated** with `campaign.json` by
 [`tools/make-estrada-da-costa.mjs`](../../tools/make-estrada-da-costa.mjs). Its plans are in
 [design/baiacu/](../design/baiacu/PLANO-DE-MECANICAS.md). The levels above and the campaigns below
 are the engine's demos and regression tests: keep them working.
@@ -181,13 +182,13 @@ luminati/
 │  │  │               readers, #line: tags, cleaners, minting) · TextKeys (keys through edits: editor,
 │  │  │               generators, tools — never the game) · ContentStrings (the extractor, tools only) ·
 │  │  │               strings/*
-│  │  └─ ui/          UI · DialogBox · Banner · TitleScreen · HUD · Minimap/WorldMap · InteractPrompt ·
+│  │  └─ ui/          UI · DialogBox · Banner · TitleScreen · HUD · Minimap/WorldMap · AtlasScreen · InteractPrompt ·
 │  │                  Fader · DebugPanel · the pixel UI kit (UiScale · FontLoader · GlyphFont · art/ ·
 │  │                  layout/) · one stylesheet per component
 │  ├─ game/          the game: Game · World · Player · Npc · Critters · dialogue · Weather · Scenery ·
 │  │                 GroundDetail · SnowCover · AudioDirector · ResolutionGovernor · AtmosphereFog ·
 │  │                 DebugControls · config · combat/* · campaign/* (CampaignFormat · CampaignStorage ·
-│  │                 CampaignState · CampaignRuntime · StoryFormat) · story/* (StoryRunner ·
+│  │                 CampaignState · CampaignRuntime · AtlasFormat · StoryFormat) · story/* (StoryRunner ·
 │  │                 StoryState · storyUI)
 │  └─ editor/        the level editor: EditorApp · EditorState · textKeys (text keys through edits) ·
 │                    autosave · icons · editor.css · tools/* · ui/* · map2d/Map2DView · viewport3d/*
@@ -602,7 +603,7 @@ verify it in its sandbox, then integrate and run the appropriate regression chec
 | The pixel UI: scale, art, type, layout | [`ui/UiScale.js`](../../src/engine/ui/UiScale.js), [`ui/art/`](../../src/engine/ui/art/index.js), [`ui/layout/type.js`](../../src/engine/ui/layout/type.js), [`ui/layout/layout.js`](../../src/engine/ui/layout/layout.js); every component's recipe in [specs/PIXEL_UI.md §5](../specs/PIXEL_UI.md#5-component-recipes) |
 | Languages, UI strings, translations, fonts | [`i18n/I18n.js`](../../src/engine/i18n/I18n.js) (`t()`), `i18n/strings/*.js` and `src/game/*/strings.js` (the UI tables), [`i18n/ContentText.js`](../../src/engine/i18n/ContentText.js) (`loc()`, `term()`, the misses), [`i18n/ContentKeys.js`](../../src/engine/i18n/ContentKeys.js) (the text keys: readers, tags, minting), [`i18n/TextKeys.js`](../../src/engine/i18n/TextKeys.js) (keys through edits; the editor's side in [`editor/textKeys.js`](../../src/editor/textKeys.js)), [`tools/i18n-keys.mjs`](../../tools/i18n-keys.mjs) (`npm run i18n:keys`), [`i18n/ContentStrings.js`](../../src/engine/i18n/ContentStrings.js) (the extractor), `public/i18n/<lang>/` (the content tables), [`tools/i18n-worklist.mjs`](../../tools/i18n-worklist.mjs) and [`tools/check-i18n.mjs`](../../tools/check-i18n.mjs) (translators' worklist and the checker; [TASK_PLAYBOOKS §26](TASK_PLAYBOOKS.md#26-translate-or-fix-content-text-with-the-worklist)), [`ui/FontLoader.js`](../../src/engine/ui/FontLoader.js); [specs/I18N.md](../specs/I18N.md), the names in [specs/I18N_GLOSSARY.md](../specs/I18N_GLOSSARY.md) |
 | The story: scripts, events, conditions, cutscenes, presence, the journal | [`level/StoryScript.js`](../../src/engine/level/StoryScript.js) (the language; its conditions and names live in the small [`level/StoryCondition.js`](../../src/engine/level/StoryCondition.js), which is all every level loads), [`level/StoryChecks.js`](../../src/engine/level/StoryChecks.js), [`game/story/StoryRunner.js`](../../src/game/story/StoryRunner.js) (triggers, runs, commands, the camera director, walks, presence), [`game/story/StoryState.js`](../../src/game/story/StoryState.js), [`game/campaign/StoryFormat.js`](../../src/game/campaign/StoryFormat.js) (story files), `World.applyStory` (live groups), `LightPool.setHidden`, [`ui/Journal.js`](../../src/engine/ui/Journal.js); [specs/STORY_SCRIPT.md](../specs/STORY_SCRIPT.md) |
-| Campaigns: travel, exits, story, saves | [`game/campaign/`](../../src/game/campaign/CampaignRuntime.js) (`CampaignRuntime.travel`, `arrival`, `setFlag`, `worldMap`; `CampaignState` saves), `Game.swapLevel` / `_buildLevel`, [`level/Travel.js`](../../src/engine/level/Travel.js) (exits, entrances, `when` / `unless`); [specs/CAMPAIGN_FORMAT.md](../specs/CAMPAIGN_FORMAT.md) |
+| Campaigns: travel, exits, story, saves | [`game/campaign/`](../../src/game/campaign/CampaignRuntime.js) (`CampaignRuntime.travel`, `arrival`, `setFlag`, `worldMap`, the atlas: `atlasView` / `travelAtlas` and `AtlasFormat.js`, the screen `ui/AtlasScreen.js`; `CampaignState` saves), `Game.swapLevel` / `_buildLevel`, [`level/Travel.js`](../../src/engine/level/Travel.js) (exits, entrances, `when` / `unless`); [specs/CAMPAIGN_FORMAT.md](../specs/CAMPAIGN_FORMAT.md) (§4.1 the atlas) |
 | The launcher (the front page's list) | [`index.html`](../../index.html) + [`tools/vite-launcher.js`](../../tools/vite-launcher.js) (the list from `public/`, `transformIndexHtml`) + [`src/launcher/launcher.css`](../../src/launcher/launcher.css); check: `sandbox/launcher.json` |
 | Level save / load | [`level/LevelStorage.js`](../../src/engine/level/LevelStorage.js) (browser slots `luminati.level.<slot>`, project API, files, `resolveLevelFromURL`) + [`tools/vite-level-api.js`](../../tools/vite-level-api.js) |
 | Editor document & undo | [`editor/EditorState.js`](../../src/editor/EditorState.js) (`begin` / `commit` transactions) |

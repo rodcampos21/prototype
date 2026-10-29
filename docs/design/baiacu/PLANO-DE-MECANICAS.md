@@ -1,14 +1,14 @@
 # Plano de mecânicas — Culto ao Baiacu Rei sobre o Luminati
 
 Planejamento para adaptar a engine Luminati ao jogo: espaços de construção fixos, a evolução visual
-do acampamento, o relógio por expedições, os recursos e a troca de idiomas (sai japonês e chinês,
+do acampamento, o relógio pelos dias do jogo, os recursos e a troca de idiomas (sai japonês e chinês,
 entram inglês e português). A lore vive nos documentos do Claude Docs (*Bíblia Narrativa* e *Ato I —
 Caderno de Lore, NPCs e Quests*). Aqui fica só o que muda no código.
 
 | | |
 | --- | --- |
 | **Público** | Rodrigo e o parceiro de projeto; agentes de IA que forem implementar cada etapa. |
-| **Estado** | **M1 (idioma) concluído em 2026-10-28** — veja a etapa A. **M2.1 (tela de criação de personagem) pronta em 2026-10-28**: `game.html` abre a campanha `culto-ao-baiacu-rei` (título → criação → [Estrada da Costa](../levels/estrada-da-costa.md)); nome e classe no save, `${player}` e `player:` nas falas (etapa J, itens 1, 2, 4 e 5). **M2.2 (visual do cavaleiro) pronta**: o Cavaleiro Errante de cabelo branco, armadura de placas clara com dourado, capa azul e espada (estilo de roupa ``plate`` novo no gerador de sprites); cada classe lista seus estágios de visual (``looks`` em ``PlayerClasses.js``), e uma especialização futura troca o visual inteiro. O resto é plano. |
+| **Estado** | **M1 (idioma) concluído em 2026-10-28** — veja a etapa A. **M2.1 (tela de criação de personagem) pronta em 2026-10-28**: `game.html` abre a campanha `culto-ao-baiacu-rei` (título → criação → [Estrada da Costa](../levels/estrada-da-costa.md)); nome e classe no save, `${player}` e `player:` nas falas (etapa J, itens 1, 2, 4 e 5). **M2.2 (visual do cavaleiro) pronta**: o Cavaleiro Errante de cabelo branco, armadura de placas clara com dourado, capa azul e espada (estilo de roupa ``plate`` novo no gerador de sprites); cada classe lista seus estágios de visual (``looks`` em ``PlayerClasses.js``), e uma especialização futura troca o visual inteiro. **Clima por mapa (etapa I) e C02 prontos**: ``environment.weatherPool`` sorteia o clima nas viradas de manhã, tarde e noite e nas chegadas; ``weather <x>`` trava e ``weather auto`` libera; a Estrada da Costa leva à Clareira do Riacho, onde acontece a fogueira (C02, marcas ``c02.estacao`` / ``c02.lar`` / ``c02.jantar``). **Acampamento (M2, itens 1 a 3)**: objetos novos ``tent``, ``mapTable``, ``banner`` e ``stake`` (categoria Camp, ``opts.stage`` para o que evolui com a cidade); na manhã do dia 2 a clareira vira o acampamento organizado (tenda e mesa ao norte, estandarte a leste, três lotes a oeste e ao sul) e começa a QP03. **Mapa do Surubin, Mata da Clareira e a noite (M2, itens 4 a 6)**: o campo ``atlas`` da campanha e a tela do mapa (G1), aberta na mesa; a Mata da Clareira, primeiro lugar do mapa, com a estaca de volta; de 18:30 às 5:00 os grupos noturnos aparecem (muito mais monstros, alguns de elite). Com isso o M2 está completo. **Exploração**: a Mata da Clareira cresceu para 100 × 84 (riacho com duas pontes, pedras musgosas, acampamento abandonado, corte antigo), com recursos para cortar, quebrar e colher (tipo `resource`, voltam a cada manhã), baús aleatórios por expedição (só ouro) e criaturas espalhadas (28 de dia, 83 à noite). O resto é plano. |
 | **Relacionado** | [Onboarding](../../ai/AGENT_ONBOARDING.md) · [Playbooks](../../ai/TASK_PLAYBOOKS.md) · [Formato de campanha](../../specs/CAMPAIGN_FORMAT.md) · [Linguagem de história](../../specs/STORY_SCRIPT.md) · [I18N](../../specs/I18N.md) · [Módulo pixel](../../architecture/modules/pixel.md) |
 
 ---
@@ -42,7 +42,7 @@ Consequências:
 | Construção aparecer na hora | `when` / `unless` em **qualquer** objeto, inclusive casas, avaliado ao vivo |
 | Recursos (madeira, pedra, comida) | **Itens** da história (`give madeira 3`, `item:madeira >= 5`) e ouro |
 | Quests QP/QS, fragmentos F01–F10 | Quests com etapas, diário (B), eventos `use` / `enter` / `cleared` |
-| Contadores (expedições, eventos EV01–EV08) | **Variáveis** da história (`var expedicoes + 1`, `if expedicoes >= 3`) |
+| Contadores (dias, eventos EV01–EV08) | O **dia** da história (`day`, +1 a cada meia-noite e a cada descanso) e **variáveis** (`var ev01-inicio = …`, `if day >= …`) |
 | NPC chegando ao acampamento | Villagers com `when`, cutscenes, `walk`, `bark` |
 | Surubin e companheiros na luta | **Party** (até 3), classes warden / ranger / mystic |
 | Hordas, chefe, defesa | Combate em tempo real, 8 tipos de inimigo, chefe com arena |
@@ -54,10 +54,10 @@ Consequências:
 | A | Idiomas: inglês + português, sem japonês e chinês | Médio (37 arquivos tocam ja/zh) |
 | B | Fundação da campanha do Ato I (acampamento hub + nós de expedição + visual do cavaleiro) | Médio |
 | C | Recursos: HUD de recursos, pontos de coleta, saque de inimigos | Médio |
-| D | Relógio por expedições (turno ao voltar ao acampamento, contagens, eventos que evoluem) | Médio |
+| D | Relógio pelos dias do jogo (obras e contagens avançam a cada manhã, eventos que evoluem) | Médio |
 | E | Construção em espaços fixos (o sistema central) | Grande |
 | F | Arte: estruturas novas com estágios, NPCs novos, Surubin por rank, cavaleiro, inimigos novos | Grande e contínuo |
-| G | Atlas (mapa de nós com estados) | Grande, depois do núcleo |
+| G | Atlas: G1, o mapa mínimo do Surubin para viajar (já no M2/M3); G2, o atlas completo | G1 médio; G2 grande, depois do núcleo |
 | H | Infra: desacoplar as fases de demonstração, testes do jogo | Pequeno e contínuo |
 | I | Clima sorteado por mapa nas viradas do dia, com trava pela história | Médio |
 | J | Criação de personagem (nome e classe) e voz do jogador nos diálogos | Médio |
@@ -111,7 +111,10 @@ português e os checks de i18n passam sem japonês e chinês.
 1. Criar a campanha `public/campaigns/ato-1/` com um gerador (`tools/make-ato-1.mjs`, no molde de
    `make-ferrymans-lantern.mjs`):
    - `estrada-da-costa` (o prólogo que já existe, movido para dentro da campanha);
-   - `acampamento`, a **fase hub**, com a clareira junto ao riacho e os espaços de construção;
+   - `acampamento`, a **fase hub**: a própria `clareira-do-riacho` da C02, aumentada e organizada
+     (fogueira no centro, tenda do Surubin com a mesa do mapa ao norte, estandarte e altar a
+     leste, três espaços de construção a sul e oeste, área livre para a capela). Sem trilhas de
+     saída: a viagem é pelo mapa (G1);
    - os nós iniciais do atlas como fases pequenas: `mata-da-clareira`, `riacho-dos-juncos`,
      `pedreira-da-encosta`.
 2. **Visual do cavaleiro**: hoje `Player.js` usa sempre o preset `traveler`. Adicionar um campo
@@ -129,34 +132,85 @@ português e os checks de i18n passam sem japonês e chinês.
    `minerio`, `couro`, `osso`, `minerio-raro`, `pedra-raiz`.
 2. **HUD de recursos** (novo componente no kit de UI pixel): uma faixa com ícone e quantidade dos
    recursos principais, visível no acampamento e nas expedições.
+2a. **Mochila e estoque**: o que se coleta numa expedição vai para a mochila, que tem limite; ao
+   voltar ao acampamento, a mochila é guardada no estoque. O silo dobra o limite. Junto com a
+   reposição dos pontos de coleta só de manhã (item 3), isso faz cada obra pedir umas 4
+   expedições (Caderno, *Coleta em várias expedições*).
+2b. **Janela de inventário** (pedida em 2026-10-28, entra no M3): uma janela do kit de UI pixel,
+   aberta por uma tecla própria (I, e o botão do controle), que pausa o jogo como o diário. Duas
+   metades:
+   - **Mochila**: a grade de espaços com o ícone e a quantidade de cada item (madeira, pedra,
+     ervas, itens de quest), o limite da mochila (`usados / limite`, maior com o silo) e, ao
+     escolher um item, o nome e a descrição (os textos dos itens de `story/main.json`). No
+     acampamento, mostra também o estoque.
+   - **Equipamento**: o cavaleiro em pé (o sprite da classe, virado para a câmera) cercado pelos
+     espaços de equipamento — arma, armadura, cabeça, mãos, pés, acessório — e os atributos ao
+     lado (HP, MP, ATK, DEF, nível). **A mecânica de equipar ainda não existe**: os espaços já
+     aparecem (vazios ou com o equipamento inicial da classe, só para ver), com o formato de dados
+     pensado para ela (cada item com `slot` e bônus), para que equipar depois seja só ligar a
+     lógica, sem refazer a tela. Equipamento inicial (decidido em 2026-10-29, só o básico):
+     Espada de viagem, Cota de viagem, Elmo amassado, Luvas de couro e Botas de estrada; o
+     acessório começa vazio. Nomes e descrições no Caderno, *O equipamento do cavaleiro*.
+   - Teclado, controle e mouse como no diário (setas ou abas trocam de metade; Enter mostra o
+     detalhe; Esc fecha). Textos traduzidos (pt / en).
+   Pede junto: os ícones dos itens (F4) e o modelo de item com `slot`, que serve depois ao sistema
+   de experiência, habilidades e classes.
 3. **Pontos de coleta**: um novo tipo de objeto `resourceNode` (árvore cortável, veio de pedra, moita
-   de ervas), com Espaço para coletar, quantidade e reposição por expedição. Enquanto ele não existe,
-   dá para usar um `event` `use` com `give madeira 3` e `once`.
+   de ervas), com Espaço para coletar, quantidade e reposição a cada manhã. **Feito (2026-10-28)**
+   como o tipo `resource` ([catálogo](../../specs/OBJECT_CATALOG.md#resource)): cada Espaço é um golpe
+   (o cavaleiro golpeia, lascas, poeira ou folhas, som e tremor); no último golpe dá o item
+   (`madeira`, `pedra`, `ervas`, declarados em `story/main.json`) e vira toco, cascalho ou galhos
+   secos. Volta a crescer às 5h (a manhã apaga as flags `res.*`). Não se coleta com inimigos em
+   cima. Falta a mochila com limite (2a) e o HUD de recursos (2).
 4. **Saque de inimigos**: hoje o loot é ouro e poções (`src/game/combat/Loot.js`). Adicionar itens
    de recurso à tabela de saque por tipo de inimigo (couro e osso das bestas).
+4a. **Baús aleatórios** (feito em 2026-10-28): um baú com `chance` aparece ou não em cada
+   expedição, com uma quantia de ouro sorteada; por enquanto só ouro. Depois: ranks de raridade com
+   saques melhores.
 5. **Ícones** dos recursos pintados por código (novo `ItemIcons.js` em `src/engine/pixel/`).
 
-### D. Relógio por expedições
+### D. Relógio pelos dias do jogo
 
-Regra do caderno: *o tempo é contado em expedições, não em minutos*.
+Regra do caderno (revista em 2026-10-28): *o tempo é contado em dias do jogo, não em expedições*.
+Um dia dura cerca de 36 minutos reais (`TIME_SPEED`: 1 hora de jogo = 90 s).
 
-1. **Turno**: uma variável de campanha `expedicao`, incrementada **ao voltar ao acampamento vindo de
-   um nó** (evento de campanha `arrive` no nível `acampamento`, com uma flag "saiu em expedição").
-   No primeiro protótipo isso é só história (`var expedicao + 1`). Depois vira um sistema
-   (`ExpeditionClock`) com gancho de evento `on: turn`.
-2. **Contagens com prazo** (EV01 saqueadores, EV02 a fera marcha, EV03 comerciante…): uma tabela
-   `timers` em `story/main.json` (`id`, começa quando, duração em turnos, o que acontece ao
-   expirar). O sistema avança todas a cada turno e dispara os scripts. Regra do caderno: no máximo
-   **dois eventos com contagem ativa ao mesmo tempo**.
-3. **O relógio de horas** (dia e noite) continua só como clima visual. Dentro de uma expedição a hora
-   anda; no acampamento ela pode ficar fixa por ato (`clock: false`).
-4. **Exibição diegética**: a contagem aparece no atlas (G); até lá, no diário e em falas.
-5. Obras (E) e eventos usam o mesmo turno.
+1. **O dia já existe**: `StoryState.day` começa em 1, sobe a cada meia-noite e a cada descanso que
+   passa da meia-noite, vai no save e é lido nas condições (`if day >= 3`). Não há contador de
+   expedições.
+2. **A virada que conta é a manhã** (5:00), a mesma que o sorteio de clima já detecta
+   (`weatherPhase` em `src/game/WeatherRoll.js`). Primeiro protótipo: um evento de campanha
+   `on: morning` que roda a cada nova manhã em qualquer fase. Depois vira um sistema (`DayClock`)
+   que avança obras e contagens.
+3. **Contagens com prazo** (EV01 saqueadores, EV02 a fera marcha, EV03 comerciante…): uma tabela
+   `timers` em `story/main.json` (`id`, começa quando, duração em dias, o que acontece ao expirar).
+   Cada contagem guarda o dia em que começou e expira em `inicio + duracao`. Regra do caderno: no
+   máximo **dois eventos com contagem ativa ao mesmo tempo**. A Noite de névoa (EV06) dura uma
+   noite, de 18:30 até a manhã seguinte.
+4. **O relógio anda em todo lugar**, inclusive no acampamento: nada de `clock: false` por ato. Uma
+   cena pode segurar a hora (`time 21`), mas o dia continua contando depois dela.
+5. **Dormir** (Bíblia, *Dormir*): só no alojamento, depois de construído. Pula até a manhã
+   seguinte e avança o dia, as obras e as contagens; um prazo pode vencer durante a noite. Antes
+   do alojamento, o tempo só passa jogando.
+5a. **A noite** (Bíblia, *A noite*): de 18:30 até a manhã, os nós têm muito mais monstros e podem
+   aparecer variantes mais fortes. **Feito (2026-10-28):** cada fase de expedição declara grupos
+   de inimigos extras com `when: hour >= 18.5 or hour < 5` (`NIGHT_CONDITION` em
+   `src/game/campaign/AtlasFormat.js`), que entram e saem ao vivo conforme o relógio; os mais
+   fortes são `elite` e de nível maior. Na Mata da Clareira: 5 inimigos de dia, 18 à noite. O
+   acampamento nunca tem inimigos. O mapa avisa quando a chegada cai de noite.
+6. **Exibição diegética**: a contagem aparece no atlas (G); até lá, no diário e em falas.
+7. Obras (E) e eventos usam o mesmo dia.
 
 ### E. Construção em espaços fixos (o sistema central)
 
 **Regra de design:** o jogador escolhe **o que** construir, nunca **onde**. Cada espaço tem uma
 lista fechada de construções possíveis.
+
+**Ato I (decidido em 2026-10-28):** três espaços fixos, um para cada obra (forja, silo,
+alojamento). A C03 escolhe só qual começar primeiro. Depois: a forja é obrigatória na fase 2
+(QP04), o alojamento na fase 4 (antes da QS03), e o silo é opcional (única porta para o Pomar
+Abandonado). Qualquer uma pode ser feita antes da hora, em qualquer ordem, se houver recursos.
+O que cada uma libera: forja → Fumaça na Serra e Odo; silo → Pomar Abandonado e a mochila maior;
+alojamento → Estrada dos Peregrinos, dormir e cura.
 
 **Modelo de dados** (novo, em `story/main.json` ou num `buildings.json` da campanha):
 
@@ -166,7 +220,7 @@ lista fechada de construções possíveis.
     "forja": {
       "nome": "Forja",
       "custo": { "madeira": 6, "pedra": 4 },
-      "turnos": 1,
+      "dias": 1,
       "estagios": ["fundacao", "andaime", "pronto"],
       "niveis": [ { "custo": { "minerio-raro": 2 }, "requer": "quest:aco-de-verdade = done" } ],
       "libera": "set forja-pronta"
@@ -185,15 +239,15 @@ E na fase do acampamento, um novo tipo de objeto:
 **Comportamento:**
 
 1. Espaço vazio: estacas, cordas e um marcador. Espaço aperta a escolha.
-2. **Menu de construção** (nova janela no kit de UI): opções, custo, turnos e o que libera.
+2. **Menu de construção** (nova janela no kit de UI): opções, custo, dias de obra e o que libera.
    Construções sem recursos ficam visíveis e desabilitadas.
-3. Ao escolher: os recursos são pagos, a obra começa no estágio `fundacao` e avança a cada **turno
-   de expedição** (D), passando por `andaime` até `pronto`.
+3. Ao escolher: os recursos são pagos, a obra começa no estágio `fundacao` e avança a cada **manhã**
+   (D), passando por `andaime` até `pronto`, esteja o jogador numa expedição ou no acampamento.
 4. Ao terminar: roda o script `libera` (abre um nó do atlas, traz um NPC, como a QS01) e o Surubin
    comenta (as "reações a construções" do caderno).
 5. **Níveis** (forja tier 2…) reabrem a obra num espaço já construído.
 6. O estado vive no save da campanha (`CampaignState` ou `StoryState`): por espaço, a construção,
-   o estágio e o turno em que começou.
+   o estágio e o dia em que começou.
 
 **Como os modelos aparecem:** cada espaço já monta **na carga** todas as variantes possíveis
 (construção × estágio) e mostra uma de cada vez. É o mesmo mecanismo do `when` / `unless`. Isso
@@ -260,9 +314,67 @@ Se em algum momento quiserem retocar à mão: um script que **exporta** qualquer
 (para editar no Aseprite) e um caminho para **carregar** um PNG no lugar da folha gerada. Isso quebra
 a regra "nenhum asset binário" da engine, então só vale se for uma decisão consciente.
 
-### G. Atlas (depois do núcleo)
+### G. Atlas
 
-Uma tela própria (no estilo do mapa-múndi atual, `ui/Minimap.js` / `WorldMap`) com:
+**G1, o mapa do Surubin (decidido em 2026-10-28, entra no M2/M3).** Não há saídas de mapa no
+acampamento: a viagem é pela mesa do Surubin. Versão mínima:
+
+1. Objeto na tenda do Surubin que abre a tela do mapa (Espaço).
+2. Tela em pergaminho com o esboço do terreno já percorrido e os pontos clicáveis, com os estados
+   boato (tracejado), descoberto e explorado. Escolha também por setas ou controle.
+3. Escolher um ponto viaja para a fase do nó (a viagem com fade da campanha), avançando o relógio
+   pelo tempo de viagem do nó.
+4. Cada nó tem um ponto de chegada (estaca com fita) que leva de volta ao acampamento; na volta, a
+   mochila é guardada e o Surubin "desenha" o que foi descoberto.
+5. Só se viaja a partir da mesa; viagem direta entre nós vizinhos fica para depois.
+5a. **Cena de viagem** (pedida em 2026-10-28, entra no M3): no lugar da tela preta entre os mapas,
+   uma pequena cena de transição. Pode ser só texto: o nome do destino e uma linha de caminho
+   ("A trilha desce pela mata…", "De volta ao acampamento, o cheiro da fogueira…"), com as horas
+   de viagem passando (7:30 → 8:30) e, se cair de noite, um aviso. Cada lugar do atlas ganha uma ou
+   mais linhas de ida e de volta (texto traduzível, no `campaign.json`), sorteadas. Fica na tela
+   enquanto o mapa carrega (no mínimo uns 2 s, Espaço adianta). Depois dá para enriquecer: o
+   pergaminho do mapa com o pontilhado andando até o destino.
+   As linhas de caminho (duas por destino, sorteadas) estão no Caderno, *Cena de viagem*.
+   **Feito (2026-10-29):** o `JourneyCard` ([PIXEL_UI §8.1](../../specs/PIXEL_UI.md)) sobre o preto:
+   *A caminho de* / *De volta a*, o nome do destino, uma linha do `road` do lugar (em rodízio pelas
+   expedições; a volta de noite tem a sua), as marcas dos dois lugares com o pontilhado e um ◆ andando,
+   as horas de saída e de chegada e *A noite cai no caminho.* quando chega de noite. 2,4 s no mínimo,
+   Enter pula. As linhas da Mata, do Riacho e da Pedreira já estão no `campaign.json`.
+5b. **Estaca de volta maior** (pedida em 2026-10-28, M3): a estaca com fita é pequena demais para
+   achar num mapa grande. Uma versão maior e bem visível (um mastro alto com uma flâmula vermelha,
+   talvez o peixe do culto), que se veja de longe e marque o ponto de retorno também no minimapa.
+   **Feito (2026-10-29):** a estaca de tipo `mast` — um mastro de 4,2 m num monte de pedras, a bola
+   de espinhos dourada no topo e o peixe do Rei numa flâmula **vermelha**, com fitas no mastro e três
+   estacas em volta. No minimapa é uma bandeira vermelha; fora da vista, um losango vermelho na borda
+   apontando para ela. No mapa-múndi, a linha *Caminho de volta* na legenda.
+5d. **Recursos mais visíveis** (pedido em 2026-10-29, M3): **feito.** Cada recurso inteiro a até
+   22 u do cavaleiro brilha de vez em quando (estrelinhas na cor do que dá: copa da árvore, topo da
+   pedra, flores das ervas) e aparece no minimapa e no mapa-múndi como um pontinho (madeira âmbar,
+   pedra cinza-clara, ervas rosa), que some quando é colhido e volta quando cresce. Com a névoa (5c),
+   os pontinhos só vão aparecer na parte revelada.
+5c. **Melhorar o minimapa** (pedida em 2026-10-28, M3: analisar primeiro). Com mapas grandes como a
+   Mata (100 × 84) ele precisa ajudar a explorar. A avaliar: zoom e área visível, marcadores do
+   ponto de retorno e dos lugares da fase (regiões nomeadas), recursos e baús, a névoa do que ainda
+   não foi visto (revelar ao andar), o norte e a legibilidade das trilhas e do riacho. Resultado
+   esperado da análise: o que o `Minimap.js` já faz, o que falta e uma proposta antes de mexer.
+   **Decidido (2026-10-28): névoa de exploração.** O minimapa (e o mapa-múndi da fase) mostra só o
+   que o jogador já percorreu; o resto fica coberto por uma névoa. Andar revela um raio em volta do
+   cavaleiro, com a borda suave. O que foi revelado fica guardado no save, por fase, e continua
+   revelado nas próximas expedições. Marcadores (baús, recursos, regiões) só aparecem na parte
+   revelada; o ponto de retorno aparece sempre.
+6. Estado no save: os nós e seus estados (boato, descoberto, explorado).
+
+**Feito (2026-10-28).** O campo `atlas` do `campaign.json` ([formato, §4.1](../../specs/CAMPAIGN_FORMAT.md#41-the-atlas)):
+lugares com ícone, fase, entrada, horas de viagem, condições de boato / descoberto / explorado,
+recursos e a anotação do Surubin por estado; o esboço do terreno (mar, costa, estrada, rio, matas,
+colinas, juncos, rótulos, o Baiacu Rei no mar, o barco naufragado), cada traço com `when`. A tela
+(`AtlasScreen`) é um pergaminho pintado por código, com bordas queimadas, dobras, rosa dos ventos
+e a rota pontilhada em vermelho; ao lado, a viagem, a hora de chegada e o aviso de noite. Os
+estados não ganharam campo próprio no save: são lidos das flags e das visitas. Cada viagem pelo
+mapa é uma expedição nova (os grupos derrotados voltam). A volta é uma saída por Espaço ao redor
+da estaca com fita. Falta para o M3: a mochila guardada na volta.
+
+**G2, o atlas completo (depois do núcleo).** Uma tela própria (no estilo do mapa-múndi atual, `ui/Minimap.js` / `WorldMap`) com:
 
 - nós e caminhos;
 - estados: rumor, descoberto, explorado e consagrado;
@@ -270,9 +382,8 @@ Uma tela própria (no estilo do mapa-múndi atual, `ui/Minimap.js` / `WorldMap`)
 - contagens visíveis;
 - "um marcador importante por vez".
 
-Viajar a partir do atlas substitui as saídas fixas de mapa. O atlas é desenhado pelo Surubin na
-mesa do acampamento, então ele abre por um objeto do acampamento. É a etapa mais longa, e o núcleo
-(B a E) funciona sem ela usando saídas e placas.
+O G2 cresce a partir do G1: contagens visíveis, marcador importante único, consagração de nós
+(Ato II).
 
 ### H. Infraestrutura
 
@@ -281,7 +392,7 @@ mesa do acampamento, então ele abre por um objeto do acampamento. É a etapa ma
    (como `campaign: true` faz) e cobrir no gerador da campanha `ato-1`. A longo prazo, decidir se as
    fases de demonstração continuam no repositório.
 2. **Um teste jogado por bot** da campanha (no molde de `sandbox/campaign.travel.json` e
-   `combat_play.js`): prólogo, construir, sair, voltar, turno, obra pronta.
+   `combat_play.js`): prólogo, construir, sair, voltar, nova manhã, obra pronta.
 3. **Documentação**: cada sistema novo ganha sua especificação em `docs/specs/` e uma linha no
    onboarding, como pede o `AGENTS.md`.
 
@@ -332,22 +443,22 @@ Design na Bíblia, seção *O protagonista*.
 | --- | --- | --- |
 | 1 | Língua-fonte do conteúdo: escrever em português e traduzir para o inglês, ou o contrário? | **Decidido (2026-10-28):** tudo em português, idioma padrão português, inglês por tradução automática. |
 | 2 | Primeira construção: estágios visíveis (fundação, andaime, pronto) ou só "em obra / pronta"? | Os três estágios: é o que faz a cidade "crescer à vista". |
-| 3 | Duração das obras: sempre 1 turno no Ato I, ou variável? | 1 turno no Ato I (o caderno fala em "a construção leva tempo"); variável a partir do Ato II. |
-| 4 | Espaços vazios aparecem desde o começo, ou vão sendo revelados? | Revelar por ato: o acampamento do Ato I tem 3 ou 4 espaços. |
+| 3 | Duração das obras: sempre 1 dia no Ato I, ou variável? | **Decidido (2026-10-28):** obras contam dias do jogo, não expedições. Recomendação: 1 dia no Ato I; variável a partir do Ato II. |
+| 4 | Espaços vazios aparecem desde o começo, ou vão sendo revelados? | **Decidido (2026-10-28):** o Ato I começa com três espaços fixos (forja, silo, alojamento); a área da capela e dos colonos abre na fase 4. |
 | 5 | Arte só procedural, ou abrir caminho para PNG (F6)? | Procedural por enquanto. Reavaliar quando houver um artista. |
 | 6 | Manter as fases de demonstração (Emberfall, Starfall…) no repositório? | Manter até o Ato I estar jogável: elas são os testes de regressão da engine. |
-| 7 | Atlas antes ou depois do núcleo de construção? | Depois. Saídas de mapa resolvem o Ato I inicial. |
+| 7 | Atlas antes ou depois do núcleo de construção? | **Decidido (2026-10-28):** o mapa mínimo do Surubin (G1) vem já no M2/M3 e substitui as saídas; o atlas completo (G2) fica depois. |
 
 ## 6. Ordem sugerida (marcos)
 
 | Marco | Entrega | Etapas |
 | --- | --- | --- |
 | **M1, Idioma** | Jogo em português, sem japonês e chinês | A |
-| **M2, Acampamento jogável** | Campanha Ato I: criação de personagem → prólogo → acampamento → Mata da Clareira → volta; cavaleiro com visual próprio e falando; clima sorteado por mapa; C02 e C03 | B, I, J, F1 (tenda, estandarte, altar), F2 (cavaleiro) |
-| **M3, Primeira obra** | Recursos coletados, escolha forja / silo / alojamento, obra em estágios, turno por expedição (protótipo E1) | C, D, E1, F1 (forja, silo, alojamento, andaime) |
+| **M2, Acampamento jogável** | Campanha Ato I: criação de personagem → prólogo → C02 → acampamento na clareira → mapa do Surubin → Mata da Clareira → volta; cavaleiro com visual próprio e falando; clima sorteado por mapa; mais monstros à noite | B, G1, I, J, F1 (tenda, mesa do mapa, estandarte, altar), F2 (cavaleiro) |
+| **M3, Primeira obra** | Mochila e estoque, janela de inventário (mochila + equipamento, C 2b), ~~cena de viagem entre mapas (G1 5a), estaca de volta maior (5b), recursos visíveis (5d)~~ (feitos em 2026-10-29), névoa no minimapa (5c), coleta em várias expedições (Mata, Riacho, Pedreira), C03 com a escolha forja / silo / alojamento, obra que avança a cada manhã, altar, dormir no alojamento (protótipo E1) | C, D, E1, F1 (forja, silo, alojamento, andaime) |
 | **M4, Sistema de construção** | `buildSlot` + `BuildingSystem` + menu + editor; contagens EV01/EV02 | E2, D completo, F4 |
 | **M5, Fase 1–3 do Ato I** | Odo, Fumaça na Serra, Pedras Riscadas, duelo do mestre | F2 (NPCs), F3 |
-| **M6, Atlas** | Atlas do Ato I com os 12 (13) nós | G |
+| **M6, Atlas completo** | Atlas do Ato I com os 12 (13) nós, contagens visíveis | G2 |
 
 Cada marco termina com as checagens de sempre: `typecheck`, `level:check --campaign`, testes de
 história, build, capturas revisadas e documentação atualizada.

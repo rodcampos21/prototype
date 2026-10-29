@@ -23,6 +23,8 @@ import { installFogStart, setFogStart } from './AtmosphereFog.js';
 import { cameraFraming, isInterior } from './LevelLook.js';
 import { SHIPPED_LEVELS } from './levels.js';
 import { CharacterCreation } from '../engine/ui/CharacterCreation.js';
+import { AtlasScreen } from '../engine/ui/AtlasScreen.js';
+import { weatherPhase, weatherPoolOf, rollWeather } from './WeatherRoll.js';
 // (the CombatSystem is imported dynamically in init, on combat levels only: peaceful levels never
 // download or parse the combat code; bindings.js is a tiny import-free table)
 import { PHOTO_PAD_DEFLECT, PHOTO_PAD_QUIET } from './combat/bindings.js';
@@ -157,6 +159,20 @@ const FAR_ACTOR_DISTANCE = 42;
 const FAR_EVERY = 4;
 /** Seconds after a conversation closes during which confirm doesn't start a new one. */
 const TALK_COOLDOWN = 0.8;
+/** After a strike at a resource (`harvest`): the next press strikes again. */
+const HARVEST_COOLDOWN = 0.08;
+/**
+ * The glint of the resources to gather (`_glintResources`): only within this distance of the player
+ * (squared, world units), about every this many seconds each, a star in the colour of what it gives
+ * at its height (a tree's crown, a stone's top, the herbs' flowers).
+ */
+const GLINT_R2 = 22 * 22;
+const GLINT_EVERY = 2.2;
+const GLINT = Object.freeze({
+  tree: { color: '#e9f7a8', y: 1.7, spread: [1.1, 0.9, 1.1] },
+  stone: { color: '#fff4d8', y: 0.55, spread: [0.6, 0.35, 0.6] },
+  herbs: { color: '#ffd0ec', y: 0.35, spread: [0.5, 0.2, 0.5] },
+});
 /** Real frames drawn behind the loading screen with every effect on (see start()). */
 const WARM_FRAMES = 5;
 /**
@@ -275,6 +291,10 @@ export class Game {
     this.busy = false; // talking / fading: player frozen
     /** The player wants music (M toggles it; a campaign's next level starts it again unless off). */
     this.musicWanted = true;
+    /** The turn of the day the weather was last rolled for (`_updateWeatherPhase`; null: not yet). @type {string|null} */
+    this._weatherPhase = null;
+    /** A single level's weather held by its story (`weatherLock`; a campaign keeps it in its save). */
+    this._weatherLock = '';
     /** @type {Record<string, number>} count by item name (no prototype: shop items are level data) */
     this.inventory = Object.assign(Object.create(null), { apples: 0 });
     this.visits = new Map();
@@ -282,6 +302,10 @@ export class Game {
     this._burstTimer = 0;
     this._sparkleTimer = 0;
     this._talkCooldown = 0;
+    /** @type {Map<string, number>} the strikes a resource still needs (`harvest`; this level only) */
+    this._harvestHits = new Map();
+    /** @type {WeakMap<object, number>|null} each resource's countdown to its next glint (`_glintResources`) */
+    this._glints = null;
     this._tmp = new THREE.Vector3();
     this._focusPos = new THREE.Vector3();
     this._target = { kind: '', npc: null, it: null };
@@ -1504,14 +1528,22 @@ export class Game {
    * once someone joined. Rows `{ keys, label, id, pad? }`, the labels in the page's language.
    */
   _controls() {
-    const party = this.party?.count ? [PARTY_CONTROL] : [];
+    const party = this.party?.count && this.partyMenuAllowed ? [PARTY_CONTROL] : [];
     if (this.story) return controlRows([...CONTROLS.slice(0, 6), JOURNAL_CONTROL, ...party, ...CONTROLS.slice(6)]);
     return controlRows(party.length ? [...CONTROLS.slice(0, 6), ...party, ...CONTROLS.slice(6)] : CONTROLS);
   }
 
   /** The lines the game adds to the combat legend (`combat.legendExtra`), the labels translated. */
   _legendExtra() {
-    return controlRows([...(this.story ? [JOURNAL_CONTROL] : []), ...(this.party?.count ? [PARTY_CONTROL] : [])]);
+    return controlRows([...(this.story ? [JOURNAL_CONTROL] : []), ...(this.party?.count && this.partyMenuAllowed ? [PARTY_CONTROL] : [])]);
+  }
+
+  /**
+   * May the player open the tactics panel? False in a campaign with `party.menu: false` (its
+   * companions follow the story's rules only: no panel, no G in the legend, no *Tactics…*).
+   */
+  get partyMenuAllowed() {
+    return this.campaign?.partyMenu ?? true;
   }
 
   /** The party changed (a join, a leave): the controls legend gains / loses *G — Party*. */
@@ -1548,7 +1580,7 @@ export class Game {
       return false;
     }
     if (this.partyMenuOpen) return true;
-    if (this.mode !== 'play') return false;
+    if (this.mode !== 'play' || !this.partyMenuAllowed) return false;
     if (!force && (this.busy || this.ui.dialog.isOpen || this.photoMode || this.mapOpen || this.journalOpen
       || this.combat?.locksPlayer || this.ui.cutscene || party.closedFrame === this.engine.time.frame)) return false;
     if (!party.count) {
@@ -1640,6 +1672,124 @@ export class Game {
   _storyLevelId() {
     const m = /^levels\/([^/]+)\.json$/.exec(this.source || '');
     return m ? m[1] : String(this.level.name || 'level').toLowerCase().replace(/[^a-z0-9-]+/g, '-');
+  }
+
+  /**
+   * The campaign's atlas (docs/specs/CAMPAIGN_FORMAT.md §4.1): the map opens over the scene (play
+   * held meanwhile: the caller holds `busy`); a place chosen on it is travelled to.
+   * @returns {Promise<boolean>} true when the player travelled
+   */
+  async openAtlas() {
+    const view = this.campaign?.atlasView();
+    if (!view) return false;
+    const atlas = this.ui.useAtlas(AtlasScreen);
+    atlas.onSound = (name) => this.audio.playSfx(name, { volume: name === 'blip' ? 0.35 : 0.5 });
+    this.ui.prompt.hide();
+    const id = await atlas.open(view);
+    if (!id || this._disposed) return false;
+    return this.campaign.travelAtlas(id);
+  }
+
+  /**
+   * Strike a resource (Space at a full `resource` object; OBJECT_CATALOG.md *resource*): the
+   * knight's swing (the combat sheet's poses, on a combat level), chips, dust or leaves, a thud and a
+   * small shake. Its `hits`-th strike spends it: its flag is set (`flag`, else `res.<level>.<id>` —
+   * the story shows its spent twin), the story gives `amount` of its `item` (a toast, the journal)
+   * and the story clears every `res.` flag at the next morning (StoryRunner: it grows back). Not
+   * while foes are on the player. The strikes are counted while the player stays in the level.
+   * @param {import('./World.js').Interactable} it
+   */
+  async harvest(it) {
+    const o = /** @type {any} */ (it.object);
+    if (!o || !this.story) return;
+    if (this.combat?.engaged) {
+      this.ui.hud.toast(t('game.toast.foesGather'), 1.6);
+      return;
+    }
+    const ro = o.opts ?? {};
+    const kind = ro.kind === 'stone' || ro.kind === 'herbs' ? ro.kind : 'tree';
+    const int = (v, d, lo, hi) => (Number.isFinite(v) ? Math.min(hi, Math.max(lo, Math.round(v))) : d);
+    const hits = int(o.hits, 3, 1, 8);
+    const hitKey = `${this.campaign?.levelId ?? ''}:${o.id}`;
+    const left = (this._harvestHits.get(hitKey) ?? hits) - 1;
+    // the swing
+    const pc = this.combat?.pc;
+    const p = this.player;
+    p.action = pc ? 'gather' : null;
+    const wait = (s) => new Promise((resolve) => { this._later(s, resolve); });
+    try {
+      if (pc) pc.showPose('wind');
+      await wait(0.14);
+      if (pc) pc.showPose('slash');
+      this.audio.playSfx(kind === 'herbs' ? 'step' : 'swing', { volume: 0.5, pitch: kind === 'herbs' ? 1.3 : 1 });
+      await wait(0.06);
+      const at = this._tmp.set(o.x, this.tileMap.getHeight(o.x, o.z) + (kind === 'tree' ? 0.9 : 0.45), o.z);
+      if (kind === 'tree') {
+        this.particles.burst('splash', at, 10, { color: '#b08552', size: [0.06, 0.1] });
+        this.audio.playSfx('hit', { volume: 0.55, pitch: 0.7 });
+      } else if (kind === 'stone') {
+        this.particles.burst('splash', at, 10, { color: '#c9c4b8', size: [0.05, 0.09] });
+        this.particles.burst('footstep', at, 6);
+        this.audio.playSfx('slam', { volume: 0.35, pitch: 1.6 });
+      } else {
+        this.particles.burst('splash', at, 8, { color: '#7fb04a', size: [0.06, 0.09] });
+      }
+      if (kind !== 'herbs') this.rig.shake(0.05, 0.12);
+      if (pc) pc.showPose('follow');
+      await wait(0.14);
+    } finally {
+      p.action = null;
+      // (the pose left the sprite on a still frame: the idle loop again from its start)
+      p.sprite.play('idle', { restart: true });
+    }
+    if (left > 0) {
+      this._harvestHits.set(hitKey, left);
+      return;
+    }
+    this._harvestHits.delete(hitKey);
+    const flag = (typeof o.flag === 'string' && o.flag.trim()) || `res.${this.campaign?.levelId ?? 'level'}.${o.id}`;
+    if (this.campaign) this.campaign.setFlag(flag);
+    else this.story.state.setFlag(flag);
+    const item = (typeof o.item === 'string' && o.item.trim()) || (kind === 'tree' ? 'madeira' : kind === 'stone' ? 'pedra' : 'ervas');
+    this.story.giveItem(item, int(o.amount, 2, 1, 20));
+    this.particles.burst(kind === 'herbs' ? 'sparkle' : 'footstep', this._tmp.set(o.x, this.tileMap.getHeight(o.x, o.z) + 0.3, o.z), kind === 'herbs' ? 4 : 10);
+  }
+
+  /**
+   * The resources to gather glint now and then (GLINT: a soft star in the colour of what they
+   * give), so they stand out from the scenery on a big map: only those near the player and still
+   * there (a gathered one is disabled until it grows back). Each keeps its own countdown, started at
+   * random, so they never glint together.
+   * @param {number} dt
+   */
+  _glintResources(dt) {
+    const list = this.world?.interactables;
+    if (!list || this.mode !== 'play') return;
+    const p = this.player.position;
+    /** @type {WeakMap<object, number>} */
+    const timers = (this._glints ??= new WeakMap());
+    for (const it of list) {
+      if (it.kind !== 'resource' || it.disabled) continue;
+      const dx = it.position.x - p.x, dz = it.position.z - p.z;
+      if (dx * dx + dz * dz > GLINT_R2) continue;
+      let left = timers.get(it) ?? Math.random() * GLINT_EVERY;
+      left -= dt;
+      if (left <= 0) {
+        const kind = /** @type {any} */ (it.object)?.opts?.kind;
+        const g = GLINT[kind === 'stone' || kind === 'herbs' ? kind : 'tree'];
+        const tall = kind === 'stone' || kind === 'herbs' ? 1 : Math.max(0.6, Math.min(1.6, (Number(/** @type {any} */ (it.object)?.opts?.height) || 4) / 4));
+        this.particles.burst('sparkle', this._tmp.set(it.position.x, it.position.y + g.y * tall, it.position.z), 2 + (Math.random() < 0.4 ? 1 : 0), {
+          color: g.color, size: [0.24, 0.4], hdr: 4.5, life: [0.8, 1.3], spawnSize: g.spread, burstSpeed: [0.05, 0.2], burstUp: [0.05, 0.25],
+        });
+        left += GLINT_EVERY * (0.75 + Math.random() * 0.5);
+      }
+      timers.set(it, left);
+    }
+  }
+
+  /** Is the atlas open? */
+  get atlasOpen() {
+    return !!this.ui?.atlas?.isOpen;
   }
 
   /** Open / close the story journal (B): only while playing, not during a conversation or the map. */
@@ -1792,6 +1942,63 @@ export class Game {
 
   setWeather(name) {
     return this.weather.setWeather(name);
+  }
+
+  /**
+   * The weather the story holds ('' = none: the map's pool rolls it, WeatherRoll.js): a campaign's
+   * (kept in its save), else this page's.
+   */
+  get weatherLock() {
+    return this.campaign ? this.campaign.state.weatherLock : this._weatherLock ?? '';
+  }
+
+  set weatherLock(w) {
+    const v = typeof w === 'string' ? w : '';
+    if (this.campaign) this.campaign.state.weatherLock = v;
+    else this._weatherLock = v;
+  }
+
+  /**
+   * The story's `weather` command: `auto` lets the map's pool roll the weather again (now, for the
+   * turn of the day); any other weather is set and held until then.
+   * @param {string} name
+   */
+  storyWeather(name) {
+    if (name === 'auto') {
+      this.weatherLock = '';
+      this.rollWeather();
+      return;
+    }
+    this.weatherLock = name;
+    this.weather.setWeather(name);
+  }
+
+  /**
+   * Roll the map's weather for the turn of the day (`environment.weatherPool`, WeatherRoll.js):
+   * nothing while the story holds one, in a room, or on a map without a pool. `instant`: no blend
+   * (an arrival, behind the fade).
+   * @param {{ instant?: boolean }} [o]
+   */
+  rollWeather({ instant = false } = {}) {
+    const phase = weatherPhase(this.lighting.timeOfDay);
+    this._weatherPhase = phase;
+    if (this.weatherLock || this.weather.indoors) return;
+    const pool = weatherPoolOf(this.level?.environment);
+    if (!pool) return;
+    const s = this.story?.state ?? this.campaign?.state.story ?? null;
+    const w = rollWeather(pool, { phase, seed: s?.seed ?? 0, day: s?.day ?? 1, level: this.campaign?.levelId ?? this.level?.name ?? '' });
+    if (w) this.weather.setWeather(w, { instant });
+  }
+
+  /**
+   * Per frame: a new turn of the day (morning, afternoon, night) rolls the map's weather; the
+   * first call only notes the turn (the level's own weather, or a save's, stands until then).
+   */
+  _updateWeatherPhase() {
+    const phase = weatherPhase(this.lighting.timeOfDay);
+    if (this._weatherPhase === phase) return;
+    if (this._weatherPhase == null) { this._weatherPhase = phase; return; }
+    this.rollWeather();
   }
 
   cycleWeather() {
@@ -2104,6 +2311,12 @@ export class Game {
         if (it.onInteract) {
           // combat levels: waystones rest, chests open (set by the CombatSystem)
           await it.onInteract(this, it);
+        } else if (it.kind === 'mapTable' && this.campaign?.atlasHere) {
+          // the hub's map table: the atlas, and the journey to the place chosen on it
+          await this.openAtlas();
+        } else if (it.kind === 'resource') {
+          // a tree to chop, a stone to break, herbs to pick: one strike per press
+          await this.harvest(it);
         } else {
           if (it.text?.sfx && it.text.lines?.length) this.audio.playSfx(it.text.sfx, { volume: 0.6 });
           // a sign's, a door's, a well's text (and the defaults standing in for none) translated
@@ -2116,7 +2329,8 @@ export class Game {
     } finally {
       if (kind === 'npc') npc.endTalk();
       this.busy = false;
-      this._talkCooldown = TALK_COOLDOWN;
+      // (a resource is struck again at once: one press, one strike)
+      this._talkCooldown = it?.kind === 'resource' ? HARVEST_COOLDOWN : TALK_COOLDOWN;
     }
   }
 
@@ -2258,6 +2472,7 @@ export class Game {
     if (dust) dust.position.set(rig.focusPoint.x, rig.focusPoint.y + 1.2, rig.focusPoint.z - 2);
     // fog scales with zoom: the fog start is fixed, so far zoom would bury the focus band in haze
     this.weather.zoomFog = clamp(((this.camera.distance - 7) / Math.max(1, rig.distance - 7)) ** 2, 0.4, 1);
+    if (this.mode === 'play') this._updateWeatherPhase();
     this.weather.update(dt);
     // combat look: grade / DOF offsets on top of what Weather wrote this frame
     combat?.applyLook(dt);
@@ -2274,6 +2489,7 @@ export class Game {
     this.world.update(dt, wv);
     this.godRays.update(dt);
     this._waterfallFx(dt);
+    this._glintResources(dt);
     this.particles.update(dt, engine.camera);
     this.resolution.update(dt);
 
@@ -2439,6 +2655,9 @@ export class Game {
       busy: this.busy,
       photoMode: this.photoMode,
       mapOpen: this.mapOpen,
+      atlasOpen: this.atlasOpen,
+      // (the place chosen on it; '' while closed)
+      atlasSelected: this.atlasOpen ? this.ui.atlas?.selectedId ?? '' : '',
       music: this.audio.musicPlaying,
       audioReady: this.audio.ready,
       nearest: target ? (target.kind === 'npc' ? target.npc.id : target.it.id) : null,

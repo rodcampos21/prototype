@@ -340,7 +340,8 @@ the panel holds play and the story (StoryRunner waits while `partyMenuOpen`).
 
 - **G** (`party` action; bound by `ensureParty`) opens / closes the tactics panel while playing
   (not in a dialog, the map, the journal, photo mode, a cutscene or while the combat locks the
-  player). Open, it pauses play like the journal (combat inactive). Esc closes it. The controls
+  player; never in a campaign with `party.menu: false` — `Game.partyMenuAllowed`, CAMPAIGN_FORMAT.md
+  §2 —, where the legend has no *G — Party* and a member's conversation no *Tactics…*). Open, it pauses play like the journal (combat inactive). Esc closes it. The controls
   legend gains *G — Party* (the combat legend too) once someone joined.
 - The party HUD (`ui.party.frames.update(party.frames())`) every frame while playing; hidden in
   photo mode, cutscenes and on the title screen.

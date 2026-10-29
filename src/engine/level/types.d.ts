@@ -245,6 +245,13 @@ export interface LevelEnvironment
   forest?: ForestSettings;
   /** Multiplier on the fog density (> 0; default 1). */
   fogScale?: number;
+  /**
+   * The weathers the map rolls (absent: none — its `weather` stands): weights per weather, a number
+   * or one per turn of the day (`{ "clear": 70, "rain": 30, "snow": { "night": 10 } }`), rolled on
+   * each turn (morning, afternoon, night) and on arriving again, unless the story holds a weather
+   * (src/game/WeatherRoll.js, LEVEL_FORMAT.md §9).
+   */
+  weatherPool?: Record<string, number | Partial<Record<'morning' | 'afternoon' | 'night', number>>>;
   /** `false` hides the HUD minimap (default: shown). */
   minimap?: boolean;
   /** Combat: absent = auto (on iff an `enemy` exists), true / false force it (`levelHasCombat`). */
@@ -401,6 +408,12 @@ export interface ObjectTypeDef {
    * Vale's coverage skips it, the demo campaign's generator covers it.
    */
   story?: boolean;
+  /**
+   * Camp type (tent, mapTable, banner, stake — props/CampProps.js; resource — props/ResourceProps.js):
+   * the Baiacu campaign's camp and expeditions; Starfall Vale's coverage skips it, the campaign's
+   * generator covers it.
+   */
+  camp?: boolean;
   /**
    * Interior type (bed, table, chair, shelf, hearth, counter, rug, staircase, wardrobe, wallWindow,
    * sacks — the furniture of rooms, props/Furniture.js): Starfall Vale's coverage skips it, the

@@ -309,7 +309,7 @@ name has spaces.
 | | `give <item> [n]` · `take <item> [n]` | items (`gold` is money); a toast says what changed hands |
 | | `quest <id> start [title]` · `quest <id> stage <stage> [text]` · `quest <id> done` · `quest <id> fail` | quests (the journal; toasts "New quest", "Quest updated" …); the title may use `${…}`, but it is a name, translated as a term: a title or a stage text with values is saved filled in and stays English (write them without values, I18N.md §4.5); a stage given to a finished or failed quest opens it again |
 | world | `home <who> [x z]` | where a villager lives from now on (saved per level) |
-| | `time <h>` / `time <hh:mm>` · `weather clear / rain / snow` | the campaign's clock moves **forward** to that hour (0–24; minutes 00–59; inside a level with its own hour: the hour outside) — the day turns when it passes midnight and the `time` events between run, also for a jump of 12 hours or more · the weather (in a room — `environment.interior` — it changes outside: none shows in the room) |
+| | `time <h>` / `time <hh:mm>` · `weather clear / rain / snow / auto` | the campaign's clock moves **forward** to that hour (0–24; minutes 00–59; inside a level with its own hour: the hour outside) — the day turns when it passes midnight and the `time` events between run, also for a jump of 12 hours or more · the weather (in a room — `environment.interior` — it changes outside: none shows in the room), **held** until `weather auto`: while held, no map's `environment.weatherPool` rolls it (LEVEL_FORMAT.md §9); `weather auto` lets the pool roll again at once (a campaign keeps the hold in its save) |
 | | `travel <level> [entrance]` | campaigns: go to another level of the campaign — the script goes on there (a level the campaign does not list ends the run) |
 | | `rest` · `heal` · `shop` · `builtin <conversation>` | sleep until morning · combat levels: full health (the party's members too) · the villager's built-in shop · a hand-written conversation (dialogue.js) |
 | | `ending <id> [title]` | the end card (the title may use `${…}`), then the title screen (the save keeps the ending) |
@@ -583,7 +583,7 @@ When the story changes, the game re-checks every `when` / `unless`:
   bench, barrel, crate, crate stack, flower box, signpost, fence, bridge, waterfall, lamppost, wall
   torch, campfire, point light, and the interior furniture (bed, table, chair, shelf, hearth,
   counter, rug, staircase, wardrobe, wall window, grain sacks — a hearth's fire and light come and
-  go with it). Props (and particle areas) with the same `when` / `unless` pair
+  go with it) and the camp props (tent, map table, banner, stake — their swaying cloth with them). Props (and particle areas) with the same `when` / `unless` pair
   are built as one **story group**, merged into the level's own batches like any other prop (the
   same draw calls as without the condition; on a big level its shadow proxies too), where the
   group owns vertex ranges; a group that comes or goes shows / hides its meshes — its ranges
@@ -635,6 +635,13 @@ rests past one. The game setting the clock (a continued game's saved hour, a new
 and going into or out of a level with its own hour are not time passing: no day, no `time` events.
 `rest` in a level with its own hour (an inn's room, `environment.clock: false`) keeps that hour and
 moves the campaign's clock to the morning outside.
+
+**The morning.** When the clock passes 5:00 going forward (or a rest takes the player to the
+morning) every flag whose name starts with `res.` is cleared: the flags a gathered `resource` set
+(OBJECT_CATALOG.md *resource*), so what was chopped, broken or picked grows back. Do not give a flag
+of your own that prefix. An atlas journey moves the clock on by its hours as time passing
+(CAMPAIGN_FORMAT.md §4.1); the variable `expeditions.<level>` counts the expeditions the map made
+to a level.
 
 ### 9.7 The party
 

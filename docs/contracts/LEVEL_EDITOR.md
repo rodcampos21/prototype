@@ -119,9 +119,10 @@ shrinking back is an exact identity.
 ## 2. Object catalog — `src/engine/level/ObjectCatalog.js` (written, use it)
 
 `OBJECT_TYPES[type]` = `{ label, category, placement: 'point'|'line'|'rect', kind: 'prop'|'actor'|'marker',
-glyph, color, radius, rotatable?, snap?, help?, combat?, campaign?, story?, interior?, defaults, fields }`
+glyph, color, radius, rotatable?, snap?, help?, combat?, campaign?, story?, interior?, camp?, defaults, fields }`
 (`combat: true` marks the combat-only types, COMBAT.md §14; `campaign: true` / `story: true` the
-campaign and story markers; `interior: true` the furniture of rooms — additive, 2026-10-07; the entry
+campaign and story markers; `interior: true` the furniture of rooms — additive, 2026-10-07; `camp:
+true` the Baiacu campaign's camp — additive, 2026-10-28; the entry
 shape is `ObjectTypeDef` in `level/types.d.ts`, checked with `@satisfies`, and the level object types
 are derived from the entries). Types:
 
@@ -131,6 +132,7 @@ are derived from the entries). Types:
 | Nature | `tree`, `rock`, `haystack` |
 | Lights | `lamppost`, `wallTorch`, `campfire`, `light` |
 | Props | `bench`, `barrel`, `crate`, `crateStack`, `flowerbox`, `signpost` |
+| Camp (`camp: true`) | `tent`, `mapTable`, `banner`, `stake` — the camp that grows into a town; `opts.stage` for the props that change with it, [OBJECT_CATALOG.md § Camp](../specs/OBJECT_CATALOG.md#camp) |
 | Interior (`interior: true`) | `bed`, `table`, `chair`, `shelf`, `hearth`, `counter`, `rug`, `staircase`, `wallWindow`, `wardrobe`, `sacks` — props made for rooms (`environment.interior`), [OBJECT_CATALOG.md § Interior](../specs/OBJECT_CATALOG.md#interior) |
 | Structures (line) | `fence`, `bridge` |
 | Water | `waterfall` |
@@ -164,7 +166,8 @@ the npc field `flag`, `isCampaignType(type)`; exits and entrances sit in `'Marke
 rooms: `OBJECT_CATEGORIES` gains `'Interior'` after `'Props'`, `BLANKET_COLORS`, `RUG_COLORS`,
 `isInteriorType(type)`, `interiorFootprint(obj)` — a piece's local footprint rectangle (`solid`,
 `round`), which `objectBounds` turns by the rotation — and `staircaseFoot(obj)`, where the player
-stands to use a staircase's exit).
+stands to use a staircase's exit; additions for the camp, 2026-10-28: `OBJECT_CATEGORIES` gains
+`'Camp'` after `'Props'`, `TENT_STAGES`, `BANNER_STAGES`, `STAKE_KINDS`, `isCampType(type)`).
 
 Interior types (`interior: true`; defaults in file order; every one rotatable, snap 0.25):
 `bed { rotation 0, opts { width 1.2, length 2.2, blanket 'red' } }`, `table { rotation 0, opts

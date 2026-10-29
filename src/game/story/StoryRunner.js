@@ -105,6 +105,10 @@ const TRIGGER_BURST = 8;
 const TRIGGER_WINDOW = 2;
 /** Coordinates a script names are kept this far around the level (`teleport`, `walk`, `home`, `camera`). */
 const MARGIN = 2;
+/** The flags a resource gathered sets start so (Game.harvest); the morning clears them (`_regrow`). */
+const REGROW_PREFIX = 'res.';
+/** The hour of the morning when what was gathered grows back. */
+const REGROW_HOUR = 5;
 /** Background runs at once (more wait in their queue). */
 const MAX_BG = 8;
 /** Legs a walk re-plans when its path ended short of the goal (the search's cell cap on a long way). */
@@ -368,6 +372,7 @@ export class StoryRunner {
    */
   rested(hourBefore) {
     if (hourBefore >= 8) this.state.day++;
+    this._regrow();
     this.state.version++;
     this._prevTime = this._clock();
   }
@@ -789,12 +794,49 @@ export class StoryRunner {
       this.state.day++;
       this.state.version++;
     }
+    // the morning (5:00): what was gathered grows back
+    const dawn = ((((REGROW_HOUR - from) % 24) + 24) % 24);
+    if (dawn > 0 && dawn <= d) this._regrow();
     for (const le of this.events) {
       const at = le.obj.at;
       if (le.obj.on !== 'time' || typeof at !== 'number' || !Number.isFinite(at)) continue;
       const k = ((((at % 24) - from) % 24) + 24) % 24;
       if (k > 0 && k <= d) this._trigger(le);
     }
+  }
+
+  /**
+   * The morning: every resource gathered grows back — the flags gathering set (`res.…`, Game.harvest)
+   * are cleared, so the full resources show again (OBJECT_CATALOG.md *resource*).
+   */
+  _regrow() {
+    let n = 0;
+    for (const k of Object.keys(this.state.vars)) {
+      if (!k.startsWith(REGROW_PREFIX)) continue;
+      delete this.state.vars[k];
+      n++;
+    }
+    if (n) this.state.version++;
+  }
+
+  /**
+   * Give the player `n` of an item, as a script's `give` does (a toast, a chime, the journal) — the
+   * game's own gifts (a resource gathered: Game.harvest).
+   * @param {string} id
+   * @param {number} n
+   */
+  giveItem(id, n) {
+    if (n > 0) this._items(id, n, { fast: false });
+  }
+
+  /**
+   * A journey on the atlas (CampaignRuntime.travel): the clock moves `h` hours on (0 < h < 24) —
+   * the day turns at midnight and the `time` events between run, as time passing.
+   * @param {number} h
+   */
+  passHours(h) {
+    if (!(h > 0 && h < 24)) return;
+    this._advanceClock((this._clock() + h) % 24);
   }
 
   /**
@@ -1483,7 +1525,8 @@ export class StoryRunner {
         return '';
       }
       case 'time': this._advanceClock(a.hour); return '';
-      case 'weather': g.weather.setWeather(a.weather); return '';
+      // (a weather is held until `weather auto` lets the map's pool roll again: Game.storyWeather)
+      case 'weather': g.storyWeather(a.weather); return '';
       case 'travel':
         if (!g.campaign) throw new Error(`line ${n.line}: "travel" needs a campaign`);
         if (!g.campaign.isLevel(a.level)) throw new Error(`line ${n.line}: "${a.level}" is not a level of the campaign`);
