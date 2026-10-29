@@ -242,6 +242,11 @@ export class UI {
      */
     this.atlas = null;
     /**
+     * The journey card (`useJourney()`: a campaign with an atlas; null otherwise).
+     * @type {import('./JourneyCard.js').JourneyCard|null}
+     */
+    this.journey = null;
+    /**
      * The cutscene's letterbox and skip hint (`useStoryUI()`; null without the story UI): the bars,
      * their gilt hairlines, the skip hint's group (laid out per scale) and its ring.
      * @type {{ letterbox: HTMLElement, bars: HTMLElement[], lines: HTMLCanvasElement[],
@@ -516,6 +521,17 @@ export class UI {
     return this.atlas;
   }
 
+  /**
+   * The journey card (JourneyCard.js), made on the first call (a campaign with an atlas): over the
+   * fader (made after it), it takes the input while it is open.
+   * @param {typeof import('./JourneyCard.js').JourneyCard} Cls
+   * @returns {import('./JourneyCard.js').JourneyCard}
+   */
+  useJourney(Cls) {
+    this.journey ??= new Cls(this.root);
+    return this.journey;
+  }
+
   useStoryUI(classes) {
     if (this._story) return { journal: this.journal, emotes: this.emotes, endCard: this.endCard };
     const { Journal, Emotes, EndCard } = classes ?? {};
@@ -734,6 +750,11 @@ export class UI {
         dialogInput = undefined;
       }
     }
+    // the journey card (over the fader, while a journey loads) first of all
+    if (this.journey?.isOpen) {
+      this.journey.update(dt, input);
+      dialogInput = undefined;
+    }
     // the atlas (z 7, like the journal) takes it next
     if (this.atlas?.isOpen) {
       this.atlas.update(dt, dialogInput);
@@ -784,6 +805,8 @@ export class UI {
     this.creation = null;
     this.atlas?.dispose();
     this.atlas = null;
+    this.journey?.dispose();
+    this.journey = null;
     this.debug.dispose();
     this.worldMap.dispose();
     this.minimap.dispose();

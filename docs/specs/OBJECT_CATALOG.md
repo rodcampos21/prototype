@@ -108,7 +108,7 @@ toggle in the tool options places freely (`snapStep` in
 | `tent` | Tent | Camp | point | prop | yes | box | — | — |
 | `mapTable` | Map table | Camp | point | prop | yes | box | — | Examine (only with `text`) |
 | `banner` | Banner | Camp | point | prop | yes | circle | — | — |
-| `stake` | Stake | Camp | point | prop | yes | ribbon: circle r 0.12; plot: none | — | — |
+| `stake` | Stake | Camp | point | prop | yes | ribbon: circle r 0.12; mast: circle r 0.48; plot: none | — | — |
 | `resource` | Resource | Camp | point | prop | yes | circle (tree trunk, boulder, bush; spent: stump and trunk, rubble) | — | Chop / Break / Gather (full only) |
 | `bed` | Bed | Interior | point | prop | yes | box | — | — |
 | `table` | Table | Interior | point | prop | yes | box (round: circle) | — (a candle flame) | — |
@@ -166,7 +166,7 @@ Enumerations exported by the catalog:
 | `RUG_COLORS` | `red`, `blue`, `green` |
 | `TENT_STAGES` | `worn`, `pavilion` (a tent's `opts.stage`) |
 | `BANNER_STAGES` | `pole`, `mast` (a banner's `opts.stage`) |
-| `STAKE_KINDS` | `ribbon`, `plot` (a stake's `opts.kind`) |
+| `STAKE_KINDS` | `ribbon`, `mast`, `plot` (a stake's `opts.kind`) |
 | `RESOURCE_KINDS` | `tree`, `stone`, `herbs` (a resource's `opts.kind`) |
 | `RESOURCE_STAGES` | `full`, `spent` (a resource's `opts.stage`) |
 
@@ -636,12 +636,14 @@ The pufferfish on sea blue, hanging from a crossbar and swaying in the wind.
 | Field | Type | Default | Editor range / options | Notes |
 | --- | --- | --- | --- | --- |
 | `rotation` | angle | `0` | step 15° | |
-| `opts.kind` | select | `ribbon` | `STAKE_KINDS` | `ribbon`: one stake with a red ribbon (where an expedition arrives and walks back from). `plot`: a building plot — a stake at each corner, a sagging rope between them, a ribbon on the front-left one. |
+| `opts.kind` | select | `ribbon` | `STAKE_KINDS` | `ribbon`: one stake with a red ribbon (where an expedition arrives and walks back from, on a small map). `mast`: the return mast of a big map — a 4.2-unit crooked pole in a cairn, a gilt spiked ball on top, the cult's fish on a **red** banner (`banner_fish_red`) from a crossbar, two red ribbons round the pole and three ribbon stakes round the cairn; seen from far. `plot`: a building plot — a stake at each corner, a sagging rope between them, a ribbon on the front-left one. |
 | `opts.width` | number | `4` | 1.5–10, step 0.5 | Plots only. |
 | `opts.depth` | number | `3` | 1.5–10, step 0.5 | Plots only. |
 | `opts.seed` | int | `1` | 0–9999 | The stakes' lean. |
 
-**In the game:** a ribbon stake has a small circle collider (0.12); a plot none (it is walkable).
+**In the game:** a ribbon stake has a small circle collider (0.12), a mast one of 0.48; a plot none
+(it is walkable). A mast is on the minimap and the world map as the way back (a red flag; on the
+minimap's edge when out of view), and a Space exit within 3 units of it shows no marker of its own.
 
 ### resource
 
@@ -674,6 +676,12 @@ or leaves, a thud, a small shake. The `hits`-th strike sets its flag and gives `
 while the player stays in the level. Colliders: the tree's trunk, the boulder (≈ 0.7), the bush
 (0.28); a stump and its trunk, rubble (0.3); twigs none. `level:check --campaign` counts a full
 resource's flag as set.
+
+**Seen from afar:** a full resource within 22 units of the player glints now and then (about every
+2.2 s each, never in step; `Game._glintResources`): two or three soft stars at its height — a tree's
+crown, a stone's top, the herbs' flowers — in the colour of what it gives (pale green, cream, pink).
+It is on the minimap and the world map as a small plus (`res_tree` amber, `res_stone` pale grey,
+`res_herbs` pink); a gathered one leaves both until it grows back.
 
 ## Interior
 

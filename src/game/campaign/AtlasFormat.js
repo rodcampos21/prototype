@@ -66,7 +66,17 @@ export const PLACE_STATES = Object.freeze(['hidden', 'rumor', 'known', 'explored
  * @property {string[]} yields what is found there (terms), shown once the place is known
  * @property {{ rumor?: string, known?: string, explored?: string }} notes  the cartographer's note
  *   for each state (terms); a state without one shows the one before it
+ * @property {AtlasRoad} road  the lines of the journey card (terms), one shown per journey
  */
+
+/**
+ * The lines the journey card shows on the way (one per journey, in turn): `there` going to the
+ * place, `back` coming home from it, `night` coming home at night (else `back`).
+ * @typedef {{ there: string[], back: string[], night: string[] }} AtlasRoad
+ */
+
+/** The parts of a road, in the file's order. */
+const ROAD_PARTS = /** @type {const} */ (['there', 'back', 'night']);
 
 /**
  * @typedef {object} Atlas
@@ -148,12 +158,17 @@ export function normalizeAtlas(raw, levels, warnings) {
     const n = isPlain(p.notes) ? p.notes : {};
     const notes = {};
     for (const s of ['rumor', 'known', 'explored']) if (text(n[s])) notes[s] = text(n[s]);
+    if (p.road != null && !isPlain(p.road)) warnings.push(`atlas place "${id}": "road" must be an object — ignored`);
+    const rd = isPlain(p.road) ? p.road : {};
+    /** @type {AtlasRoad} */
+    const road = { there: [], back: [], night: [] };
+    for (const s of ROAD_PARTS) road[s] = (Array.isArray(rd[s]) ? rd[s] : []).map(text).filter(Boolean);
     const [x, y] = inside([p.x, p.y]);
     places.push({
       id, name: text(p.name) || id, x, y, icon, level, entrance: text(p.entrance), hours: r1(hours),
       rumor: text(p.rumor), known: text(p.known), explored: text(p.explored),
       yields: (Array.isArray(p.yields) ? p.yields : []).map(text).filter(Boolean),
-      notes,
+      notes, road,
     });
   }
   if (!places.some((p) => p.level === home)) warnings.push(`atlas: no place is the hub "${home}" — the map shows no camp`);
@@ -182,6 +197,7 @@ export function serializeAtlas(at) {
       ...(p.explored ? { explored: p.explored } : {}),
       ...(p.yields.length ? { yields: p.yields } : {}),
       ...(Object.keys(p.notes).length ? { notes: p.notes } : {}),
+      ...(ROAD_PARTS.some((s) => p.road[s].length) ? { road: Object.fromEntries(ROAD_PARTS.filter((s) => p.road[s].length).map((s) => [s, p.road[s]])) } : {}),
     })),
     sketch: at.sketch.map((f) => ({ kind: f.kind, ...(f.at ? { at: f.at } : {}), ...(f.points ? { points: f.points } : {}), ...(f.name ? { name: f.name } : {}), ...(f.when ? { when: f.when } : {}) })),
   };
@@ -212,9 +228,21 @@ export function placeState(at, p, holds) {
  * @param {string} to
  */
 export function journeyHours(at, from, to) {
-  if (!at || from === to) return 0;
-  const other = from === at.home ? to : to === at.home ? from : '';
-  if (!other) return 0;
-  const p = at.places.find((q) => q.level === other);
-  return p ? p.hours : 0;
+  return journeyOf(at, from, to)?.place.hours ?? 0;
+}
+
+/**
+ * The atlas journey from level `from` to level `to`: the place away from the hub and whether the
+ * journey comes back to the hub (null: not a journey on the atlas — a door, a seam, the same level).
+ * @param {Atlas|null} at
+ * @param {string} from
+ * @param {string} to
+ * @returns {{ place: AtlasPlace, back: boolean }|null}
+ */
+export function journeyOf(at, from, to) {
+  if (!at || from === to) return null;
+  const back = to === at.home;
+  const other = from === at.home ? to : back ? from : '';
+  const place = other ? at.places.find((q) => q.level === other) : null;
+  return place ? { place, back } : null;
 }

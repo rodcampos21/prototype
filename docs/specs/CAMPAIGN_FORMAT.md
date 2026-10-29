@@ -214,7 +214,9 @@ is `src/game/campaign/AtlasFormat.js`; the screen `src/engine/ui/AtlasScreen.js`
     { "id": "acampamento", "name": "Clareira do Riacho", "x": 60, "y": 34, "icon": "camp", "level": "clareira-do-riacho" },
     { "id": "mata-da-clareira", "name": "Mata da Clareira", "x": 41, "y": 27, "icon": "forest", "level": "mata-da-clareira",
       "entrance": "chegada", "hours": 1, "known": "mata.desenhada", "explored": "mata.explorada", "yields": ["Madeira", "Caça"],
-      "notes": { "rumor": "Os marinheiros falam de uma mata velha…", "known": "Carvalhos velhos, javalis…" } },
+      "notes": { "rumor": "Os marinheiros falam de uma mata velha…", "known": "Carvalhos velhos, javalis…" },
+      "road": { "there": ["A trilha deixa o riacho e entra na sombra das árvores."], "back": ["Entre as árvores, aparece o estandarte azul."],
+        "night": ["A fogueira do acampamento brilha no escuro."] } },
     { "id": "toca-das-bestas", "name": "Toca das Bestas", "x": 33, "y": 8, "icon": "den", "hours": 2, "rumor": "toca.desenhada" }
   ],
   "sketch": [
@@ -231,7 +233,7 @@ is `src/game/campaign/AtlasFormat.js`; the screen `src/engine/ui/AtlasScreen.js`
 | `home` | The hub level (required, a level of the campaign): its map table opens the map. |
 | `entrance` | Where a journey back arrives in the hub (blank: its player start). |
 | `size` | `[w, h]` map units (default `[100, 60]`; north up). Every point is clamped inside. |
-| `places[]` | `id` (a slug), `name`, `x`, `y`, `icon` (`camp` `forest` `reeds` `quarry` `den` `ruin`), `level` (where it travels; blank or not a level of the campaign: no road yet — shown, not travelled), `entrance` (there; blank: its player start), `hours` (each way, 0–12, default 1), `rumor` / `known` / `explored` (story conditions, the flag rule), `yields` (what is found there), `notes` (`{ rumor, known, explored }`: the cartographer's note in each state; a state without one shows the one before). |
+| `places[]` | `id` (a slug), `name`, `x`, `y`, `icon` (`camp` `forest` `reeds` `quarry` `den` `ruin`), `level` (where it travels; blank or not a level of the campaign: no road yet — shown, not travelled), `entrance` (there; blank: its player start), `hours` (each way, 0–12, default 1), `rumor` / `known` / `explored` (story conditions, the flag rule), `yields` (what is found there), `notes` (`{ rumor, known, explored }`: the cartographer's note in each state; a state without one shows the one before), `road` (`{ there, back, night }`: lines of the journey card — going there, coming home, coming home at night, else `back`; one per journey, in turn by the expeditions made). |
 | `sketch[]` | What is drawn: `kind` `sea` `forest` `hills` `reeds` (polygons, `points`), `coast` `road` `river` (lines, `points`; a river swells toward its last point), `label` (`at`, `name`), `fish` (the Baiacu Rei, `at`), `wreck` (`at`); `when`: drawn only while it holds. |
 
 **A place's state** is read from the story every time the map opens, never saved apart
@@ -246,7 +248,14 @@ from the camp; on the right its name, its state, the journey (`1 h de caminhada`
 arrival, and a warning when that falls in the night, 18:30–5:00), what is found there and the note;
 the day and the hour above. ← → ↑ ↓ choose the nearest place that way, Space / Enter travels, Esc
 closes; a click chooses, a click on the chosen place or on *Viajar* travels. Texts are terms
-([I18N.md §4](I18N.md#4-content-text)): the title, place names, yields, labels and notes.
+([I18N.md §4](I18N.md#4-content-text)): the title, place names, yields, labels, notes and road lines.
+
+**The journey card.** While a journey between the hub and a place loads, the screen shows the
+journey instead of black (`JourneyCard`, PIXEL_UI.md §8.1): *A caminho de* / *De volta a* and the
+destination, one line of the place's `road`, the marks of the two places with the route between them
+walked by a ◆ in steps, the hour of leaving and of arriving, and *A noite cai no caminho.* when the
+arrival falls in the night. It plays at least 2.4 s (Enter skips) and the level appears after it.
+Doors, seams and a story's other travels keep the plain fade.
 
 **Journeys.** Choosing a place travels to its level and entrance (`CampaignRuntime.travelAtlas`).
 Every journey from the map is an **expedition** of its own: the place's enemy groups defeated
@@ -256,9 +265,9 @@ more (conditions may read it) and the place's **random chests** (a chest with a 
 that count — which ones are there and how much gold each holds. Resources gathered there do not
 come back with an expedition: they grow back in the morning
 ([OBJECT_CATALOG.md](OBJECT_CATALOG.md#resource)). Any travel between the hub and a place's level —
-the map, or a `use` exit back at the place (the return stake) — moves the clock on by that place's
-`hours` (`journeyHours`; the day turns at midnight and `time` events run, as for the `time`
-command).
+the map, or a `use` exit back at the place (the return mast, a `stake` of kind `mast`, marked on
+the maps) — moves the clock on by that place's `hours` (`journeyOf` / `journeyHours`; the day turns
+at midnight and `time` events run, as for the `time` command).
 
 **Checks.** `level:check --campaign` counts every place with a road as a travel from the hub (so it
 is reachable), reads the places' and the sketch's conditions, and fails on an `entrance` the hub or

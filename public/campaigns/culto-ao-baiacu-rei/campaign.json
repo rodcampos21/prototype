@@ -74,6 +74,19 @@
           "rumor": "Os marinheiros falam de uma mata velha a oeste daqui. Madeira boa, e caça.",
           "known": "Carvalhos velhos, um riacho com duas pontes, pedras musgosas e uma clareira de flores. A trilha some ao norte.",
           "explored": "Já conhecemos cada trilha dela. À noite, porém, ninguém volta igual."
+        },
+        "road": {
+          "there": [
+            "A trilha deixa o riacho e entra na sombra das árvores.",
+            "O cheiro da fogueira fica para trás. Na frente, só musgo."
+          ],
+          "back": [
+            "Entre as árvores, aparece o estandarte azul.",
+            "O riacho conhecido. Falta pouco."
+          ],
+          "night": [
+            "A fogueira do acampamento brilha no escuro. O Surubin deixou ela acesa."
+          ]
         }
       },
       {
@@ -89,6 +102,19 @@
         ],
         "notes": {
           "rumor": "Subindo o riacho, dizem, os juncos crescem mais alto que um homem. Peixe e ervas."
+        },
+        "road": {
+          "there": [
+            "Rio acima, o barulho da água cresce entre os juncos.",
+            "As botas afundam na lama da margem."
+          ],
+          "back": [
+            "Entre as árvores, aparece o estandarte azul.",
+            "O riacho conhecido. Falta pouco."
+          ],
+          "night": [
+            "A fogueira do acampamento brilha no escuro. O Surubin deixou ela acesa."
+          ]
         }
       },
       {
@@ -104,6 +130,19 @@
         ],
         "notes": {
           "rumor": "Uma pedreira antiga na encosta. Pedra para as obras. Quem será que a cortou primeiro?"
+        },
+        "road": {
+          "there": [
+            "A subida pela encosta é íngreme. Lá em cima, o vento muda.",
+            "Lascas de pedra estalam sob as botas."
+          ],
+          "back": [
+            "Entre as árvores, aparece o estandarte azul.",
+            "O riacho conhecido. Falta pouco."
+          ],
+          "night": [
+            "A fogueira do acampamento brilha no escuro. O Surubin deixou ela acesa."
+          ]
         }
       },
       {

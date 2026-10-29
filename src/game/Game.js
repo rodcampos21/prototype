@@ -161,6 +161,18 @@ const FAR_EVERY = 4;
 const TALK_COOLDOWN = 0.8;
 /** After a strike at a resource (`harvest`): the next press strikes again. */
 const HARVEST_COOLDOWN = 0.08;
+/**
+ * The glint of the resources to gather (`_glintResources`): only within this distance of the player
+ * (squared, world units), about every this many seconds each, a star in the colour of what it gives
+ * at its height (a tree's crown, a stone's top, the herbs' flowers).
+ */
+const GLINT_R2 = 22 * 22;
+const GLINT_EVERY = 2.2;
+const GLINT = Object.freeze({
+  tree: { color: '#e9f7a8', y: 1.7, spread: [1.1, 0.9, 1.1] },
+  stone: { color: '#fff4d8', y: 0.55, spread: [0.6, 0.35, 0.6] },
+  herbs: { color: '#ffd0ec', y: 0.35, spread: [0.5, 0.2, 0.5] },
+});
 /** Real frames drawn behind the loading screen with every effect on (see start()). */
 const WARM_FRAMES = 5;
 /**
@@ -292,6 +304,8 @@ export class Game {
     this._talkCooldown = 0;
     /** @type {Map<string, number>} the strikes a resource still needs (`harvest`; this level only) */
     this._harvestHits = new Map();
+    /** @type {WeakMap<object, number>|null} each resource's countdown to its next glint (`_glintResources`) */
+    this._glints = null;
     this._tmp = new THREE.Vector3();
     this._focusPos = new THREE.Vector3();
     this._target = { kind: '', npc: null, it: null };
@@ -1741,6 +1755,38 @@ export class Game {
     this.particles.burst(kind === 'herbs' ? 'sparkle' : 'footstep', this._tmp.set(o.x, this.tileMap.getHeight(o.x, o.z) + 0.3, o.z), kind === 'herbs' ? 4 : 10);
   }
 
+  /**
+   * The resources to gather glint now and then (GLINT: a soft star in the colour of what they
+   * give), so they stand out from the scenery on a big map: only those near the player and still
+   * there (a gathered one is disabled until it grows back). Each keeps its own countdown, started at
+   * random, so they never glint together.
+   * @param {number} dt
+   */
+  _glintResources(dt) {
+    const list = this.world?.interactables;
+    if (!list || this.mode !== 'play') return;
+    const p = this.player.position;
+    /** @type {WeakMap<object, number>} */
+    const timers = (this._glints ??= new WeakMap());
+    for (const it of list) {
+      if (it.kind !== 'resource' || it.disabled) continue;
+      const dx = it.position.x - p.x, dz = it.position.z - p.z;
+      if (dx * dx + dz * dz > GLINT_R2) continue;
+      let left = timers.get(it) ?? Math.random() * GLINT_EVERY;
+      left -= dt;
+      if (left <= 0) {
+        const kind = /** @type {any} */ (it.object)?.opts?.kind;
+        const g = GLINT[kind === 'stone' || kind === 'herbs' ? kind : 'tree'];
+        const tall = kind === 'stone' || kind === 'herbs' ? 1 : Math.max(0.6, Math.min(1.6, (Number(/** @type {any} */ (it.object)?.opts?.height) || 4) / 4));
+        this.particles.burst('sparkle', this._tmp.set(it.position.x, it.position.y + g.y * tall, it.position.z), 2 + (Math.random() < 0.4 ? 1 : 0), {
+          color: g.color, size: [0.24, 0.4], hdr: 4.5, life: [0.8, 1.3], spawnSize: g.spread, burstSpeed: [0.05, 0.2], burstUp: [0.05, 0.25],
+        });
+        left += GLINT_EVERY * (0.75 + Math.random() * 0.5);
+      }
+      timers.set(it, left);
+    }
+  }
+
   /** Is the atlas open? */
   get atlasOpen() {
     return !!this.ui?.atlas?.isOpen;
@@ -2443,6 +2489,7 @@ export class Game {
     this.world.update(dt, wv);
     this.godRays.update(dt);
     this._waterfallFx(dt);
+    this._glintResources(dt);
     this.particles.update(dt, engine.camera);
     this.resolution.update(dt);
 

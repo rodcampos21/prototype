@@ -8,7 +8,7 @@ import { art } from './art/painter.js';
 import { fade, rgbOf, hairline, gemGlyph } from './art/pieces.js';
 import {
   renderPixelMap, resampleMap, mapEdgeColour, arrowSprite, facingOf, wedgeSprite, WEDGE_APEX, vignetteSprite,
-  markerSprite, MARKER_HALF, MARKER_REACH, pipSprite, pulseRing, legendKey, KEY_SIZE,
+  markerSprite, MARKER_HALF, MARKER_REACH, pipSprite, homePipSprite, pulseRing, legendKey, KEY_SIZE,
 } from './art/minimap.js';
 import { measure, fit, txt, txc, UP, cjk, FONT, roles, nameParts, setOrigin, originOf } from './layout/type.js';
 import { group, put, win, place, U, keyHints, section, capW } from './layout/layout.js';
@@ -79,11 +79,19 @@ const INSIDE_SPOTS = (() => {
   return out.sort((a, b) => (Math.hypot(a[0] - 0.5, a[1] - 0.5) - Math.hypot(b[0] - 0.5, b[1] - 0.5)) || (a[1] - b[1]) || (a[0] - b[0]));
 })();
 /** Today's marker kinds → the pixel markers' (art/minimap.js `markerSprite`). */
-const KIND = Object.freeze({ fire: 'campfire', door: 'door', sign: 'sign', well: 'well', object: 'object', waystone: 'waystone', chest: 'chest', boss: 'boss' });
+const KIND = Object.freeze({
+  fire: 'campfire', door: 'door', sign: 'sign', well: 'well', object: 'object', waystone: 'waystone', chest: 'chest', boss: 'boss',
+  return: 'return', res_tree: 'res_tree', res_stone: 'res_stone', res_herbs: 'res_herbs',
+});
 /** @param {string} kind */
 const kindOf = (kind) => (typeof kind === 'string' && Object.prototype.hasOwnProperty.call(KIND, kind) ? KIND[kind] : 'object');
-/** The drawing passes of the markers (G's MARKER_ORDER): points of interest, then waystones and chests, then the boss with the foes. */
-const PASS = Object.freeze({ campfire: 0, door: 0, sign: 0, well: 0, object: 0, waystone: 1, chest: 1, boss: 3 });
+/**
+ * The drawing passes of the markers (G's MARKER_ORDER): resources and points of interest, then
+ * waystones, chests and the return mast, then the boss with the foes.
+ */
+const PASS = Object.freeze({ res_tree: 0, res_stone: 0, res_herbs: 0, campfire: 0, door: 0, sign: 0, well: 0, object: 0, waystone: 1, chest: 1, return: 1, boss: 3 });
+/** Is a marker kind a resource to gather (the world map's "Resource" legend row)? @param {string} kind */
+const isResource = (kind) => kind === 'res_tree' || kind === 'res_stone' || kind === 'res_herbs';
 /** The passes over `markers` (the villagers after pass 1; the foes after pass 3, the party last). */
 const PASSES = Object.freeze([0, 1, 3]);
 
@@ -275,7 +283,8 @@ export class Minimap {
 
   /**
    * One marker at window pixel (x, y): moved aside from the arrow at (px, py); outside the window
-   * a foe becomes a pip on its edge, anything else is skipped (G's `miniMap`).
+   * a foe becomes a pip on its edge (G's `miniMap`), the return mast a red pip on the edge toward
+   * it, anything else is skipped.
    * @param {string} kind
    * @param {number} x
    * @param {number} y
@@ -284,6 +293,14 @@ export class Minimap {
    */
   _mark(kind, x, y, px, py) {
     const V = MM_V, at = this._at;
+    if (kind === 'return' && (x < 3 || y < 3 || x > V - 4 || y > V - 4)) {
+      // (the way home, however far: on the edge where the line from the arrow to it leaves the window)
+      const dx = x - px, dy = y - py;
+      const s = Math.min(dx ? Math.abs(((dx > 0 ? V - 4 : 3) - px) / dx) : Infinity, dy ? Math.abs(((dy > 0 ? V - 4 : 3) - py) / dy) : Infinity, 1);
+      const ex = Math.round(px + dx * s), ey = Math.round(py + dy * s);
+      this.ctx.drawImage(homePipSprite(), Math.max(1, Math.min(V - 6, ex - 2)), Math.max(1, Math.min(V - 6, ey - 2)));
+      return;
+    }
     // (far outside: nothing to move aside, no pip unless a foe)
     if (kind !== 'enemy' && (x < -8 || y < -8 || x > V + 8 || y > V + 8)) return;
     aside(x, y, px, py, kind, at);
@@ -433,7 +450,7 @@ function part(parent, tag, cls) {
  * below and just above that covers no marker, else the first that covers none of weight 2.
  * @type {Readonly<Record<string, number>>}
  */
-const KEEP_CLEAR = Object.freeze({ player: 2, waystone: 2, boss: 2 });
+const KEEP_CLEAR = Object.freeze({ player: 2, waystone: 2, boss: 2, return: 2 });
 /** The player's arrow's reach from its point (art px: the 9 × 9 arrow and its outline). */
 const PLAYER_REACH = 5;
 
@@ -484,6 +501,9 @@ export class WorldMap {
     this._combat = false;
     /** The "Companion" legend row is shown (only while `update` gets a party). */
     this._party = false;
+    /** The "Way back" and "Resource" legend rows are shown (only while such markers are on the map). */
+    this._return = false;
+    this._resource = false;
     this._open = false;
     this._pulse = 0;
     /** Art px per world unit of the shown map, and the map's size on screen (art px). */
@@ -566,6 +586,19 @@ export class WorldMap {
     this._invalidate();
   }
 
+  /**
+   * Add / remove the "Way back" and "Resource to gather" legend rows (after "Chest", or after
+   * "Campfire" without the combat rows): only while the map shows such markers.
+   * @param {boolean} ret
+   * @param {boolean} res
+   */
+  _setMarkLegend(ret, res) {
+    if (ret === this._return && res === this._resource) return;
+    this._return = ret;
+    this._resource = res;
+    this._invalidate();
+  }
+
   /** The region name shown under the legend (hidden when there is none). */
   setRegion(name) {
     const n = String(name || '');
@@ -581,6 +614,8 @@ export class WorldMap {
     if (this._party) rows.push(['party', 'party', t('map.legend.companion')]);
     rows.push(['poi', 'poi', t('map.legend.poi')], ['fire', 'fire', t('map.legend.campfire')]);
     if (this._combat) rows.push(['enemy', 'enemy', t('map.legend.enemy')], ['waystone', 'waystone', t('map.legend.waystone')], ['chest', 'chest', t('map.legend.chest')]);
+    if (this._return) rows.push(['return', 'return', t('map.legend.return')]);
+    if (this._resource) rows.push(['resource', 'resource', t('map.legend.resource')]);
     rows.push(['house', 'house', t('map.legend.building')], ['road', 'road', t('map.legend.road')], ['water', 'water', t('map.legend.water')], ['forest', 'forest', t('map.legend.forest')]);
     return rows;
   }
@@ -821,6 +856,8 @@ export class WorldMap {
         const m = marks[i];
         if (!m || m.hidden || !Number.isFinite(m.x) || !Number.isFinite(m.z)) continue;
         const kind = kindOf(m.kind);
+        // (resources are many and small: the names may lie over them)
+        if (isResource(kind)) continue;
         const r = MARKER_REACH[kind] ?? 2;
         const x = Math.floor((m.x + ox) * S), y = Math.floor((m.z + oz) * S);
         out.push({ left: x - r, right: x + r + 1, top: y - r, bottom: y + r + 1, w: Object.prototype.hasOwnProperty.call(KEEP_CLEAR, kind) ? KEEP_CLEAR[kind] : 1 });
@@ -1020,8 +1057,18 @@ export class WorldMap {
     const marks = s.markers;
     // the region names keep clear of the player and the static markers: placed again when the
     // player stands elsewhere or a marker came or went (once per opening: play is paused)
-    let nm = 0;
-    if (marks) for (let i = 0; i < marks.length; i++) if (!marks[i].hidden) nm++;
+    let nm = 0, ret = false, res = false;
+    if (marks) {
+      for (let i = 0; i < marks.length; i++) {
+        if (marks[i].hidden) continue;
+        nm++;
+        const kind = kindOf(marks[i].kind);
+        if (kind === 'return') ret = true;
+        else if (isResource(kind)) res = true;
+      }
+    }
+    // (the legend's rows for what the map shows: the window is laid out again)
+    this._setMarkLegend(ret, res);
     if (px !== this._sigX || py !== this._sigY || nm !== this._sigN) {
       this._sigX = px;
       this._sigY = py;

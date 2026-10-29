@@ -62,6 +62,12 @@ const table = {
     'atlas.travel': 'Viajar',
     'atlas.close': 'Fechar',
     'atlas.choose': 'Escolher',
+    /** the journey card (JourneyCard): over the destination's name */
+    'journey.to': 'A caminho de',
+    'journey.back': 'De volta a',
+    /** under the route, when the arrival falls between 18:30 and 5:00 */
+    'journey.night': 'A noite cai no caminho.',
+    'journey.skip': 'Pular',
   },
   en: {
     loading: 'Opening the campaign',
@@ -102,6 +108,10 @@ const table = {
     'atlas.travel': 'Travel',
     'atlas.close': 'Close',
     'atlas.choose': 'Choose',
+    'journey.to': 'On the way to',
+    'journey.back': 'Back to',
+    'journey.night': 'Night falls on the way.',
+    'journey.skip': 'Skip',
   },
 };
 export default table;

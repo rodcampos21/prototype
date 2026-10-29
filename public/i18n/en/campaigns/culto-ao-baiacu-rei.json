@@ -6,7 +6,11 @@
   "extends": [],
   "terms": {
     "A clareira do riacho. O estandarte do Rei já tremula aqui.": "The clearing by the stream. The King's banner already flies here.",
+    "A fogueira do acampamento brilha no escuro. O Surubin deixou ela acesa.": "The camp's fire glows in the dark. Surubin left it burning.",
+    "A subida pela encosta é íngreme. Lá em cima, o vento muda.": "The climb up the slope is steep. Up there, the wind changes.",
+    "A trilha deixa o riacho e entra na sombra das árvores.": "The trail leaves the stream and goes into the shade of the trees.",
     "Acampamento Abandonado": "Abandoned Camp",
+    "As botas afundam na lama da margem.": "Boots sink into the mud of the bank.",
     "Bosque dos Carvalhos": "Oak Grove",
     "Carvalhos velhos, um riacho com duas pontes, pedras musgosas e uma clareira de flores. A trilha some ao norte.": "Old oaks, a stream with two bridges, mossy stones and a flower glade. The trail fades to the north.",
     "Clareira": "Clearing",
@@ -18,15 +22,19 @@
     "Criatura da mata": "Forest Creature",
     "Criatura da noite": "Night creature",
     "Culto ao Baiacu Rei": "Cult of the Pufferfish King",
+    "Entre as árvores, aparece o estandarte azul.": "Through the trees, the blue banner comes into view.",
     "Ervas": "Herbs",
     "Estrada da Costa": "The Coast Road",
     "Já conhecemos cada trilha dela. À noite, porém, ninguém volta igual.": "We know every trail in it now. At night, though, no one comes back the same.",
+    "Lascas de pedra estalam sob as botas.": "Stone chips crack under the boots.",
     "Madeira": "Wood",
     "Marcas de garra num carvalho, ao norte da mata. De noite, ouço uivos de lá.": "Claw marks on an oak, north of the woods. At night I hear howling from there.",
     "Mata da Clareira": "Clearing Woods",
     "Minério": "Ore",
+    "O cheiro da fogueira fica para trás. Na frente, só musgo.": "The smell of the campfire falls behind. Ahead, only moss.",
     "O mapa do Surubin": "Surubin's Map",
     "O resgate": "The Rescue",
+    "O riacho conhecido. Falta pouco.": "The familiar stream. Not far now.",
     "Os alicerces": "The Foundations",
     "Os marinheiros falam de uma mata velha a oeste daqui. Madeira boa, e caça.": "The sailors speak of old woods west of here. Good timber, and game.",
     "Osso": "Bone",
@@ -37,6 +45,7 @@
     "Riacho": "Stream",
     "Riacho da Mata": "Woodland Stream",
     "Riacho dos Juncos": "Reed Stream",
+    "Rio acima, o barulho da água cresce entre os juncos.": "Upstream, the sound of water grows among the reeds.",
     "Rumo a Marina": "To Marina",
     "Subindo o riacho, dizem, os juncos crescem mais alto que um homem. Peixe e ervas.": "Up the stream, they say, the reeds grow taller than a man. Fish and herbs.",
     "Surubin": "Surubin",
@@ -56,8 +65,8 @@
       "target": "CULT OF THE PUFFERFISH KING"
     },
     "0E8ADE6E1F537EE691272A7F09057F6A": {
-      "source": "Há madeira para cortar, pedra para quebrar e ervas para colher. O que for tirado hoje volta a crescer amanhã.",
-      "target": "There is wood to chop, stone to break and herbs to pick. Whatever is taken today grows back tomorrow."
+      "source": "Há madeira para cortar, pedra para quebrar e ervas para colher. Eles brilham entre as árvores, e o mapa marca cada um. O que for tirado hoje volta a crescer amanhã.",
+      "target": "There is wood to chop, stone to break and herbs to pick. They glint among the trees, and the map marks each one. Whatever is taken today grows back tomorrow."
     },
     "1B9E581671AFBC8396B75F69947A14A4": {
       "source": "Passei a noite desenhando. Por enquanto é pouco: a costa, o riacho, a nossa clareira.",
@@ -308,8 +317,8 @@
       "target": "You don't need to believe in the King. You only need to believe a roof is better than the road."
     },
     "086117AAB314E7D0179E0A5B2116483F": {
-      "source": "Uma estaca com fita vermelha marca a trilha de volta ao acampamento.",
-      "target": "A stake with a red ribbon marks the trail back to camp."
+      "source": "Um mastro com o peixe do Rei numa flâmula vermelha marca a trilha de volta ao acampamento. Dá para vê-lo de longe.",
+      "target": "A mast with the King's fish on a red banner marks the trail back to camp. It can be seen from afar."
     },
     "163089DC247CC04A57D0EAF1B06749F1": {
       "source": "Estrada da Costa",

@@ -109,8 +109,8 @@ export const OBJECT_CATEGORIES = ['Buildings', 'Nature', 'Lights', 'Props', 'Cam
 export const TENT_STAGES = ['worn', 'pavilion'];
 /** @see TENT_STAGES */
 export const BANNER_STAGES = ['pole', 'mast'];
-/** What a `stake` is (`opts.kind`): one stake with a ribbon, or a roped building plot. */
-export const STAKE_KINDS = ['ribbon', 'plot'];
+/** What a `stake` is (`opts.kind`): one stake with a ribbon, the return mast of a big map, or a roped building plot. */
+export const STAKE_KINDS = ['ribbon', 'mast', 'plot'];
 /**
  * What a `resource` is (`opts.kind`, props/ResourceProps.js): a tree to chop, a stone to break, a
  * bush of herbs to pick. Its stages (`opts.stage`): `full`, gathered with Space, and `spent`, what
@@ -319,7 +319,7 @@ export const OBJECT_TYPES = {
   },
   stake: {
     label: 'Stake', category: 'Camp', placement: 'point', kind: 'prop', camp: true, glyph: '↥', color: '#b0703f', radius: 0.4, rotatable: true, snap: 0.25,
-    help: 'Ribbon: one stake with a red ribbon (where an expedition starts and ends). Plot: a roped building plot of width × depth, walkable.',
+    help: 'Ribbon: one stake with a red ribbon (where an expedition starts and ends). Mast: the return mast of a big map, a tall pole with the fish on a red banner, marked on the maps. Plot: a roped building plot of width × depth, walkable.',
     defaults: { rotation: 0, opts: { kind: 'ribbon', width: 4, depth: 3, seed: 1 } },
     fields: [
       ROT,

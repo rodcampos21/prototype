@@ -4,7 +4,8 @@ import { cachedCondition, evalCondition } from '../../engine/level/StoryConditio
 import { levelHasCombat, OBJECT_TYPES } from '../../engine/level/ObjectCatalog.js';
 import { isOwnKey } from '../../engine/utils/own.js';
 import { chapterLevelId, activeChapter, acrossSeam, campaignLevel } from './CampaignFormat.js';
-import { placeState, journeyHours, isNightHour } from './AtlasFormat.js';
+import { placeState, journeyOf, isNightHour } from './AtlasFormat.js';
+import { JourneyCard } from '../../engine/ui/JourneyCard.js';
 import { RNG } from '../../engine/utils/math.js';
 import { CampaignState, formatPlayTime, SAVE_VERSION, cleanPlayerName, PLAYER_NAME_MAX } from './CampaignState.js';
 import { PLAYER_CLASSES, isPlayerClass, classLook } from './PlayerClasses.js';
@@ -67,6 +68,14 @@ const FADE_IN = 0.5;
 
 /** The story variable counting the expeditions to a level (`expeditions.<level>`: travelAtlas). */
 const EXPEDITIONS = 'expeditions';
+/** How long the journey card's walk takes at least (seconds; confirm skips it). */
+const JOURNEY_SECONDS = 2.4;
+
+/** An hour of the day as the clock shows it ('7:05'). @param {number} h */
+const clockText = (h) => {
+  const m = Math.floor((((h % 24) + 24) % 24) * 60);
+  return `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}`;
+};
 
 /** A 32-bit hash of a text (FNV-1a), for seeds. @param {string} s */
 function hashText(s) {
@@ -690,6 +699,11 @@ export class CampaignRuntime {
     const from = this.levelId;
     const fromFile = this.fileId;
     const fileId = this.fileFor(to);
+    // a journey on the atlas (to a place from the hub, or back): its card shows while it loads, and
+    // the clock moves on by its hours
+    const journey = start || fresh ? null : journeyOf(this.campaign.atlas, from, to);
+    /** @type {JourneyCard|null} */
+    let card = null;
     // (a new story keeps nothing of the one before)
     if (fresh) this.dropAside();
     // the level set aside on an earlier visit (attached again below while its file still holds:
@@ -718,6 +732,7 @@ export class CampaignRuntime {
     g.ui.prompt.hide();
     try {
       await g.ui.fader.fadeOut(FADE_OUT);
+      if (journey) card = this._openJourney(journey);
       let loaded;
       /** @type {LevelPreparation|null} */
       let prepared = null;
@@ -747,6 +762,7 @@ export class CampaignRuntime {
         console.warn(`[Luminati] ${err?.message ?? err}`);
         this._travelFailed(to);
         this._armed = false;
+        await card?.close();
         await g.ui.fader.fadeIn(FADE_IN);
         return false;
       }
@@ -790,6 +806,7 @@ export class CampaignRuntime {
           console.error('[Luminati] could not return to the previous level either:', err2);
         }
         this._travelFailed(to, level.name);
+        await card?.close();
         await g.ui.fader.fadeIn(FADE_IN);
         return false;
       }
@@ -802,8 +819,8 @@ export class CampaignRuntime {
       this.stats.lastAside = left ? slot : '';
       if (left) this._putAside(slot, { id: from, fileId: fromFile, text: keepText, raw: prevRaw, kept: left });
       this._enterLevel(level, { firstVisit });
-      // a journey on the atlas (to a place from the hub, or back): the clock moves on by its hours
-      const hours = start || fresh ? 0 : journeyHours(this.campaign.atlas, from, to);
+      // (the journey's hours pass)
+      const hours = journey?.place.hours ?? 0;
       if (hours > 0) this._passHours(hours);
       this._armed = false;
       this.state.level = to;
@@ -812,6 +829,11 @@ export class CampaignRuntime {
       this.save({ milestone: true });
       this.stats.travels++;
       this.stats.lastMs = Math.round(performance.now() - t0);
+      // (the card's walk plays to its end, or is skipped, before the new place shows)
+      if (card) {
+        await card.done();
+        await card.close();
+      }
       await g.ui.fader.fadeIn(FADE_IN);
       // (the name a term, the subtitle by the key the level holds — I18N.md §4.2, §4.8)
       if (banner) g.ui.banner.show(term(level.name), loc(textKeyOf(level, 'subtitle'), level.subtitle), { duration: 3.2 });
@@ -821,6 +843,7 @@ export class CampaignRuntime {
     } finally {
       // (taken for this travel but not attached — something threw before the swap: released)
       if (aside && !handed) this._release(aside);
+      if (card?.isOpen) card.close();
       g.busy = wasBusy;
       this._traveling = false;
     }
@@ -1067,10 +1090,7 @@ export class CampaignRuntime {
     if (!a) return null;
     const hour = this.hour();
     const day = this.runner?.state.day ?? this.state.story.day ?? 1;
-    const clock = (h) => {
-      const m = Math.floor((((h % 24) + 24) % 24) * 60);
-      return `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}`;
-    };
+    const clock = clockText;
     const span = (h) => {
       const m = Math.round(h * 60);
       return m % 60 ? `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, '0')}` : `${m / 60} h`;
@@ -1132,6 +1152,42 @@ export class CampaignRuntime {
     const key = `${EXPEDITIONS}.${p.level}`;
     this.state.story.setVar(key, this.state.story.get(key) + 1);
     return this.travel(p.level, { entrance: p.entrance });
+  }
+
+  /**
+   * Show the journey card for an atlas journey (behind the fader, while the level loads): the
+   * destination, a line of its road — taken in turn by the expeditions made there —, the mark and
+   * the hour of the place left and of the place reached, a warning when the arrival falls at night.
+   * @param {{ place: import('./AtlasFormat.js').AtlasPlace, back: boolean }} journey
+   * @returns {JourneyCard|null}
+   */
+  _openJourney({ place, back }) {
+    const a = this.campaign.atlas;
+    const g = this.game;
+    if (!a || !g) return null;
+    const home = a.places.find((p) => p.level === a.home);
+    const hour = this.hour();
+    const arrive = hour + place.hours;
+    const night = isNightHour(((arrive % 24) + 24) % 24);
+    const road = place.road;
+    const lines = back ? (night && road.night.length ? road.night : road.back) : road.there;
+    const turn = Math.max(0, Math.floor(Number(this.state.story.get(`${EXPEDITIONS}.${place.level}`)) || 0));
+    const st = placeState(a, place, this.holds);
+    /** @type {{ icon: string, state: 'rumor'|'known'|'explored'|'home' }} */
+    const there = { icon: place.icon, state: st === 'hidden' || st === 'home' ? 'rumor' : st };
+    /** @type {{ icon: string, state: 'rumor'|'known'|'explored'|'home' }} */
+    const camp = { icon: home?.icon ?? 'camp', state: 'home' };
+    const card = g.ui.useJourney(JourneyCard);
+    card.open({
+      kicker: t(back ? 'campaign.journey.back' : 'campaign.journey.to'),
+      name: term(back ? home?.name ?? '' : place.name),
+      line: lines.length ? term(lines[turn % lines.length]) : '',
+      from: { ...(back ? there : camp), time: clockText(hour) },
+      to: { ...(back ? camp : there), time: clockText(arrive) },
+      warn: night ? t('campaign.journey.night') : '',
+      skip: t('campaign.journey.skip'),
+    }, { seconds: JOURNEY_SECONDS });
+    return card;
   }
 
   /** The save object of the game as it is now (position, time, weather, story, combat). */

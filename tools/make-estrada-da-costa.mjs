@@ -744,7 +744,7 @@ function buildMata() {
   };
 
   // ---- the arrival: the stake with the ribbon, the way back to the camp ------------------------------
-  put('stake', ARRIVAL[0], ARRIVAL[1] - 1.6, { rotation: 0, opts: { kind: 'ribbon', seed: 4 } }, 'estaca-volta');
+  put('stake', ARRIVAL[0], ARRIVAL[1] - 1.6, { rotation: 0, opts: { kind: 'mast', seed: 4 } }, 'estaca-volta');
   put('exit', 0, 0, { minX: ARRIVAL[0] - 1.1, maxX: ARRIVAL[0] + 1.1, minZ: ARRIVAL[1] - 2.6, maxZ: ARRIVAL[1] - 0.6, to: CLEARING_ID, entrance: 'mesa', mode: 'use', label: 'Voltar ao acampamento' });
   put('entrance', ARRIVAL[0], ARRIVAL[1] + 0.6, { name: 'chegada', facing: 'up' });
   put('crate', ARRIVAL[0] + 2.4, ARRIVAL[1] - 0.4, { rotation: 0.5, opts: { size: 0.55 } });
@@ -962,8 +962,8 @@ function buildMata() {
       'banner Mata da Clareira | Terra Selvagem',
       ': Árvores velhas fecham o céu. O ar é úmido e cheira a musgo e a bicho.',
       'camera estaca-volta 1',
-      ': Uma estaca com fita vermelha marca a trilha de volta ao acampamento.',
-      ': Há madeira para cortar, pedra para quebrar e ervas para colher. O que for tirado hoje volta a crescer amanhã.',
+      ': Um mastro com o peixe do Rei numa flâmula vermelha marca a trilha de volta ao acampamento. Dá para vê-lo de longe.',
+      ': Há madeira para cortar, pedra para quebrar e ervas para colher. Eles brilham entre as árvores, e o mapa marca cada um. O que for tirado hoje volta a crescer amanhã.',
       'camera reset 1',
     ],
   });
@@ -1019,6 +1019,11 @@ for (const t of Object.keys(OBJECT_TYPES).filter(isCampType)) {
 // The places: the camp; the Mata da Clareira (the first journey, an hour away); the reeds up the
 // stream and the quarry on the slope, rumours with no road yet (M3); the Toca das Bestas, a rumour
 // once the claw marks were told (`toca.desenhada`).
+// the journey card's lines (the notebook, *Cena de viagem*): the way to the woods, the way home by
+// day and by night
+const ROAD_MATA = ['A trilha deixa o riacho e entra na sombra das árvores.', 'O cheiro da fogueira fica para trás. Na frente, só musgo.'];
+const ROAD_HOME = ['Entre as árvores, aparece o estandarte azul.', 'O riacho conhecido. Falta pouco.'];
+const ROAD_HOME_NIGHT = ['A fogueira do acampamento brilha no escuro. O Surubin deixou ela acesa.'];
 const atlas = {
   title: 'O mapa do Surubin',
   subtitle: 'Terra Selvagem',
@@ -1037,14 +1042,23 @@ const atlas = {
         known: 'Carvalhos velhos, um riacho com duas pontes, pedras musgosas e uma clareira de flores. A trilha some ao norte.',
         explored: 'Já conhecemos cada trilha dela. À noite, porém, ninguém volta igual.',
       },
+      road: { there: ROAD_MATA, back: ROAD_HOME, night: ROAD_HOME_NIGHT },
     },
     {
       id: 'riacho-dos-juncos', name: 'Riacho dos Juncos', x: 81, y: 22, icon: 'reeds', hours: 2, yields: ['Comida', 'Ervas'],
       notes: { rumor: 'Subindo o riacho, dizem, os juncos crescem mais alto que um homem. Peixe e ervas.' },
+      road: {
+        there: ['Rio acima, o barulho da água cresce entre os juncos.', 'As botas afundam na lama da margem.'],
+        back: ROAD_HOME, night: ROAD_HOME_NIGHT,
+      },
     },
     {
       id: 'pedreira-da-encosta', name: 'Pedreira da Encosta', x: 75, y: 9, icon: 'quarry', hours: 2, yields: ['Pedra', 'Minério'],
       notes: { rumor: 'Uma pedreira antiga na encosta. Pedra para as obras. Quem será que a cortou primeiro?' },
+      road: {
+        there: ['A subida pela encosta é íngreme. Lá em cima, o vento muda.', 'Lascas de pedra estalam sob as botas.'],
+        back: ROAD_HOME, night: ROAD_HOME_NIGHT,
+      },
     },
     {
       id: 'toca-das-bestas', name: 'Toca das Bestas', x: 33, y: 8, icon: 'den', hours: 2, rumor: 'toca.desenhada', yields: ['Couro', 'Osso'],

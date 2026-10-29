@@ -182,3 +182,26 @@ export interface AtlasView {
   selected?: string;
   texts: { travel: string; close: string; choose: string; journey: string; yields: string; note: string; here: string; unknown: string };
 }
+
+/** One end of a journey on the card: the place's mark (atlas icon and state) and the hour there. */
+export interface JourneyEnd {
+  icon: string;
+  state: 'rumor' | 'known' | 'explored' | 'home';
+  time: string;
+}
+
+/** JourneyCard.open()'s data (every text translated). */
+export interface JourneyView {
+  /** 'On the way to' / 'Back to' */
+  kicker: string;
+  /** the destination */
+  name: string;
+  /** one line of the road ('' none) */
+  line: string;
+  from: JourneyEnd;
+  to: JourneyEnd;
+  /** the arrival falls at night ('' it does not) */
+  warn: string;
+  /** the skip hint's label */
+  skip: string;
+}

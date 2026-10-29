@@ -27,6 +27,10 @@ const table = {
     'legend.enemy': 'Inimigo',
     'legend.waystone': 'Pedra-guia',
     'legend.chest': 'Baú',
+    /** a tree to chop, a stone to break, herbs to pick (a green, a grey and a pink dot) */
+    'legend.resource': 'Recurso para coletar',
+    /** the return mast of an expedition: where the way home starts */
+    'legend.return': 'Caminho de volta',
     'legend.building': 'Construção',
     'legend.road': 'Estrada',
     'legend.water': 'Água',
@@ -50,6 +54,8 @@ const table = {
     'legend.enemy': 'Enemy',
     'legend.waystone': 'Waystone',
     'legend.chest': 'Chest',
+    'legend.resource': 'Resource to gather',
+    'legend.return': 'Way back',
     'legend.building': 'Building',
     'legend.road': 'Road',
     'legend.water': 'Water',

@@ -331,15 +331,75 @@ function stakeGeom(b, rb, ribbon, sx, sz, rng, h = 0.85) {
 }
 
 /**
+ * The return mast (a stake's `mast` kind): a tall crooked pole wedged in a cairn, a gilt spiked ball
+ * on top (the pufferfish), the cult's fish on a red banner from a crossbar — red so it is seen from
+ * far across a big map —, two red ribbons tied round the pole and a few stakes with ribbons round
+ * the cairn. The cloth faces local +Z.
+ * @param {PropFactory} f
+ */
+function buildReturnMast(f, x, y, z, opts) {
+  const rng = f.rng('stake', x, z, opts.seed);
+  const b = f.builder(groundAO(0.5));
+  const rb = f.builder();
+  const ribbon = f.clothMaterial('cloth_red');
+  const Hp = 4.2;
+  const bar = Hp - 0.32;
+  const cw = 0.95;
+  const ch = 1.7;
+  // the pole, a little crooked, its top cut square, and the cairn holding it
+  b.push([0, 0, 0], [rng.range(-0.025, 0.025), 0, rng.range(-0.025, 0.025)]);
+  b.box(TRIM, [0.14, Hp, 0.14], { at: [0, Hp / 2 - 0.1, 0], rotUV: true, faces: { ny: false } });
+  b.box(TRIM, [0.18, 0.12, 0.18], { at: [0, Hp - 0.06, 0], rot: [0, Math.PI / 4, 0] });
+  // the finial: a gilt ball with spikes, the pufferfish again
+  b.lathe('metal', [{ y: -0.1, r: 0.02 }, { y: -0.05, r: 0.09 }, { y: 0.05, r: 0.09 }, { y: 0.1, r: 0.02 }], { segments: 8, at: [0, Hp + 0.1, 0], smooth: true, color: [1.5, 1.2, 0.55] });
+  for (let k = 0; k < 8; k++) {
+    const a = (k / 8) * Math.PI * 2;
+    const e = k % 2 ? 0.35 : -0.25;
+    const dir = [Math.cos(a) * Math.cos(e), Math.sin(e), Math.sin(a) * Math.cos(e)];
+    strut(b, 'metal', [dir[0] * 0.07, Hp + 0.1 + dir[1] * 0.07, dir[2] * 0.07], [dir[0] * 0.17, Hp + 0.1 + dir[1] * 0.17, dir[2] * 0.17], 0.022);
+  }
+  // the crossbar with its rope ties
+  const bw = cw + 0.24;
+  b.box(TRIM, [bw, 0.08, 0.08], { at: [0, bar, 0.1], rotUV: true });
+  for (const s of [-1, 1]) strut(b, 'rope', [0, bar + 0.22, 0.06], [s * (bw / 2 - 0.05), bar + 0.03, 0.1], 0.025);
+  // rope wound round the pole where the ribbons are tied
+  for (const h of [1.25, 1.55]) b.box('rope', [0.18, 0.05, 0.18], { at: [0, h, 0] });
+  b.pop();
+  const stone = { top: f.extra.material('boulder_moss'), side: f.extra.material('boulder') };
+  for (let k = 0; k < 7; k++) {
+    const a = (k / 7) * Math.PI * 2 + rng.range(-0.3, 0.3);
+    rockGeom(b, Math.cos(a) * 0.36, 0, Math.sin(a) * 0.36, [0.22, 0.16, 0.2], rng, { ...stone, detail: 0, yaw: rng.range(0, 6) });
+  }
+  rockGeom(b, 0.1, 0.2, -0.06, [0.18, 0.13, 0.16], rng, { ...stone, detail: 0 });
+  rockGeom(b, -0.12, 0.18, 0.08, [0.16, 0.12, 0.14], rng, { ...stone, detail: 0 });
+  // the ribbons on the pole, and three stakes with ribbons round the cairn
+  for (const [h, dx] of [[1.25, 0.08], [1.55, -0.08]]) hangingCloth(rb, ribbon, dx, h, 0.08, 0.07, 0.55, { rows: 4, swing: 3, lean: 0.03 });
+  for (let k = 0; k < 3; k++) {
+    const a = (k / 3) * Math.PI * 2 + 0.5 + rng.range(-0.25, 0.25);
+    stakeGeom(b, rb, ribbon, Math.cos(a) * 0.95, Math.sin(a) * 0.95, rng, 0.75);
+  }
+  const group = f.finish(b, 'stake', x, y, z, opts.rotation ?? 0);
+  // the cloth: its own swaying mesh (wind materials are never merged)
+  hangingCloth(rb, f.clothMaterial('banner_fish_red'), 0, bar - 0.02, 0.15, cw, ch, { rows: 7, swing: 2.4, lean: 0.05 });
+  const cloth = f.finish(rb, 'stake:ribbon', 0, 0, 0, 0);
+  group.add(cloth);
+  cloth.updateMatrixWorld(true);
+  return f.result(group, { colliders: [{ type: 'circle', x, z, r: 0.48 }] });
+}
+
+/**
  * Stakes in the ground.
  * - `ribbon`: one stake with a red ribbon — where the player arrives on an expedition and walks
- *   back to camp from.
+ *   back to camp from (a small map).
+ * - `mast`: the return mast for a big map — a tall pole with the cult's fish on a red banner, seen
+ *   from far, and marked on the minimap (`buildReturnMast`).
  * - `plot`: a building plot, `width` × `depth`: a stake at each corner, a rope between them and a
  *   ribbon on the front-left one. Walkable (no collider): a building rises on it later.
  * opts: { rotation = 0, kind = 'ribbon', width = 4, depth = 3, seed }
  * @param {PropFactory} f
  */
 export function buildStake(f, x, y, z, opts = {}) {
+  if (opts.kind === 'mast') return buildReturnMast(f, x, y, z, opts);
   const rng = f.rng('stake', x, z, opts.seed);
   const plot = opts.kind === 'plot';
   const b = f.builder(groundAO(0.4));

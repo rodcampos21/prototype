@@ -130,7 +130,7 @@ where it would stand between the camera and the knight). Weather pool clear 60, 
 
 | Area | Where | What |
 | --- | --- | --- |
-| The arrival | south-east | a glade with the stake and its red ribbon (`estaca-volta`) and a Space exit round it, *Voltar ao acampamento* (→ the camp, entrance `mesa`, an hour); entrance `chegada`; the band south of it kept clear |
+| The arrival | south-east | a glade with the return mast (`estaca-volta`, a stake of kind `mast`: the fish on a red banner, seen from far and marked on the maps) and a Space exit round it, *Voltar ao acampamento* (→ the camp, entrance `mesa`, an hour); entrance `chegada`; the band south of it kept clear |
 | *Clareira das Flores* | east | a flower meadow round a pond (level 1, still water) |
 | *Bosque dos Carvalhos* | middle | old oaks spaced wide, fallen trunks, boulders |
 | *Riacho da Mata* | west third, north to south | a stream (level 0) between sandy banks (level 1), two bridges (`ponte-1`, `ponte-2`), herbs along its banks, birches, mist and fireflies |

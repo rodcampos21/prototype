@@ -17,7 +17,7 @@ import { CampaignState, cleanPlayerName, PLAYER_NAME_MAX } from '../src/game/cam
 import { PLAYER_CLASSES, isPlayerClass, classLook } from '../src/game/campaign/PlayerClasses.js';
 import { weatherPhase, weatherPoolOf, rollWeather } from '../src/game/WeatherRoll.js';
 import { normalizeCampaign, parseCampaign, serializeCampaign } from '../src/game/campaign/CampaignFormat.js';
-import { placeState, journeyHours, isNightHour, NIGHT_CONDITION } from '../src/game/campaign/AtlasFormat.js';
+import { placeState, journeyHours, journeyOf, isNightHour, NIGHT_CONDITION } from '../src/game/campaign/AtlasFormat.js';
 import { buildStory } from '../src/game/campaign/StoryFormat.js';
 import { cachedCondition, evalCondition, parseScript, interpolate, isTextRef } from '../src/engine/level/StoryScript.js';
 import { MAX_PARTY, ruleOfPreset, normalizeRule, PARTY_PRESETS } from '../src/engine/level/PartyRules.js';
@@ -1410,8 +1410,8 @@ begin('the atlas (AtlasFormat.js): the places, their states, the journeys, the n
       title: 'Mapa', home: 'camp', entrance: 'mesa',
       places: [
         { id: 'home', name: 'Camp', x: 50, y: 30, level: 'camp' },
-        { id: 'woods', name: 'Woods', x: 20, y: 20, icon: 'forest', level: 'woods', entrance: 'in', hours: 1.5, known: 'drawn', explored: 'done-woods', yields: ['Wood'], notes: { rumor: 'They say…' } },
-        { id: 'den', name: 'Den', x: 10, y: 5, icon: 'den', rumor: 'claws' },
+        { id: 'woods', name: 'Woods', x: 20, y: 20, icon: 'forest', level: 'woods', entrance: 'in', hours: 1.5, known: 'drawn', explored: 'done-woods', yields: ['Wood'], notes: { rumor: 'They say…' }, road: { there: ['Into the trees.', ' ', 7], back: ['Home.'] } },
+        { id: 'den', name: 'Den', x: 10, y: 5, icon: 'den', rumor: 'claws', road: 'north' },
         { id: 'far', name: 'Far', x: 500, y: -4, level: 'nowhere', hours: 30 },
         { id: 'Bad Id', name: 'x', x: 1, y: 1 },
       ],
@@ -1423,7 +1423,9 @@ begin('the atlas (AtlasFormat.js): the places, their states, the journeys, the n
   eq('normalised: the places kept (a bad id dropped), a level that is none no road, hours clamped, the point inside the map; a short line and an unknown kind dropped',
     [at.places.map((p) => p.id), at.places[3].level, at.places[3].hours, [at.places[3].x, at.places[3].y], at.places[0].icon, at.sketch.map((f) => f.kind), at.size],
     [['home', 'woods', 'den', 'far'], '', 12, [100, 0], 'camp', ['sea', 'label', 'forest'], [100, 60]]);
-  ok('… each thing dropped or changed warned', warnings.length === 5, warnings);
+  ok('… each thing dropped or changed warned', warnings.length === 6, warnings);
+  eq('a road: its lines kept (blanks and non-texts dropped), a part not given empty; a road that is no object none',
+    [at.places[1].road, at.places[2].road], [{ there: ['Into the trees.'], back: ['Home.'], night: [] }, { there: [], back: [], night: [] }]);
   eq('serialised and read back the same', parseCampaign(serializeCampaign(campaign)).campaign.atlas, at);
   eq('no atlas: none written', [normalizeCampaign({ format: 'luminati-campaign', levels: ['a'] }).campaign.atlas, serializeCampaign(normalizeCampaign({ format: 'luminati-campaign', levels: ['a'] }).campaign).includes('"atlas"')], [null, false]);
   ok('an atlas whose hub is no level of the campaign: ignored, warned', (() => { const r = normalizeCampaign({ ...raw, atlas: { ...raw.atlas, home: 'x' } }); return r.campaign.atlas === null && r.warnings.some((w) => w.includes('atlas.home')); })());
@@ -1437,6 +1439,9 @@ begin('the atlas (AtlasFormat.js): the places, their states, the journeys, the n
   eq('… explored', placeState(at, at.places[1], holds), 'explored');
   eq('the default known: the place\'s level visited', placeState(at, { ...at.places[1], known: '', explored: '' }, (c) => c === 'visited:woods'), 'known');
   eq('journeyHours: from the hub to a place and back its hours; anything else none', [journeyHours(at, 'camp', 'woods'), journeyHours(at, 'woods', 'camp'), journeyHours(at, 'woods', 'woods'), journeyHours(at, 'woods', 'elsewhere'), journeyHours(null, 'camp', 'woods')], [1.5, 1.5, 0, 0, 0]);
+  eq('journeyOf: the place away from the hub and whether the journey comes home; else null',
+    [journeyOf(at, 'camp', 'woods'), journeyOf(at, 'woods', 'camp'), journeyOf(at, 'woods', 'elsewhere'), journeyOf(null, 'camp', 'woods')].map((j) => (j ? [j.place.id, j.back] : null)),
+    [['woods', false], ['woods', true], null, null]);
   eq('the night: 18:30 to 5:00', [17, 18.5, 23, 0, 4.9, 5, 12].map(isNightHour), [false, true, true, true, true, false, false]);
   ok('NIGHT_CONDITION reads the hour as the story does', evalCondition(cachedCondition(NIGHT_CONDITION), { get: () => 19, word: () => 0 }) && !evalCondition(cachedCondition(NIGHT_CONDITION), { get: () => 12, word: () => 0 }));
 }

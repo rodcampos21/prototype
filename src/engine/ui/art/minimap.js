@@ -525,18 +525,28 @@ export function vignetteSprite(w, h = w) {
  */
 export const POI_COLORS = Object.freeze({ door: '#e9d49a', sign: '#f2d27a', well: '#9cc8f0', object: '#f2d27a' });
 
+/**
+ * The resources to gather (a tree, a stone, herbs): a small dot each, in the colour of what it
+ * gives — wood amber (green would sink into the map's grass and forest), stone pale grey, the
+ * herbs' flowers pink.
+ */
+export const RESOURCE_COLORS = Object.freeze({ res_tree: '#e0a352', res_stone: '#dcd8ce', res_herbs: '#e58fc0' });
+
 /** A marker's reach (with its outline) by kind: one closer than a clear pixel to the arrow moves aside. */
-export const MARKER_REACH = Object.freeze({ enemy: 2, boss: 4, campfire: 2, waystone: 3, npc: 2, party: 3, chest: 3, door: 2, sign: 2, well: 2, object: 2 });
+export const MARKER_REACH = Object.freeze({ enemy: 2, boss: 4, campfire: 2, waystone: 3, npc: 2, party: 3, chest: 3, door: 2, sign: 2, well: 2, object: 2, return: 5, res_tree: 2, res_stone: 2, res_herbs: 2 });
 /** The order markers are drawn in (later on top). */
-export const MARKER_ORDER = Object.freeze({ door: 0, sign: 0, well: 0, object: 0, campfire: 0, chest: 1, waystone: 1, npc: 2, enemy: 3, boss: 3, party: 4 });
+export const MARKER_ORDER = Object.freeze({ res_tree: 0, res_stone: 0, res_herbs: 0, door: 0, sign: 0, well: 0, object: 0, campfire: 0, chest: 1, waystone: 1, return: 1, npc: 2, enemy: 3, boss: 3, party: 4 });
+/** The marker kinds drawn in a look of their own (any other is the gold gem of a point of interest). */
+const OWN_LOOK = new Set(['enemy', 'boss', 'campfire', 'waystone', 'npc', 'party', 'chest', 'return', ...Object.keys(RESOURCE_COLORS)]);
 
 /**
  * One marker at (x, y) of the window: a foe dot, the boss's ruby, a campfire, a waystone gem, a
  * villager dot, a companion's teal diamond (G's kinds); and, drawn in the same family for today's
- * other points of interest, a treasure chest and a small gem in the old diamond's colour for a
- * door, sign, well or other object.
+ * other points of interest, a treasure chest, the return mast's red flag on its pole, a resource's
+ * small dot in the colour of what it gives (RESOURCE_COLORS) and a small gem in the old diamond's
+ * colour for a door, sign, well or other object.
  * @param {PixelPainter} p
- * @param {string} kind 'enemy' | 'boss' | 'campfire' | 'waystone' | 'npc' | 'party' | 'chest' | 'door' | 'sign' | 'well' | 'object'
+ * @param {string} kind 'enemy' | 'boss' | 'campfire' | 'waystone' | 'npc' | 'party' | 'chest' | 'return' | 'res_tree' | 'res_stone' | 'res_herbs' | 'door' | 'sign' | 'well' | 'object'
  * @param {number} x
  * @param {number} y
  */
@@ -561,6 +571,22 @@ export function marker(p, kind, x, y) {
   } else if (kind === 'chest') {
     // a small chest: the lid lit, a dark seam with the lock, the gilt body
     p.rows(x - 3, y - 2, ['.ooooo.', 'oWLLLGo', 'oDDkDDo', 'oGGGGBo', '.ooooo.'], { o: k.ink0, W: k.g5, L: k.g4, G: k.g3, B: k.g2, D: k.g1, k: k.kf0 });
+  } else if (kind === 'return') {
+    // the return mast: a gilt pole, the red banner with the fish's pale eye, its foot on the point
+    p.rows(x - 2, y - 5, [
+      'oooooooo',
+      'oWRRRRRo',
+      'oWRReRRo',
+      'oWrrrrro',
+      'oWoooooo',
+      'oWo.....',
+      'oWo.....',
+      'oWo.....',
+      'ooo.....',
+    ], { o: k.ink0, W: k.g4, R: '#d4523e', r: '#9c2f2a', e: '#f4ead0' });
+  } else if (Object.prototype.hasOwnProperty.call(RESOURCE_COLORS, kind)) {
+    // a resource: a plus of its colour in an ink rim
+    stamp(p, [[x, y - 1, RESOURCE_COLORS[kind]], [x - 1, y, RESOURCE_COLORS[kind]], [x, y, RESOURCE_COLORS[kind]], [x + 1, y, RESOURCE_COLORS[kind]], [x, y + 1, RESOURCE_COLORS[kind]]], true, k['m-ol']);
   } else if (Object.prototype.hasOwnProperty.call(POI_COLORS, kind)) {
     const r = gemRamp(POI_COLORS[kind]);
     gem(p, x, y, 1, r, { setting: [r[2], r[1], r[0]] });
@@ -578,8 +604,7 @@ export const MARKER_HALF = 5;
  * @returns {HTMLCanvasElement}
  */
 export function markerSprite(kind) {
-  const id = kind === 'enemy' || kind === 'boss' || kind === 'campfire' || kind === 'waystone' || kind === 'npc' || kind === 'party' || kind === 'chest'
-    || Object.prototype.hasOwnProperty.call(POI_COLORS, kind) ? kind : 'object';
+  const id = OWN_LOOK.has(kind) || Object.prototype.hasOwnProperty.call(POI_COLORS, kind) ? kind : 'object';
   let c = MARKERS.get(id);
   if (!c) {
     const S = MARKER_HALF * 2 + 1;
@@ -595,6 +620,22 @@ let PIP = null;
 export function pipSprite() {
   if (!PIP) PIP = art(3, 3, (p) => { const k = pal(); p.rect(0, 0, 3, 3, k.ink0); p.px(1, 1, k.foe); });
   return PIP;
+}
+
+/** @type {HTMLCanvasElement|null} */
+let HOME_PIP = null;
+/**
+ * The way back beyond the window: a 5 × 5 red diamond in ink with a gold heart, on the window's
+ * edge toward the return mast (it is never lost from the minimap).
+ */
+export function homePipSprite() {
+  if (!HOME_PIP) {
+    HOME_PIP = art(5, 5, (p) => {
+      const k = pal();
+      p.rows(0, 0, ['..o..', '.oRo.', 'oRGRo', '.oRo.', '..o..'], { o: k.ink0, R: '#d4523e', G: k.g4 });
+    });
+  }
+  return HOME_PIP;
 }
 
 /** @type {Map<string, HTMLCanvasElement>} */
@@ -691,7 +732,7 @@ const KEYS = new Map();
  * dark grass (the player's arrow, a villager, a companion, a point of interest, a campfire, a foe,
  * a waystone, a chest) or a swatch of the painted map (a building's roof with its ridge, a road
  * across grass, water, forest crowns). Cached; a copy per call (a canvas stands in one place only).
- * @param {string} kind 'player' | 'npc' | 'party' | 'poi' | 'fire' | 'enemy' | 'waystone' | 'chest' | 'house' | 'road' | 'water' | 'forest'
+ * @param {string} kind 'player' | 'npc' | 'party' | 'poi' | 'fire' | 'enemy' | 'waystone' | 'chest' | 'return' | 'resource' | 'house' | 'road' | 'water' | 'forest'
  * @returns {HTMLCanvasElement}
  */
 export function legendKey(kind) {
@@ -712,6 +753,14 @@ export function legendKey(kind) {
         case 'enemy': chip(ground); marker(p, 'enemy', m, m); break;
         case 'waystone': chip(ground); marker(p, 'waystone', m, m); break;
         case 'chest': chip(ground); marker(p, 'chest', m, m); break;
+        case 'return': chip(ground); marker(p, 'return', m - 1, m + 1); break;
+        case 'resource':
+          // the three resources side by side
+          chip(ground);
+          marker(p, 'res_tree', 2 + 1, m - 2);
+          marker(p, 'res_stone', S - 4, m - 2);
+          marker(p, 'res_herbs', m, m + 2);
+          break;
         case 'house':
           // a roof (LevelMap's red): a darker rim, the lit ridge across the middle
           chip(ground);

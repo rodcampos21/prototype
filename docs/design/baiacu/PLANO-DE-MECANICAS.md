@@ -148,7 +148,9 @@ português e os checks de i18n passam sem japonês e chinês.
      lado (HP, MP, ATK, DEF, nível). **A mecânica de equipar ainda não existe**: os espaços já
      aparecem (vazios ou com o equipamento inicial da classe, só para ver), com o formato de dados
      pensado para ela (cada item com `slot` e bônus), para que equipar depois seja só ligar a
-     lógica, sem refazer a tela.
+     lógica, sem refazer a tela. Equipamento inicial (decidido em 2026-10-29, só o básico):
+     Espada de viagem, Cota de viagem, Elmo amassado, Luvas de couro e Botas de estrada; o
+     acessório começa vazio. Nomes e descrições no Caderno, *O equipamento do cavaleiro*.
    - Teclado, controle e mouse como no diário (setas ou abas trocam de metade; Enter mostra o
      detalhe; Esc fecha). Textos traduzidos (pt / en).
    Pede junto: os ícones dos itens (F4) e o modelo de item com `slot`, que serve depois ao sistema
@@ -332,9 +334,24 @@ acampamento: a viagem é pela mesa do Surubin. Versão mínima:
    mais linhas de ida e de volta (texto traduzível, no `campaign.json`), sorteadas. Fica na tela
    enquanto o mapa carrega (no mínimo uns 2 s, Espaço adianta). Depois dá para enriquecer: o
    pergaminho do mapa com o pontilhado andando até o destino.
+   As linhas de caminho (duas por destino, sorteadas) estão no Caderno, *Cena de viagem*.
+   **Feito (2026-10-29):** o `JourneyCard` ([PIXEL_UI §8.1](../../specs/PIXEL_UI.md)) sobre o preto:
+   *A caminho de* / *De volta a*, o nome do destino, uma linha do `road` do lugar (em rodízio pelas
+   expedições; a volta de noite tem a sua), as marcas dos dois lugares com o pontilhado e um ◆ andando,
+   as horas de saída e de chegada e *A noite cai no caminho.* quando chega de noite. 2,4 s no mínimo,
+   Enter pula. As linhas da Mata, do Riacho e da Pedreira já estão no `campaign.json`.
 5b. **Estaca de volta maior** (pedida em 2026-10-28, M3): a estaca com fita é pequena demais para
    achar num mapa grande. Uma versão maior e bem visível (um mastro alto com uma flâmula vermelha,
    talvez o peixe do culto), que se veja de longe e marque o ponto de retorno também no minimapa.
+   **Feito (2026-10-29):** a estaca de tipo `mast` — um mastro de 4,2 m num monte de pedras, a bola
+   de espinhos dourada no topo e o peixe do Rei numa flâmula **vermelha**, com fitas no mastro e três
+   estacas em volta. No minimapa é uma bandeira vermelha; fora da vista, um losango vermelho na borda
+   apontando para ela. No mapa-múndi, a linha *Caminho de volta* na legenda.
+5d. **Recursos mais visíveis** (pedido em 2026-10-29, M3): **feito.** Cada recurso inteiro a até
+   22 u do cavaleiro brilha de vez em quando (estrelinhas na cor do que dá: copa da árvore, topo da
+   pedra, flores das ervas) e aparece no minimapa e no mapa-múndi como um pontinho (madeira âmbar,
+   pedra cinza-clara, ervas rosa), que some quando é colhido e volta quando cresce. Com a névoa (5c),
+   os pontinhos só vão aparecer na parte revelada.
 5c. **Melhorar o minimapa** (pedida em 2026-10-28, M3: analisar primeiro). Com mapas grandes como a
    Mata (100 × 84) ele precisa ajudar a explorar. A avaliar: zoom e área visível, marcadores do
    ponto de retorno e dos lugares da fase (regiões nomeadas), recursos e baús, a névoa do que ainda
@@ -438,7 +455,7 @@ Design na Bíblia, seção *O protagonista*.
 | --- | --- | --- |
 | **M1, Idioma** | Jogo em português, sem japonês e chinês | A |
 | **M2, Acampamento jogável** | Campanha Ato I: criação de personagem → prólogo → C02 → acampamento na clareira → mapa do Surubin → Mata da Clareira → volta; cavaleiro com visual próprio e falando; clima sorteado por mapa; mais monstros à noite | B, G1, I, J, F1 (tenda, mesa do mapa, estandarte, altar), F2 (cavaleiro) |
-| **M3, Primeira obra** | Mochila e estoque, janela de inventário (mochila + equipamento, C 2b), cena de viagem entre mapas (G1 5a), estaca de volta maior (5b), análise do minimapa (5c), coleta em várias expedições (Mata, Riacho, Pedreira), C03 com a escolha forja / silo / alojamento, obra que avança a cada manhã, altar, dormir no alojamento (protótipo E1) | C, D, E1, F1 (forja, silo, alojamento, andaime) |
+| **M3, Primeira obra** | Mochila e estoque, janela de inventário (mochila + equipamento, C 2b), ~~cena de viagem entre mapas (G1 5a), estaca de volta maior (5b), recursos visíveis (5d)~~ (feitos em 2026-10-29), névoa no minimapa (5c), coleta em várias expedições (Mata, Riacho, Pedreira), C03 com a escolha forja / silo / alojamento, obra que avança a cada manhã, altar, dormir no alojamento (protótipo E1) | C, D, E1, F1 (forja, silo, alojamento, andaime) |
 | **M4, Sistema de construção** | `buildSlot` + `BuildingSystem` + menu + editor; contagens EV01/EV02 | E2, D completo, F4 |
 | **M5, Fase 1–3 do Ato I** | Odo, Fumaça na Serra, Pedras Riscadas, duelo do mestre | F2 (NPCs), F3 |
 | **M6, Atlas completo** | Atlas do Ato I com os 12 (13) nós, contagens visíveis | G2 |

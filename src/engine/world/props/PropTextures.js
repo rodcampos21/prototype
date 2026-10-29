@@ -317,13 +317,17 @@ function paintCanvas(seed) {
  * The cult's banner: a sea-blue field with a gold trim, a cream pufferfish crowned with spikes and
  * three waves below it, cut into a swallowtail at the foot. 20×36 px (1.25×2.25 units), alpha; the
  * top rows are the sleeve the crossbar runs through. Painted to be mapped whole onto the cloth.
+ * `field`: the cloth's five tones, darkest first (the sea blue; `banner_fish_red` the return mast's
+ * red, seen from afar).
+ * @param {number} seed
+ * @param {string[]} [field]
  */
-function paintBannerFish(seed) {
+function paintBannerFish(seed, field = ['#0f1f3d', '#1a3157', '#24467a', '#305c97', '#4a7bb5']) {
   const W = 20;
   const H = 36;
   const pc = new PixelCanvas(W, H);
   const hf = new Float32Array(W * H).fill(0);
-  const blue = ['#0f1f3d', '#1a3157', '#24467a', '#305c97', '#4a7bb5'];
+  const blue = field;
   const gold = PALETTE.gold;
   const cream = ['#8a7a5c', '#c2ad84', '#e3d2a8', '#f4ead0'];
   const tail = 8;
@@ -448,13 +452,15 @@ function paintMapParchment(seed) {
 const PAINTERS = {
   birch: paintBirch, produce: paintProduce, sail: paintSail, leaf_litter: paintLeafLitter, ash: paintAsh,
   boulder: (seed) => paintBoulder(seed, false), boulder_moss: (seed) => paintBoulder(seed, true),
-  canvas: paintCanvas, banner_fish: paintBannerFish, map_parchment: paintMapParchment,
+  canvas: paintCanvas, banner_fish: (seed) => paintBannerFish(seed),
+  banner_fish_red: (seed) => paintBannerFish(seed, ['#3a0e10', '#5e1a1a', '#8c2a24', '#ad3a2e', '#cf5a42']),
+  map_parchment: paintMapParchment,
 };
 
 /**
  * Names of the prop textures a PropTextureSet paints (keys of `PAINTERS`).
  * @typedef {'birch'|'produce'|'sail'|'leaf_litter'|'ash'|'boulder'|'boulder_moss'|'canvas'|'banner_fish'
- *   |'map_parchment'} PropTextureName
+ *   |'banner_fish_red'|'map_parchment'} PropTextureName
  */
 
 /**
