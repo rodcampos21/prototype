@@ -10,7 +10,7 @@ Brazilian Portuguese, written as the level's source text.
 | | |
 | --- | --- |
 | **Audience** | The game's authors; anyone extending the Ato I prologue. |
-| **Source of truth** | [`tools/make-estrada-da-costa.mjs`](../../../tools/make-estrada-da-costa.mjs) (the generator), [`public/campaigns/culto-ao-baiacu-rei/`](../../../public/campaigns/culto-ao-baiacu-rei/campaign.json) (its output: `campaign.json` and `levels/estrada-da-costa.json`) |
+| **Source of truth** | [`tools/make-estrada-da-costa.mjs`](../../../tools/make-estrada-da-costa.mjs) (the generator), [`public/campaigns/culto-ao-baiacu-rei/`](../../../public/campaigns/culto-ao-baiacu-rei/campaign.json) (its output: `campaign.json` with Surubin's map, `levels/estrada-da-costa.json`, `levels/clareira-do-riacho.json`, `levels/mata-da-clareira.json`) |
 | **Related docs** | [Story script](../../specs/STORY_SCRIPT.md) · [Party](../../specs/PARTY.md) · [Combat](../../contracts/COMBAT.md) · [Pixel module](../../architecture/modules/pixel.md) (the `head: 'catfish'` spec) · [Willowmere](sample-hamlet.md) (the generator it follows) |
 
 Play it: `game.html` (the game: title, character creation, this level), or `game.html?campaign=culto-ao-baiacu-rei&level=estrada-da-costa` to start in it. Regenerate it: `node tools/make-estrada-da-costa.mjs`
@@ -48,8 +48,9 @@ protagonist (an open question of the Ato I notebook); the player still wears the
 
 `levels/clareira-do-riacho.json` (34 × 28, built by the same generator): a wide clearing in the woods
 with a stream down its east side (the far bank is forest) — the camp of Act I. Its weather pool is
-clear 70, rain 30. The old trail from the south is scenery: the camp has no exit, travel will be by
-Surubin's map (the mechanics plan, G1).
+clear 70, rain 30. The old trail from the south is scenery: the camp has no exit; travel is by
+Surubin's map on the table by his tent (the atlas, below), and journeys back arrive in front of it
+(entrance `mesa`).
 
 **The first night (C02).** On arriving with Surubin in the party (`arrive`, `if: party:surubin`)
 the story holds a clear sky (`weather clear`), moves the clock on to 21:00, seats the two at the
@@ -78,9 +79,83 @@ event lets the pool roll again then).
 | Area | What | Ids / names |
 | --- | --- | --- |
 | Middle | the fire with two logs, a crate | — |
-| North | Surubin's tent (`worn`), the map table (examined: the map's text), his crate and barrel | `tenda-surubin`, `mesa-do-mapa` |
+| North | Surubin's tent (`worn`), the map table (Space: Surubin's map), his crate and barrel; the arrival of every journey back in front of the table | `tenda-surubin`, `mesa-do-mapa`, entrance `mesa` |
 | East | the banner (`pole`); the altar's place beside it (C03) | `estandarte`, marker `altar` |
 | West and south | three roped plots on bare ground: forge 4 × 3.5, silo 3.5 × 3.5, lodging 5 × 3.5 | `lote-forja`, `lote-silo`, `lote-alojamento` |
 | North-east | the chapel's place (QP05, phase 4), left clear | marker `capela` |
 
 The generator fails unless the campaign places every `camp: true` type (Starfall Vale skips them).
+
+**Back from the woods.** The first time the knight comes back from the Mata da Clareira
+(`visited:mata-da-clareira and not mata.desenhada`), Surubin draws it on the map while the knight
+talks (`set mata.desenhada`: the woods appear on the sheet and the place turns *known*); if the
+claw marks were found, the knight tells of them and Surubin puts the Toca das Bestas on the map as a
+rumour (`toca.desenhada`). Claw marks found on a later journey are told on that return. The
+crowned fish found on the crate of the abandoned camp (`mata.marca`) is told on a return once the
+woods are drawn: Surubin has never seen the King crowned, and no colony of the cult came this far —
+"not that the Capital knows of".
+
+## Surubin's map (the atlas)
+
+`campaign.json`'s `atlas` ([CAMPAIGN_FORMAT.md §4.1](../../specs/CAMPAIGN_FORMAT.md#41-the-atlas)):
+the Terra Selvagem as Surubin draws it, 100 × 60 map units, north up. Space at the map table opens
+it; choosing a place travels there.
+
+| Drawn | Where | When |
+| --- | --- | --- |
+| The sea with the Baiacu Rei in it, "Rumo a Marina", the shore | west | always |
+| The coast road, Surubin's wrecked boat on the beach | west, along the shore | always |
+| The stream from the hills past the camp to the sea, "Riacho" | north-east to west | always |
+| The hills of the slope | north-east | always (seen from the camp) |
+| The woods round the clearing | middle | always |
+| The old woods west of the camp | west of the camp | `mata.desenhada` |
+
+| Place | Icon | Road | Hours | State |
+| --- | --- | --- | --- | --- |
+| Clareira do Riacho (the camp) | camp | the hub | — | home |
+| Mata da Clareira | forest | `mata-da-clareira`, entrance `chegada` | 1 | rumour → known (`mata.desenhada`) → explored (`mata.explorada`); yields wood, stone and herbs |
+| Riacho dos Juncos | reeds | none yet (M3) | 2 | rumour |
+| Pedreira da Encosta | quarry | none yet (M3) | 2 | rumour |
+| Toca das Bestas | den | none yet | 2 | hidden until `toca.desenhada`, then a rumour |
+
+Each place has Surubin's note for its states (the Ato I notebook, *Roteiro jogável*). An arrival
+between 18:30 and 5:00 is announced on the map: more monsters, and stronger.
+
+## Mata da Clareira (the first place on the map)
+
+`levels/mata-da-clareira.json` (100 × 84, the same generator): the old woods west of the camp, the
+first expedition — a big map to explore, its places joined by two-tile trails, open woods between
+them (trees spaced wide, denser in groves by noise; nothing tall on a trail or just south of it,
+where it would stand between the camera and the knight). Weather pool clear 60, rain 40.
+
+| Area | Where | What |
+| --- | --- | --- |
+| The arrival | south-east | a glade with the stake and its red ribbon (`estaca-volta`) and a Space exit round it, *Voltar ao acampamento* (→ the camp, entrance `mesa`, an hour); entrance `chegada`; the band south of it kept clear |
+| *Clareira das Flores* | east | a flower meadow round a pond (level 1, still water) |
+| *Bosque dos Carvalhos* | middle | old oaks spaced wide, fallen trunks, boulders |
+| *Riacho da Mata* | west third, north to south | a stream (level 0) between sandy banks (level 1), two bridges (`ponte-1`, `ponte-2`), herbs along its banks, birches, mist and fireflies |
+| *Corte Antigo* | west | stumps of an old felling (spent tree resources, no flag); Space on them — cut by axes long before the cult came (a seed for the old colonies) |
+| *Acampamento Abandonado* | south-west | a torn tent, a cold fire pit (a ring of stones), a barrel, a broken fence and a crate with a mark: a spiny fish wearing a crown (Space: `mata.marca`, a toast; Surubin's reaction in the camp — a seed for a colony no one remembers) |
+| *Pedras Musgosas* | north-west | mossy stone ground, rocky knots, good stone to break, seven stones in a ring with roots woven between them (Space: a seed for the Povo da Raiz) |
+| *Trilha das Garras* | north | an oak scored by claws (Space: `toca.boato`, a toast), the trail lost toward the north, rocks, mist |
+
+**Resources** (`resource`, [OBJECT_CATALOG.md](../../specs/OBJECT_CATALOG.md#resource)): 32 trees to
+chop (3 strikes, 2 wood) in groves along the trails, 16 stones to break (4 strikes, 2 stone) mostly
+in the mossy stones, 20 herbs to pick (1 strike, 1 herb) on the stream's banks, the meadow, the old
+camp and the cutting. Each has a spent twin; their flags are `res.mata.<id>`, cleared every morning:
+they grow back. Trees and stones stand on a patch of trodden earth, which reads from afar.
+
+**Chests:** 12 hidden places (`bau-01` … `bau-12`), each a random chest (`chance: 0.4`, gold only —
+up to 30–40): on each expedition from the map a new roll says which are there and how much they
+hold (2 to 7 of them in practice).
+
+**Foes** (the forest creatures — slimes for now; the mobs come later): by day 10 groups of 2–3
+(28 creatures, Lv 1–2) spread over every area — `criaturas-clareira` in the meadow, the oaks, the
+cutting, the stones, the claws, the old camp, the stream north and south, the east and the
+north-east. From 18:30 to 5:00 (`when: hour >= 18.5 or hour < 5`, live) 14 more groups of 3–5
+(*Criatura da noite*, Lv 2–3, every third elite): 83 creatures in all. Every journey from the map
+brings them back; the camp never has foes. Measured: ≈ 180 fps by day, ≈ 80 at night (1280 × 720).
+
+**Story.** The first arrival: a banner, the woods, the camera on the stake, a line about what can
+be gathered. An arrival at night: a toast (*A mata à noite é outra*). The meadow's creatures beaten:
+`mata.criaturas`; with the claw marks found too, the place is explored (`mata.explorada`, a toast).

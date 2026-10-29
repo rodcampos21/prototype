@@ -23,6 +23,7 @@ import { installFogStart, setFogStart } from './AtmosphereFog.js';
 import { cameraFraming, isInterior } from './LevelLook.js';
 import { SHIPPED_LEVELS } from './levels.js';
 import { CharacterCreation } from '../engine/ui/CharacterCreation.js';
+import { AtlasScreen } from '../engine/ui/AtlasScreen.js';
 import { weatherPhase, weatherPoolOf, rollWeather } from './WeatherRoll.js';
 // (the CombatSystem is imported dynamically in init, on combat levels only: peaceful levels never
 // download or parse the combat code; bindings.js is a tiny import-free table)
@@ -158,6 +159,8 @@ const FAR_ACTOR_DISTANCE = 42;
 const FAR_EVERY = 4;
 /** Seconds after a conversation closes during which confirm doesn't start a new one. */
 const TALK_COOLDOWN = 0.8;
+/** After a strike at a resource (`harvest`): the next press strikes again. */
+const HARVEST_COOLDOWN = 0.08;
 /** Real frames drawn behind the loading screen with every effect on (see start()). */
 const WARM_FRAMES = 5;
 /**
@@ -287,6 +290,8 @@ export class Game {
     this._burstTimer = 0;
     this._sparkleTimer = 0;
     this._talkCooldown = 0;
+    /** @type {Map<string, number>} the strikes a resource still needs (`harvest`; this level only) */
+    this._harvestHits = new Map();
     this._tmp = new THREE.Vector3();
     this._focusPos = new THREE.Vector3();
     this._target = { kind: '', npc: null, it: null };
@@ -1655,6 +1660,92 @@ export class Game {
     return m ? m[1] : String(this.level.name || 'level').toLowerCase().replace(/[^a-z0-9-]+/g, '-');
   }
 
+  /**
+   * The campaign's atlas (docs/specs/CAMPAIGN_FORMAT.md §4.1): the map opens over the scene (play
+   * held meanwhile: the caller holds `busy`); a place chosen on it is travelled to.
+   * @returns {Promise<boolean>} true when the player travelled
+   */
+  async openAtlas() {
+    const view = this.campaign?.atlasView();
+    if (!view) return false;
+    const atlas = this.ui.useAtlas(AtlasScreen);
+    atlas.onSound = (name) => this.audio.playSfx(name, { volume: name === 'blip' ? 0.35 : 0.5 });
+    this.ui.prompt.hide();
+    const id = await atlas.open(view);
+    if (!id || this._disposed) return false;
+    return this.campaign.travelAtlas(id);
+  }
+
+  /**
+   * Strike a resource (Space at a full `resource` object; OBJECT_CATALOG.md *resource*): the
+   * knight's swing (the combat sheet's poses, on a combat level), chips, dust or leaves, a thud and a
+   * small shake. Its `hits`-th strike spends it: its flag is set (`flag`, else `res.<level>.<id>` —
+   * the story shows its spent twin), the story gives `amount` of its `item` (a toast, the journal)
+   * and the story clears every `res.` flag at the next morning (StoryRunner: it grows back). Not
+   * while foes are on the player. The strikes are counted while the player stays in the level.
+   * @param {import('./World.js').Interactable} it
+   */
+  async harvest(it) {
+    const o = /** @type {any} */ (it.object);
+    if (!o || !this.story) return;
+    if (this.combat?.engaged) {
+      this.ui.hud.toast(t('game.toast.foesGather'), 1.6);
+      return;
+    }
+    const ro = o.opts ?? {};
+    const kind = ro.kind === 'stone' || ro.kind === 'herbs' ? ro.kind : 'tree';
+    const int = (v, d, lo, hi) => (Number.isFinite(v) ? Math.min(hi, Math.max(lo, Math.round(v))) : d);
+    const hits = int(o.hits, 3, 1, 8);
+    const hitKey = `${this.campaign?.levelId ?? ''}:${o.id}`;
+    const left = (this._harvestHits.get(hitKey) ?? hits) - 1;
+    // the swing
+    const pc = this.combat?.pc;
+    const p = this.player;
+    p.action = pc ? 'gather' : null;
+    const wait = (s) => new Promise((resolve) => { this._later(s, resolve); });
+    try {
+      if (pc) pc.showPose('wind');
+      await wait(0.14);
+      if (pc) pc.showPose('slash');
+      this.audio.playSfx(kind === 'herbs' ? 'step' : 'swing', { volume: 0.5, pitch: kind === 'herbs' ? 1.3 : 1 });
+      await wait(0.06);
+      const at = this._tmp.set(o.x, this.tileMap.getHeight(o.x, o.z) + (kind === 'tree' ? 0.9 : 0.45), o.z);
+      if (kind === 'tree') {
+        this.particles.burst('splash', at, 10, { color: '#b08552', size: [0.06, 0.1] });
+        this.audio.playSfx('hit', { volume: 0.55, pitch: 0.7 });
+      } else if (kind === 'stone') {
+        this.particles.burst('splash', at, 10, { color: '#c9c4b8', size: [0.05, 0.09] });
+        this.particles.burst('footstep', at, 6);
+        this.audio.playSfx('slam', { volume: 0.35, pitch: 1.6 });
+      } else {
+        this.particles.burst('splash', at, 8, { color: '#7fb04a', size: [0.06, 0.09] });
+      }
+      if (kind !== 'herbs') this.rig.shake(0.05, 0.12);
+      if (pc) pc.showPose('follow');
+      await wait(0.14);
+    } finally {
+      p.action = null;
+      // (the pose left the sprite on a still frame: the idle loop again from its start)
+      p.sprite.play('idle', { restart: true });
+    }
+    if (left > 0) {
+      this._harvestHits.set(hitKey, left);
+      return;
+    }
+    this._harvestHits.delete(hitKey);
+    const flag = (typeof o.flag === 'string' && o.flag.trim()) || `res.${this.campaign?.levelId ?? 'level'}.${o.id}`;
+    if (this.campaign) this.campaign.setFlag(flag);
+    else this.story.state.setFlag(flag);
+    const item = (typeof o.item === 'string' && o.item.trim()) || (kind === 'tree' ? 'madeira' : kind === 'stone' ? 'pedra' : 'ervas');
+    this.story.giveItem(item, int(o.amount, 2, 1, 20));
+    this.particles.burst(kind === 'herbs' ? 'sparkle' : 'footstep', this._tmp.set(o.x, this.tileMap.getHeight(o.x, o.z) + 0.3, o.z), kind === 'herbs' ? 4 : 10);
+  }
+
+  /** Is the atlas open? */
+  get atlasOpen() {
+    return !!this.ui?.atlas?.isOpen;
+  }
+
   /** Open / close the story journal (B): only while playing, not during a conversation or the map. */
   toggleJournal(open = !this.journalOpen) {
     const j = this.ui.journal;
@@ -2174,6 +2265,12 @@ export class Game {
         if (it.onInteract) {
           // combat levels: waystones rest, chests open (set by the CombatSystem)
           await it.onInteract(this, it);
+        } else if (it.kind === 'mapTable' && this.campaign?.atlasHere) {
+          // the hub's map table: the atlas, and the journey to the place chosen on it
+          await this.openAtlas();
+        } else if (it.kind === 'resource') {
+          // a tree to chop, a stone to break, herbs to pick: one strike per press
+          await this.harvest(it);
         } else {
           if (it.text?.sfx && it.text.lines?.length) this.audio.playSfx(it.text.sfx, { volume: 0.6 });
           // a sign's, a door's, a well's text (and the defaults standing in for none) translated
@@ -2186,7 +2283,8 @@ export class Game {
     } finally {
       if (kind === 'npc') npc.endTalk();
       this.busy = false;
-      this._talkCooldown = TALK_COOLDOWN;
+      // (a resource is struck again at once: one press, one strike)
+      this._talkCooldown = it?.kind === 'resource' ? HARVEST_COOLDOWN : TALK_COOLDOWN;
     }
   }
 
@@ -2510,6 +2608,9 @@ export class Game {
       busy: this.busy,
       photoMode: this.photoMode,
       mapOpen: this.mapOpen,
+      atlasOpen: this.atlasOpen,
+      // (the place chosen on it; '' while closed)
+      atlasSelected: this.atlasOpen ? this.ui.atlas?.selectedId ?? '' : '',
       music: this.audio.musicPlaying,
       audioReady: this.audio.ready,
       nearest: target ? (target.kind === 'npc' ? target.npc.id : target.it.id) : null,

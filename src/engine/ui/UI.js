@@ -237,6 +237,11 @@ export class UI {
      */
     this.creation = null;
     /**
+     * The atlas (`useAtlas()`: a campaign with a map to travel by; null otherwise).
+     * @type {import('./AtlasScreen.js').AtlasScreen|null}
+     */
+    this.atlas = null;
+    /**
      * The cutscene's letterbox and skip hint (`useStoryUI()`; null without the story UI): the bars,
      * their gilt hairlines, the skip hint's group (laid out per scale) and its ring.
      * @type {{ letterbox: HTMLElement, bars: HTMLElement[], lines: HTMLCanvasElement[],
@@ -499,6 +504,18 @@ export class UI {
     return this.creation;
   }
 
+  /**
+   * The atlas (AtlasScreen.js), made on the first call (a campaign with a map to travel by); the
+   * class comes from the caller, like the character creation's. From then on `update()` gives it the
+   * input while it is open.
+   * @param {typeof import('./AtlasScreen.js').AtlasScreen} Cls
+   * @returns {import('./AtlasScreen.js').AtlasScreen}
+   */
+  useAtlas(Cls) {
+    this.atlas ??= new Cls(this.root);
+    return this.atlas;
+  }
+
   useStoryUI(classes) {
     if (this._story) return { journal: this.journal, emotes: this.emotes, endCard: this.endCard };
     const { Journal, Emotes, EndCard } = classes ?? {};
@@ -717,6 +734,11 @@ export class UI {
         dialogInput = undefined;
       }
     }
+    // the atlas (z 7, like the journal) takes it next
+    if (this.atlas?.isOpen) {
+      this.atlas.update(dt, dialogInput);
+      dialogInput = undefined;
+    }
     // the party's tactics panel (z 7, like the journal: never open with it) takes the input next
     const panel = this.party?.panel;
     if (panel?.isOpen) {
@@ -760,6 +782,8 @@ export class UI {
     }
     this.creation?.dispose();
     this.creation = null;
+    this.atlas?.dispose();
+    this.atlas = null;
     this.debug.dispose();
     this.worldMap.dispose();
     this.minimap.dispose();

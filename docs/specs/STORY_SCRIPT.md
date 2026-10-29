@@ -636,6 +636,13 @@ and going into or out of a level with its own hour are not time passing: no day,
 `rest` in a level with its own hour (an inn's room, `environment.clock: false`) keeps that hour and
 moves the campaign's clock to the morning outside.
 
+**The morning.** When the clock passes 5:00 going forward (or a rest takes the player to the
+morning) every flag whose name starts with `res.` is cleared: the flags a gathered `resource` set
+(OBJECT_CATALOG.md *resource*), so what was chopped, broken or picked grows back. Do not give a flag
+of your own that prefix. An atlas journey moves the clock on by its hours as time passing
+(CAMPAIGN_FORMAT.md §4.1); the variable `expeditions.<level>` counts the expeditions the map made
+to a level.
+
 ### 9.7 The party
 
 The party's members are records in the story's state (`StoryState.party`, PARTY.md §2): the Party

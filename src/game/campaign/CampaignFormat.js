@@ -11,6 +11,7 @@
 import { isOwnKey, showValue } from '../../engine/utils/own.js';
 import { storyFileList } from './StoryFormat.js';
 import { cleanTextKeysOf } from '../../engine/i18n/ContentKeys.js';
+import { normalizeAtlas, serializeAtlas } from './AtlasFormat.js';
 
 /** Any value for a message, never throwing (`{"toString": 1}`), at most 80 characters. @param {unknown} v */
 const show = (v) => {
@@ -72,12 +73,14 @@ const RESERVED = /^(con|prn|aux|nul|com[0-9]|lpt[0-9])$/;
  * @property {{ menu: boolean }} party   the party: `menu` — the player may open the tactics panel
  *   (G, a member's *Tactics…*); false: companions follow the story's rules only, no panel, no G in
  *   the legend. True is the default (absent from the file)
+ * @property {import('./AtlasFormat.js').Atlas|null} atlas   the map the player travels by from the
+ *   hub's map table (AtlasFormat.js; null: none — absent from the file)
  * @property {Record<string, any>} extra   top-level keys this engine does not know, kept as they are
  *   so a rewrite (serializeCampaign) does not drop what a newer engine wrote
  */
 
 /** The top-level keys of a campaign file this engine reads (the rest go to `extra`). */
-const KNOWN_KEYS = new Set(['format', 'version', 'name', 'subtitle', 'title', 'start', 'levels', 'chapters', 'flags', 'story', 'textKeys', 'player', 'party']);
+const KNOWN_KEYS = new Set(['format', 'version', 'name', 'subtitle', 'title', 'start', 'levels', 'chapters', 'flags', 'story', 'textKeys', 'player', 'party', 'atlas']);
 /** Keys never copied into `extra` (they would change its prototype, not add a field). */
 const UNSAFE_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
 
@@ -170,6 +173,7 @@ export function normalizeCampaign(raw) {
   const pa = isPlain(r.party) ? r.party : {};
   if (pa.menu != null && typeof pa.menu !== 'boolean') warnings.push('party.menu must be true or false — ignored');
   const party = { menu: pa.menu !== false };
+  const atlas = normalizeAtlas(r.atlas, ids, warnings);
   const rootKeys = cleanTextKeysOf('root', r.textKeys);
   if (rootKeys.dropped) warnings.push(`textKeys: ${rootKeys.dropped} malformed or unknown text key(s) dropped`);
   /** @type {Record<string, any>} */
@@ -192,6 +196,7 @@ export function normalizeCampaign(raw) {
     ...(rootKeys.keys ? { textKeys: rootKeys.keys } : {}),
     player,
     party,
+    atlas,
     extra,
   };
   return { campaign, warnings, errors };
@@ -233,9 +238,10 @@ export function serializeCampaign(c) {
     ...(c.textKeys ? { textKeys: c.textKeys } : {}),
     ...(c.player?.create ? { player: { create: true } } : {}),
     ...(c.party?.menu === false ? { party: { menu: false } } : {}),
+    ...(c.atlas ? { atlas: serializeAtlas(c.atlas) } : {}),
     ...(c.extra ?? {}),
   };
-  // (an `at` pair on one line)
+  // (an `at` pair — a level's, an atlas point — on one line)
   return `${JSON.stringify(out, null, 2).replace(/\[\n\s+(-?[\d.e+-]+),\n\s+(-?[\d.e+-]+)\n\s+\]/g, '[$1, $2]')}\n`;
 }
 

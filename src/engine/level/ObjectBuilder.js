@@ -130,7 +130,9 @@ export class LevelObjectBuilder {
       case 'tent':
       case 'mapTable':
       case 'banner':
-      case 'stake': {
+      case 'stake':
+      // resources to gather (props/ResourceProps.js)
+      case 'resource': {
         if (obj.type === 'house' && !opts.upperWall) delete opts.upperWall;
         // (each type calls its own method with its own opts — a correlation TS cannot follow)
         res = /** @type {(x: number, y: number, z: number, opts: object) => PropResult} */ (f[obj.type])(obj.x, h(obj.x, obj.z), obj.z, opts);

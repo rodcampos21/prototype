@@ -989,12 +989,25 @@ export class World {
           }
           break;
         case 'mapTable':
-          // (Surubin's map: its text for now; the map screen opens from here later)
+          // (a campaign's hub: Space opens the atlas — Game._interact —; elsewhere its text)
           if (lines.length) {
             const pos = b.interact?.position ?? b.anchor;
             this._interact(obj.id, pos, { radius: 1.2, label: 'Examine', kind: 'mapTable', prompt: new THREE.Vector3(obj.x, b.anchor.y + 1.9, obj.z), text: { speaker: '', ...pages } });
           }
           break;
+        case 'resource': {
+          // a full resource is gathered with Space (Game.harvest); a spent one is scenery
+          const ro = /** @type {any} */ (obj).opts ?? {};
+          if (ro.stage === 'spent') break;
+          const kind = ro.kind === 'stone' || ro.kind === 'herbs' ? ro.kind : 'tree';
+          const y = b.anchor.y;
+          this._interact(obj.id, new THREE.Vector3(obj.x, y, obj.z), {
+            kind: 'resource', label: kind === 'tree' ? 'Chop' : kind === 'stone' ? 'Break' : 'Gather',
+            radius: kind === 'herbs' ? 1.1 : 1.45, prompt: new THREE.Vector3(obj.x, y + (kind === 'tree' ? 2.0 : 1.3), obj.z),
+            text: { speaker: '', lines: [] }, object: obj,
+          });
+          break;
+        }
         case 'well': {
           if (!lines.length) break;
           const y = b.anchor.y;

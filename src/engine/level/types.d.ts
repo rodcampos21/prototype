@@ -409,8 +409,9 @@ export interface ObjectTypeDef {
    */
   story?: boolean;
   /**
-   * Camp type (tent, mapTable, banner, stake — props/CampProps.js): the Baiacu campaign's camp;
-   * Starfall Vale's coverage skips it, the campaign's generator covers it.
+   * Camp type (tent, mapTable, banner, stake — props/CampProps.js; resource — props/ResourceProps.js):
+   * the Baiacu campaign's camp and expeditions; Starfall Vale's coverage skips it, the campaign's
+   * generator covers it.
    */
   camp?: boolean;
   /**

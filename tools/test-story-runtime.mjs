@@ -17,6 +17,7 @@ import { CampaignState, cleanPlayerName, PLAYER_NAME_MAX } from '../src/game/cam
 import { PLAYER_CLASSES, isPlayerClass, classLook } from '../src/game/campaign/PlayerClasses.js';
 import { weatherPhase, weatherPoolOf, rollWeather } from '../src/game/WeatherRoll.js';
 import { normalizeCampaign, parseCampaign, serializeCampaign } from '../src/game/campaign/CampaignFormat.js';
+import { placeState, journeyHours, isNightHour, NIGHT_CONDITION } from '../src/game/campaign/AtlasFormat.js';
 import { buildStory } from '../src/game/campaign/StoryFormat.js';
 import { cachedCondition, evalCondition, parseScript, interpolate, isTextRef } from '../src/engine/level/StoryScript.js';
 import { MAX_PARTY, ruleOfPreset, normalizeRule, PARTY_PRESETS } from '../src/engine/level/PartyRules.js';
@@ -1399,6 +1400,64 @@ begin('the player\'s character: the save, ${player}, the player speaking');
   const anon = new StoryRunner({ game: stubGame(), story, state: new StoryState(story), levelId: 'here' });
   anon.attachLevel('here');
   eq('no character made: the UI default', interpolate('${player}', anon.reader), t('story.player.default'));
+}
+
+begin('the atlas (AtlasFormat.js): the places, their states, the journeys, the night');
+{
+  const raw = {
+    format: 'luminati-campaign', levels: ['camp', 'woods'],
+    atlas: {
+      title: 'Mapa', home: 'camp', entrance: 'mesa',
+      places: [
+        { id: 'home', name: 'Camp', x: 50, y: 30, level: 'camp' },
+        { id: 'woods', name: 'Woods', x: 20, y: 20, icon: 'forest', level: 'woods', entrance: 'in', hours: 1.5, known: 'drawn', explored: 'done-woods', yields: ['Wood'], notes: { rumor: 'They say…' } },
+        { id: 'den', name: 'Den', x: 10, y: 5, icon: 'den', rumor: 'claws' },
+        { id: 'far', name: 'Far', x: 500, y: -4, level: 'nowhere', hours: 30 },
+        { id: 'Bad Id', name: 'x', x: 1, y: 1 },
+      ],
+      sketch: [{ kind: 'sea', points: [[0, 0], [10, 0], [10, 60]] }, { kind: 'label', at: [5, 5], name: 'Sea' }, { kind: 'river', points: [[1, 1]] }, { kind: 'dragon', at: [1, 1] }, { kind: 'forest', points: [[1, 1], [9, 1], [5, 9]], when: 'drawn' }],
+    },
+  };
+  const { campaign, warnings } = normalizeCampaign(raw);
+  const at = /** @type {import('../src/game/campaign/AtlasFormat.js').Atlas} */ (campaign.atlas);
+  eq('normalised: the places kept (a bad id dropped), a level that is none no road, hours clamped, the point inside the map; a short line and an unknown kind dropped',
+    [at.places.map((p) => p.id), at.places[3].level, at.places[3].hours, [at.places[3].x, at.places[3].y], at.places[0].icon, at.sketch.map((f) => f.kind), at.size],
+    [['home', 'woods', 'den', 'far'], '', 12, [100, 0], 'camp', ['sea', 'label', 'forest'], [100, 60]]);
+  ok('… each thing dropped or changed warned', warnings.length === 5, warnings);
+  eq('serialised and read back the same', parseCampaign(serializeCampaign(campaign)).campaign.atlas, at);
+  eq('no atlas: none written', [normalizeCampaign({ format: 'luminati-campaign', levels: ['a'] }).campaign.atlas, serializeCampaign(normalizeCampaign({ format: 'luminati-campaign', levels: ['a'] }).campaign).includes('"atlas"')], [null, false]);
+  ok('an atlas whose hub is no level of the campaign: ignored, warned', (() => { const r = normalizeCampaign({ ...raw, atlas: { ...raw.atlas, home: 'x' } }); return r.campaign.atlas === null && r.warnings.some((w) => w.includes('atlas.home')); })());
+  const flags = new Set();
+  const holds = (c) => (c.startsWith('visited:') ? false : flags.has(c));
+  const st = () => at.places.map((p) => placeState(at, p, holds));
+  eq('states: the hub home; a rumour until known; hidden while its rumour does not hold', st(), ['home', 'rumor', 'hidden', 'rumor']);
+  flags.add('drawn'); flags.add('claws');
+  eq('… known once its condition holds, a rumour shown once it holds', st(), ['home', 'known', 'rumor', 'rumor']);
+  flags.add('done-woods');
+  eq('… explored', placeState(at, at.places[1], holds), 'explored');
+  eq('the default known: the place\'s level visited', placeState(at, { ...at.places[1], known: '', explored: '' }, (c) => c === 'visited:woods'), 'known');
+  eq('journeyHours: from the hub to a place and back its hours; anything else none', [journeyHours(at, 'camp', 'woods'), journeyHours(at, 'woods', 'camp'), journeyHours(at, 'woods', 'woods'), journeyHours(at, 'woods', 'elsewhere'), journeyHours(null, 'camp', 'woods')], [1.5, 1.5, 0, 0, 0]);
+  eq('the night: 18:30 to 5:00', [17, 18.5, 23, 0, 4.9, 5, 12].map(isNightHour), [false, true, true, true, true, false, false]);
+  ok('NIGHT_CONDITION reads the hour as the story does', evalCondition(cachedCondition(NIGHT_CONDITION), { get: () => 19, word: () => 0 }) && !evalCondition(cachedCondition(NIGHT_CONDITION), { get: () => 12, word: () => 0 }));
+}
+
+begin('resources grow back in the morning (the res. flags a harvest sets)');
+{
+  const r = new StoryRunner({ game: stubGame(), story, state: new StoryState(story), levelId: 'here' });
+  r.attachLevel('here');
+  r.state.setFlag('res.mata.arvore-01');
+  r.state.setFlag('res.mata.pedra-02');
+  r.state.setFlag('resgatado');
+  r._passTime(3, 1.5);
+  ok('before 5:00 nothing grows back', r.state.has('res.mata.arvore-01') && r.state.has('res.mata.pedra-02'));
+  r._passTime(4.5, 1);
+  ok('passing 5:00: every res. flag cleared, other flags kept', !r.state.has('res.mata.arvore-01') && !r.state.has('res.mata.pedra-02') && r.state.has('resgatado'));
+  r.state.setFlag('res.mata.erva-03');
+  r._passTime(22, 8);
+  ok('a night passed (22:00 → 6:00): cleared too', !r.state.has('res.mata.erva-03'));
+  r.state.setFlag('res.mata.erva-04');
+  r.rested(23);
+  ok('sleeping until morning: cleared', !r.state.has('res.mata.erva-04'));
 }
 
 begin('the weather a map rolls (WeatherRoll.js), the story holding it');

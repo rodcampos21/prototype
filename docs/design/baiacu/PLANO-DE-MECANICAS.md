@@ -8,7 +8,7 @@ Caderno de Lore, NPCs e Quests*). Aqui fica só o que muda no código.
 | | |
 | --- | --- |
 | **Público** | Rodrigo e o parceiro de projeto; agentes de IA que forem implementar cada etapa. |
-| **Estado** | **M1 (idioma) concluído em 2026-10-28** — veja a etapa A. **M2.1 (tela de criação de personagem) pronta em 2026-10-28**: `game.html` abre a campanha `culto-ao-baiacu-rei` (título → criação → [Estrada da Costa](../levels/estrada-da-costa.md)); nome e classe no save, `${player}` e `player:` nas falas (etapa J, itens 1, 2, 4 e 5). **M2.2 (visual do cavaleiro) pronta**: o Cavaleiro Errante de cabelo branco, armadura de placas clara com dourado, capa azul e espada (estilo de roupa ``plate`` novo no gerador de sprites); cada classe lista seus estágios de visual (``looks`` em ``PlayerClasses.js``), e uma especialização futura troca o visual inteiro. **Clima por mapa (etapa I) e C02 prontos**: ``environment.weatherPool`` sorteia o clima nas viradas de manhã, tarde e noite e nas chegadas; ``weather <x>`` trava e ``weather auto`` libera; a Estrada da Costa leva à Clareira do Riacho, onde acontece a fogueira (C02, marcas ``c02.estacao`` / ``c02.lar`` / ``c02.jantar``). **Acampamento (M2, itens 1 a 3)**: objetos novos ``tent``, ``mapTable``, ``banner`` e ``stake`` (categoria Camp, ``opts.stage`` para o que evolui com a cidade); na manhã do dia 2 a clareira vira o acampamento organizado (tenda e mesa ao norte, estandarte a leste, três lotes a oeste e ao sul) e começa a QP03. O resto é plano. |
+| **Estado** | **M1 (idioma) concluído em 2026-10-28** — veja a etapa A. **M2.1 (tela de criação de personagem) pronta em 2026-10-28**: `game.html` abre a campanha `culto-ao-baiacu-rei` (título → criação → [Estrada da Costa](../levels/estrada-da-costa.md)); nome e classe no save, `${player}` e `player:` nas falas (etapa J, itens 1, 2, 4 e 5). **M2.2 (visual do cavaleiro) pronta**: o Cavaleiro Errante de cabelo branco, armadura de placas clara com dourado, capa azul e espada (estilo de roupa ``plate`` novo no gerador de sprites); cada classe lista seus estágios de visual (``looks`` em ``PlayerClasses.js``), e uma especialização futura troca o visual inteiro. **Clima por mapa (etapa I) e C02 prontos**: ``environment.weatherPool`` sorteia o clima nas viradas de manhã, tarde e noite e nas chegadas; ``weather <x>`` trava e ``weather auto`` libera; a Estrada da Costa leva à Clareira do Riacho, onde acontece a fogueira (C02, marcas ``c02.estacao`` / ``c02.lar`` / ``c02.jantar``). **Acampamento (M2, itens 1 a 3)**: objetos novos ``tent``, ``mapTable``, ``banner`` e ``stake`` (categoria Camp, ``opts.stage`` para o que evolui com a cidade); na manhã do dia 2 a clareira vira o acampamento organizado (tenda e mesa ao norte, estandarte a leste, três lotes a oeste e ao sul) e começa a QP03. **Mapa do Surubin, Mata da Clareira e a noite (M2, itens 4 a 6)**: o campo ``atlas`` da campanha e a tela do mapa (G1), aberta na mesa; a Mata da Clareira, primeiro lugar do mapa, com a estaca de volta; de 18:30 às 5:00 os grupos noturnos aparecem (muito mais monstros, alguns de elite). Com isso o M2 está completo. **Exploração**: a Mata da Clareira cresceu para 100 × 84 (riacho com duas pontes, pedras musgosas, acampamento abandonado, corte antigo), com recursos para cortar, quebrar e colher (tipo `resource`, voltam a cada manhã), baús aleatórios por expedição (só ouro) e criaturas espalhadas (28 de dia, 83 à noite). O resto é plano. |
 | **Relacionado** | [Onboarding](../../ai/AGENT_ONBOARDING.md) · [Playbooks](../../ai/TASK_PLAYBOOKS.md) · [Formato de campanha](../../specs/CAMPAIGN_FORMAT.md) · [Linguagem de história](../../specs/STORY_SCRIPT.md) · [I18N](../../specs/I18N.md) · [Módulo pixel](../../architecture/modules/pixel.md) |
 
 ---
@@ -137,10 +137,17 @@ português e os checks de i18n passam sem japonês e chinês.
    reposição dos pontos de coleta só de manhã (item 3), isso faz cada obra pedir umas 4
    expedições (Caderno, *Coleta em várias expedições*).
 3. **Pontos de coleta**: um novo tipo de objeto `resourceNode` (árvore cortável, veio de pedra, moita
-   de ervas), com Espaço para coletar, quantidade e reposição a cada manhã. Enquanto ele não existe,
-   dá para usar um `event` `use` com `give madeira 3` e `once`.
+   de ervas), com Espaço para coletar, quantidade e reposição a cada manhã. **Feito (2026-10-28)**
+   como o tipo `resource` ([catálogo](../../specs/OBJECT_CATALOG.md#resource)): cada Espaço é um golpe
+   (o cavaleiro golpeia, lascas, poeira ou folhas, som e tremor); no último golpe dá o item
+   (`madeira`, `pedra`, `ervas`, declarados em `story/main.json`) e vira toco, cascalho ou galhos
+   secos. Volta a crescer às 5h (a manhã apaga as flags `res.*`). Não se coleta com inimigos em
+   cima. Falta a mochila com limite (2a) e o HUD de recursos (2).
 4. **Saque de inimigos**: hoje o loot é ouro e poções (`src/game/combat/Loot.js`). Adicionar itens
    de recurso à tabela de saque por tipo de inimigo (couro e osso das bestas).
+4a. **Baús aleatórios** (feito em 2026-10-28): um baú com `chance` aparece ou não em cada
+   expedição, com uma quantia de ouro sorteada; por enquanto só ouro. Depois: ranks de raridade com
+   saques melhores.
 5. **Ícones** dos recursos pintados por código (novo `ItemIcons.js` em `src/engine/pixel/`).
 
 ### D. Relógio pelos dias do jogo
@@ -166,9 +173,11 @@ Um dia dura cerca de 36 minutos reais (`TIME_SPEED`: 1 hora de jogo = 90 s).
    seguinte e avança o dia, as obras e as contagens; um prazo pode vencer durante a noite. Antes
    do alojamento, o tempo só passa jogando.
 5a. **A noite** (Bíblia, *A noite*): de 18:30 até a manhã, os nós têm muito mais monstros e podem
-   aparecer variantes mais fortes. Caminho: cada fase de expedição declara grupos de inimigos
-   extras com `when` na hora (condição nova `night`, ou `hour >= 18.5`) e os mais fortes com um
-   peso noturno; o acampamento nunca tem inimigos.
+   aparecer variantes mais fortes. **Feito (2026-10-28):** cada fase de expedição declara grupos
+   de inimigos extras com `when: hour >= 18.5 or hour < 5` (`NIGHT_CONDITION` em
+   `src/game/campaign/AtlasFormat.js`), que entram e saem ao vivo conforme o relógio; os mais
+   fortes são `elite` e de nível maior. Na Mata da Clareira: 5 inimigos de dia, 18 à noite. O
+   acampamento nunca tem inimigos. O mapa avisa quando a chegada cai de noite.
 6. **Exibição diegética**: a contagem aparece no atlas (G); até lá, no diário e em falas.
 7. Obras (E) e eventos usam o mesmo dia.
 
@@ -300,6 +309,16 @@ acampamento: a viagem é pela mesa do Surubin. Versão mínima:
    mochila é guardada e o Surubin "desenha" o que foi descoberto.
 5. Só se viaja a partir da mesa; viagem direta entre nós vizinhos fica para depois.
 6. Estado no save: os nós e seus estados (boato, descoberto, explorado).
+
+**Feito (2026-10-28).** O campo `atlas` do `campaign.json` ([formato, §4.1](../../specs/CAMPAIGN_FORMAT.md#41-the-atlas)):
+lugares com ícone, fase, entrada, horas de viagem, condições de boato / descoberto / explorado,
+recursos e a anotação do Surubin por estado; o esboço do terreno (mar, costa, estrada, rio, matas,
+colinas, juncos, rótulos, o Baiacu Rei no mar, o barco naufragado), cada traço com `when`. A tela
+(`AtlasScreen`) é um pergaminho pintado por código, com bordas queimadas, dobras, rosa dos ventos
+e a rota pontilhada em vermelho; ao lado, a viagem, a hora de chegada e o aviso de noite. Os
+estados não ganharam campo próprio no save: são lidos das flags e das visitas. Cada viagem pelo
+mapa é uma expedição nova (os grupos derrotados voltam). A volta é uma saída por Espaço ao redor
+da estaca com fita. Falta para o M3: a mochila guardada na volta.
 
 **G2, o atlas completo (depois do núcleo).** Uma tela própria (no estilo do mapa-múndi atual, `ui/Minimap.js` / `WorldMap`) com:
 

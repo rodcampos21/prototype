@@ -109,6 +109,7 @@ toggle in the tool options places freely (`snapStep` in
 | `mapTable` | Map table | Camp | point | prop | yes | box | — | Examine (only with `text`) |
 | `banner` | Banner | Camp | point | prop | yes | circle | — | — |
 | `stake` | Stake | Camp | point | prop | yes | ribbon: circle r 0.12; plot: none | — | — |
+| `resource` | Resource | Camp | point | prop | yes | circle (tree trunk, boulder, bush; spent: stump and trunk, rubble) | — | Chop / Break / Gather (full only) |
 | `bed` | Bed | Interior | point | prop | yes | box | — | — |
 | `table` | Table | Interior | point | prop | yes | box (round: circle) | — (a candle flame) | — |
 | `chair` | Chair | Interior | point | prop | yes | circle | — | — |
@@ -166,6 +167,8 @@ Enumerations exported by the catalog:
 | `TENT_STAGES` | `worn`, `pavilion` (a tent's `opts.stage`) |
 | `BANNER_STAGES` | `pole`, `mast` (a banner's `opts.stage`) |
 | `STAKE_KINDS` | `ribbon`, `plot` (a stake's `opts.kind`) |
+| `RESOURCE_KINDS` | `tree`, `stone`, `herbs` (a resource's `opts.kind`) |
+| `RESOURCE_STAGES` | `full`, `spent` (a resource's `opts.stage`) |
 
 Helper for the camp types: `isCampType(type)`.
 
@@ -575,7 +578,8 @@ Builder extra: `wall` (wall-mounted, no legs and no collider). **In the game:** 
 
 The camp of the Baiacu campaign (`camp: true`, category **Camp**; builders in
 [`props/CampProps.js`](../../src/engine/world/props/CampProps.js)), which grows from a clearing
-into a town ([the mechanics plan](../design/baiacu/PLANO-DE-MECANICAS.md), stages E and F1).
+into a town ([the mechanics plan](../design/baiacu/PLANO-DE-MECANICAS.md), stages E and F1), and
+the resources its expeditions gather (`resource`, [`props/ResourceProps.js`](../../src/engine/world/props/ResourceProps.js)).
 
 - **Stages.** A prop that changes as the camp grows takes `opts.stage`, one of its list in the
   catalog (`TENT_STAGES`, `BANNER_STAGES`); the first entry is the first camp's, and anything else
@@ -612,7 +616,8 @@ stub.
 | `opts.seed` | int | `1` | 0–9999 | |
 
 **In the game:** box collider 1.8 × 1.0; with text: interactable "Examine" (radius 1.2), in front of
-the table. The map screen will open from here (the plan's stage G1).
+the table. In a campaign's atlas hub, Space opens the atlas instead
+([CAMPAIGN_FORMAT.md §4.1](CAMPAIGN_FORMAT.md#41-the-atlas)).
 
 ### banner
 
@@ -637,6 +642,38 @@ The pufferfish on sea blue, hanging from a crossbar and swaying in the wind.
 | `opts.seed` | int | `1` | 0–9999 | The stakes' lean. |
 
 **In the game:** a ribbon stake has a small circle collider (0.12); a plot none (it is walkable).
+
+### resource
+
+Something to gather on an expedition (builders in
+[`props/ResourceProps.js`](../../src/engine/world/props/ResourceProps.js)).
+
+| Field | Type | Default | Editor range / options | Notes |
+| --- | --- | --- | --- | --- |
+| `rotation` | angle | `0` | step 15° | A stump's felled trunk lies toward local +X. |
+| `opts.kind` | select | `tree` | `RESOURCE_KINDS` | `tree`: a tree (Trees.js) to chop. `stone`: a grey boulder with pale veins to break. `herbs`: a low flowering bush to pick. |
+| `opts.stage` | select | `full` | `RESOURCE_STAGES` | `full`: gathered with Space. `spent`: what is left — a stump with chips and the felled trunk, rubble, bare twigs (no prompt). A spent tree with no condition is a plain stump (the Mata's old cutting). |
+| `item` | text | `"madeira"` | | The story item it gives (a story file declares it: its name in the toast and the journal). |
+| `amount` | int | `2` | 1–20 | How many. |
+| `hits` | int | `3` | 1–8 | Strikes until it is spent (one per Space). |
+| `flag` | text | `""` | | The flag set when it is spent; blank: `res.<level>.<id>`. |
+| `opts.tree` | select | `oak` | `TREE_KINDS` | Trees only. |
+| `opts.height` | number | `4` | 2.5–6, step 0.1 | Trees only. |
+| `opts.seed` | int | `1` | 0–9999 | |
+
+**Placing one.** A resource that grows back is two objects at one spot: the `full` one with
+`unless: <flag>` and a `spent` twin with `when: <flag>` (the story shows one at a time, live — World's
+story groups). Its flag should start with `res.`: **every `res.` flag is cleared at 5:00 each
+morning** (and when the player sleeps until morning), so the full one stands again
+(StoryRunner `_regrow`).
+
+**In the game:** a full resource is an interactable — *Cortar* / *Quebrar* / *Colher* (radius 1.45; herbs
+1.1). Each press is one strike (`Game.harvest`): the knight's swing (on a combat level), chips, dust
+or leaves, a thud, a small shake. The `hits`-th strike sets its flag and gives `amount` × `item`
+(the story's give: a toast and a chime). Not with foes on the player (a toast). Strikes are counted
+while the player stays in the level. Colliders: the tree's trunk, the boulder (≈ 0.7), the bush
+(0.28); a stump and its trunk, rubble (0.3); twigs none. `level:check --campaign` counts a full
+resource's flag as set.
 
 ## Interior
 
@@ -1156,6 +1193,7 @@ An iron-banded treasure chest (`PropFactory.chest`, [`props/CombatProps.js`](../
 | `gold` | int | `20` | 0–500 | Coins that pop out on opening. |
 | `potions` | int | `0` | 0–5 | Healing Draughts that pop out. |
 | `upgrade` | select | `none` | `CHEST_UPGRADES` | One `upgrade` pickup: +20 max HP, +10 max MP or +3 ATK (Inspector labels: None, Max HP +20, Max MP +10, Attack +3; the file stores the values). |
+| `chance` | number | absent | 0–1 (not in the Inspector) | *(Optional, October 2026.)* A **random chest** of a campaign: there on an expedition only when the roll says so, with a random amount of gold between a third of `gold` and `gold`. Rolled per journey, level and expedition count (`expeditions.<level>`), so a reload gives the same chests and each new expedition from the atlas rolls again (CAMPAIGN_FORMAT.md §4.1). Absent or 1: always there. |
 
 **In the game:** ~0.9 × 0.6 × 0.6 u, a circle collider r 0.45, the interact point 0.8 u in front
 (radius 1.2). The lid is a separate animated part: the prop's `controls.open()` swings it open in

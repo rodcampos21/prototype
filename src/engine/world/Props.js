@@ -18,6 +18,7 @@ import {
 } from './props/SmallProps.js';
 import { buildChest, buildWaystone } from './props/CombatProps.js';
 import { buildTent, buildMapTable, buildBanner, buildStake } from './props/CampProps.js';
+import { buildResource } from './props/ResourceProps.js';
 import {
   buildBed, buildTable, buildChair, buildShelf, buildHearth, buildCounter, buildRug, buildStaircase, buildWardrobe,
   buildWallWindow, buildSacks,
@@ -394,6 +395,15 @@ export class PropFactory {
    * @returns {PropResult}
    */
   stake(x, y, z, opts = {}) { return buildStake(this, x, y, z, opts); }
+
+  /**
+   * A resource to gather: `tree` (a tree; spent: a stump and the felled trunk), `stone` (a boulder with
+   * pale veins; spent: rubble) or `herbs` (a flowering bush; spent: bare twigs).
+   * @param {number} x @param {number} y @param {number} z
+   * @param {{ rotation?: number, kind?: string, stage?: string, tree?: string, height?: number, seed?: number, id?: string }} [opts]
+   * @returns {PropResult}
+   */
+  resource(x, y, z, opts = {}) { return buildResource(this, x, y, z, opts); }
 
   /** Dispose every geometry, material and texture this factory created (not the TextureLibrary's). */
   dispose() {

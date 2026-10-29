@@ -111,6 +111,14 @@ export const TENT_STAGES = ['worn', 'pavilion'];
 export const BANNER_STAGES = ['pole', 'mast'];
 /** What a `stake` is (`opts.kind`): one stake with a ribbon, or a roped building plot. */
 export const STAKE_KINDS = ['ribbon', 'plot'];
+/**
+ * What a `resource` is (`opts.kind`, props/ResourceProps.js): a tree to chop, a stone to break, a
+ * bush of herbs to pick. Its stages (`opts.stage`): `full`, gathered with Space, and `spent`, what
+ * is left (a stump, rubble, bare twigs) until it grows back.
+ */
+export const RESOURCE_KINDS = ['tree', 'stone', 'herbs'];
+/** @see RESOURCE_KINDS */
+export const RESOURCE_STAGES = ['full', 'spent'];
 
 /** Quilt colours of a `bed` (`opts.blanket`; the texture `quilt_<colour>`, props/Furniture.js BLANKETS). */
 export const BLANKET_COLORS = ['red', 'blue', 'green', 'ochre', 'plum'];
@@ -318,6 +326,23 @@ export const OBJECT_TYPES = {
       { key: 'opts.kind', label: 'Kind', type: 'select', options: STAKE_KINDS },
       { key: 'opts.width', label: 'Plot width', type: 'number', min: 1.5, max: 10, step: 0.5, help: 'Plots only.' },
       { key: 'opts.depth', label: 'Plot depth', type: 'number', min: 1.5, max: 10, step: 0.5, help: 'Plots only.' },
+      SEED,
+    ],
+  },
+  resource: {
+    label: 'Resource', category: 'Camp', placement: 'point', kind: 'prop', camp: true, glyph: '✦', color: '#9cbf5a', radius: 0.6, rotatable: true, snap: 0.25,
+    help: 'Something to gather with Space: a tree to chop, a stone to break, herbs to pick. Struck “Hits” times it gives “Amount” of its item and sets its flag; give it “unless: <flag>” and a spent twin “when: <flag>”. Flags starting with res. are cleared every morning: it grows back.',
+    defaults: { rotation: 0, item: 'madeira', amount: 2, hits: 3, flag: '', opts: { kind: 'tree', stage: 'full', tree: 'oak', height: 4, seed: 1 } },
+    fields: [
+      ROT,
+      { key: 'opts.kind', label: 'Kind', type: 'select', options: RESOURCE_KINDS },
+      { key: 'opts.stage', label: 'Stage', type: 'select', options: RESOURCE_STAGES, help: 'Full: gathered with Space. Spent: what is left until it grows back.' },
+      { key: 'item', label: 'Item given', type: 'text', help: 'A story item id (madeira, pedra, ervas).' },
+      { key: 'amount', label: 'Amount', type: 'int', min: 1, max: 20 },
+      { key: 'hits', label: 'Hits', type: 'int', min: 1, max: 8 },
+      { key: 'flag', label: 'Flag when gathered', type: 'text', help: 'Blank: res.<level>.<id>.' },
+      { key: 'opts.tree', label: 'Tree kind', type: 'select', options: TREE_KINDS, help: 'Trees only.' },
+      { key: 'opts.height', label: 'Tree height', type: 'number', min: 2.5, max: 6, step: 0.1, help: 'Trees only.' },
       SEED,
     ],
   },

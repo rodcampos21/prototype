@@ -50,8 +50,15 @@ const table = {
     'prompt.enter': 'Entrar',
     'prompt.rest': 'Descansar',
     'prompt.open': 'Abrir',
+    'prompt.chop': 'Cortar',
+    'prompt.break': 'Quebrar',
+    'prompt.gather': 'Colher',
 
     'toast.noParty': 'Ninguém viaja com você.',
+    /** a resource spent (Game.harvest): {item} the item's name, {n} how many */
+    'toast.gathered': '+{n} {item}',
+    /** a resource struck while foes are near */
+    'toast.foesGather': 'Não dá para trabalhar com inimigos por perto',
     'toast.weather.clear': 'Céu limpo',
     'toast.weather.rain': 'Chuva',
     'toast.weather.snow': 'Neve',
@@ -121,8 +128,13 @@ const table = {
     'prompt.enter': 'Enter',
     'prompt.rest': 'Rest',
     'prompt.open': 'Open',
+    'prompt.chop': 'Chop',
+    'prompt.break': 'Break',
+    'prompt.gather': 'Gather',
 
     'toast.noParty': 'No one travels with you.',
+    'toast.gathered': '+{n} {item}',
+    'toast.foesGather': 'Not with foes nearby',
     'toast.weather.clear': 'Clear skies',
     'toast.weather.rain': 'Rain',
     'toast.weather.snow': 'Snowfall',

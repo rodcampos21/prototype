@@ -17,9 +17,15 @@
     },
     {
       "id": "clareira-do-riacho"
+    },
+    {
+      "id": "mata-da-clareira"
     }
   ],
   "chapters": [],
+  "story": [
+    "main.json"
+  ],
   "textKeys": {
     "subtitle": "8D8994D15DC5441421A2C2C307E65EED",
     "title.title": "0D5D362E43CD5C26FA16E16559129DDE",
@@ -30,5 +36,206 @@
   },
   "party": {
     "menu": false
+  },
+  "atlas": {
+    "title": "O mapa do Surubin",
+    "subtitle": "Terra Selvagem",
+    "home": "clareira-do-riacho",
+    "entrance": "mesa",
+    "places": [
+      {
+        "id": "acampamento",
+        "name": "Clareira do Riacho",
+        "x": 60,
+        "y": 34,
+        "icon": "camp",
+        "level": "clareira-do-riacho",
+        "notes": {
+          "rumor": "A clareira do riacho. O estandarte do Rei já tremula aqui."
+        }
+      },
+      {
+        "id": "mata-da-clareira",
+        "name": "Mata da Clareira",
+        "x": 41,
+        "y": 27,
+        "icon": "forest",
+        "level": "mata-da-clareira",
+        "entrance": "chegada",
+        "hours": 1,
+        "known": "mata.desenhada",
+        "explored": "mata.explorada",
+        "yields": [
+          "Madeira",
+          "Pedra",
+          "Ervas"
+        ],
+        "notes": {
+          "rumor": "Os marinheiros falam de uma mata velha a oeste daqui. Madeira boa, e caça.",
+          "known": "Carvalhos velhos, um riacho com duas pontes, pedras musgosas e uma clareira de flores. A trilha some ao norte.",
+          "explored": "Já conhecemos cada trilha dela. À noite, porém, ninguém volta igual."
+        }
+      },
+      {
+        "id": "riacho-dos-juncos",
+        "name": "Riacho dos Juncos",
+        "x": 81,
+        "y": 22,
+        "icon": "reeds",
+        "hours": 2,
+        "yields": [
+          "Comida",
+          "Ervas"
+        ],
+        "notes": {
+          "rumor": "Subindo o riacho, dizem, os juncos crescem mais alto que um homem. Peixe e ervas."
+        }
+      },
+      {
+        "id": "pedreira-da-encosta",
+        "name": "Pedreira da Encosta",
+        "x": 75,
+        "y": 9,
+        "icon": "quarry",
+        "hours": 2,
+        "yields": [
+          "Pedra",
+          "Minério"
+        ],
+        "notes": {
+          "rumor": "Uma pedreira antiga na encosta. Pedra para as obras. Quem será que a cortou primeiro?"
+        }
+      },
+      {
+        "id": "toca-das-bestas",
+        "name": "Toca das Bestas",
+        "x": 33,
+        "y": 8,
+        "icon": "den",
+        "hours": 2,
+        "rumor": "toca.desenhada",
+        "yields": [
+          "Couro",
+          "Osso"
+        ],
+        "notes": {
+          "rumor": "Marcas de garra num carvalho, ao norte da mata. De noite, ouço uivos de lá."
+        }
+      }
+    ],
+    "sketch": [
+      {
+        "kind": "sea",
+        "points": [
+          [0, 0],
+          [16, 0],
+          [18, 8],
+          [15, 17],
+          [17, 27],
+          [14, 38],
+          [17, 48],
+          [15, 60],
+          [0, 60]
+        ]
+      },
+      {
+        "kind": "coast",
+        "points": [
+          [16, 0],
+          [18, 8],
+          [15, 17],
+          [17, 27],
+          [14, 38],
+          [17, 48],
+          [15, 60]
+        ]
+      },
+      {
+        "kind": "fish",
+        "at": [8, 21]
+      },
+      {
+        "kind": "label",
+        "at": [8, 54],
+        "name": "Rumo a Marina"
+      },
+      {
+        "kind": "road",
+        "points": [
+          [25, 60],
+          [24, 50],
+          [22, 41],
+          [23, 30],
+          [25, 20],
+          [24, 10],
+          [23, 0]
+        ]
+      },
+      {
+        "kind": "wreck",
+        "at": [19.5, 46]
+      },
+      {
+        "kind": "label",
+        "at": [30, 56],
+        "name": "Estrada da Costa"
+      },
+      {
+        "kind": "river",
+        "points": [
+          [96, 6],
+          [88, 13],
+          [81, 19],
+          [72, 26],
+          [65, 31],
+          [57, 35],
+          [46, 38],
+          [34, 39],
+          [24, 40],
+          [15, 41]
+        ]
+      },
+      {
+        "kind": "hills",
+        "points": [
+          [64, 2],
+          [94, 1],
+          [97, 13],
+          [84, 15],
+          [70, 14],
+          [63, 9]
+        ]
+      },
+      {
+        "kind": "forest",
+        "points": [
+          [52, 24],
+          [70, 25],
+          [72, 32],
+          [69, 45],
+          [56, 47],
+          [50, 41],
+          [53, 33]
+        ]
+      },
+      {
+        "kind": "forest",
+        "points": [
+          [29, 14],
+          [47, 12],
+          [52, 22],
+          [50, 34],
+          [44, 36],
+          [31, 35],
+          [27, 25]
+        ],
+        "when": "mata.desenhada"
+      },
+      {
+        "kind": "label",
+        "at": [81, 31],
+        "name": "Riacho"
+      }
+    ]
   }
 }
