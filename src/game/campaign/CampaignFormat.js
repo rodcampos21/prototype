@@ -9,7 +9,8 @@
  * key, and level ids are file-safe slugs, so every path stays inside the campaign's folder.
  */
 import { isOwnKey, showValue } from '../../engine/utils/own.js';
-import { storyFileList } from './StoryFormat.js';
+import { storyFileList, EQUIP_SLOTS } from './StoryFormat.js';
+import { isStoryName } from '../../engine/level/StoryCondition.js';
 import { cleanTextKeysOf } from '../../engine/i18n/ContentKeys.js';
 import { normalizeAtlas, serializeAtlas } from './AtlasFormat.js';
 
@@ -75,12 +76,28 @@ const RESERVED = /^(con|prn|aux|nul|com[0-9]|lpt[0-9])$/;
  *   the legend. True is the default (absent from the file)
  * @property {import('./AtlasFormat.js').Atlas|null} atlas   the map the player travels by from the
  *   hub's map table (AtlasFormat.js; null: none — absent from the file)
+ * @property {CampaignInventory|null} inventory   the backpack and the starting equipment (null:
+ *   none — absent from the file: no backpack limit, no equipment slots shown)
  * @property {Record<string, any>} extra   top-level keys this engine does not know, kept as they are
  *   so a rewrite (serializeCampaign) does not drop what a newer engine wrote
  */
 
+/**
+ * The backpack and the equipment (CAMPAIGN_FORMAT.md §4.2). Gathered items (story items with
+ * `pack`) go into the backpack, up to `pack` of them in all; arriving at the atlas's home stores
+ * them in the camp's stock. The largest `grow` step whose `when` holds raises the limit (the silo).
+ * @typedef {object} CampaignInventory
+ * @property {number} pack   how many pack items the backpack holds (1–999)
+ * @property {{ when: string, pack: number }[]} grow   a larger backpack while `when` (a story
+ *   condition) holds
+ * @property {Record<string, string>} equipment   slot (EQUIP_SLOTS) → the story item a new journey
+ *   starts with there
+ */
+
 /** The top-level keys of a campaign file this engine reads (the rest go to `extra`). */
-const KNOWN_KEYS = new Set(['format', 'version', 'name', 'subtitle', 'title', 'start', 'levels', 'chapters', 'flags', 'story', 'textKeys', 'player', 'party', 'atlas']);
+const KNOWN_KEYS = new Set(['format', 'version', 'name', 'subtitle', 'title', 'start', 'levels', 'chapters', 'flags', 'story', 'textKeys', 'player', 'party', 'atlas', 'inventory']);
+/** The backpack's largest limit. */
+const PACK_MAX = 999;
 /** Keys never copied into `extra` (they would change its prototype, not add a field). */
 const UNSAFE_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
 
@@ -174,6 +191,7 @@ export function normalizeCampaign(raw) {
   if (pa.menu != null && typeof pa.menu !== 'boolean') warnings.push('party.menu must be true or false — ignored');
   const party = { menu: pa.menu !== false };
   const atlas = normalizeAtlas(r.atlas, ids, warnings);
+  const inventory = normalizeInventory(r.inventory, warnings);
   const rootKeys = cleanTextKeysOf('root', r.textKeys);
   if (rootKeys.dropped) warnings.push(`textKeys: ${rootKeys.dropped} malformed or unknown text key(s) dropped`);
   /** @type {Record<string, any>} */
@@ -197,9 +215,55 @@ export function normalizeCampaign(raw) {
     player,
     party,
     atlas,
+    inventory,
     extra,
   };
   return { campaign, warnings, errors };
+}
+
+/**
+ * The `inventory` field → CampaignInventory, or null (absent, or not an object: a warning).
+ * @param {unknown} raw
+ * @param {string[]} warnings
+ * @returns {CampaignInventory|null}
+ */
+function normalizeInventory(raw, warnings) {
+  if (raw == null) return null;
+  if (!isPlain(raw)) { warnings.push('"inventory" must be an object — ignored'); return null; }
+  const r = /** @type {Record<string, any>} */ (raw);
+  const size = (/** @type {unknown} */ v) => (Number.isInteger(v) && /** @type {number} */ (v) >= 1 && /** @type {number} */ (v) <= PACK_MAX ? /** @type {number} */ (v) : 0);
+  let pack = size(r.pack);
+  if (!pack) {
+    if (r.pack != null) warnings.push(`inventory.pack must be a whole number from 1 to ${PACK_MAX} — 10 used`);
+    pack = 10;
+  }
+  /** @type {{ when: string, pack: number }[]} */
+  const grow = [];
+  for (const [k, g] of (Array.isArray(r.grow) ? r.grow : []).entries()) {
+    const when = isPlain(g) ? text(g.when).trim() : '';
+    const n = isPlain(g) ? size(g.pack) : 0;
+    if (!when || !n) { warnings.push(`inventory.grow[${k}] needs "when" (a story condition) and "pack" (1–${PACK_MAX}) — dropped`); continue; }
+    grow.push({ when, pack: n });
+  }
+  if (r.grow != null && !Array.isArray(r.grow)) warnings.push('inventory.grow must be a list — ignored');
+  /** @type {Record<string, string>} */
+  const equipment = {};
+  for (const [slot, id] of Object.entries(isPlain(r.equipment) ? r.equipment : {})) {
+    if (!EQUIP_SLOTS.includes(/** @type {any} */ (slot))) { warnings.push(`inventory.equipment: "${show(slot)}" is not a slot (${EQUIP_SLOTS.join(', ')}) — dropped`); continue; }
+    if (!isStoryName(id)) { warnings.push(`inventory.equipment.${slot}: "${show(id)}" is not an item id — dropped`); continue; }
+    equipment[slot] = id;
+  }
+  if (r.equipment != null && !isPlain(r.equipment)) warnings.push('inventory.equipment must be an object — ignored');
+  return { pack, grow, equipment };
+}
+
+/** @param {CampaignInventory} inv */
+function serializeInventory(inv) {
+  return {
+    pack: inv.pack,
+    ...(inv.grow.length ? { grow: inv.grow.map((g) => ({ when: g.when, pack: g.pack })) } : {}),
+    ...(Object.keys(inv.equipment).length ? { equipment: { ...inv.equipment } } : {}),
+  };
 }
 
 /**
@@ -239,6 +303,7 @@ export function serializeCampaign(c) {
     ...(c.player?.create ? { player: { create: true } } : {}),
     ...(c.party?.menu === false ? { party: { menu: false } } : {}),
     ...(c.atlas ? { atlas: serializeAtlas(c.atlas) } : {}),
+    ...(c.inventory ? { inventory: serializeInventory(c.inventory) } : {}),
     ...(c.extra ?? {}),
   };
   // (an `at` pair — a level's, an atlas point — on one line)

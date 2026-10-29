@@ -599,6 +599,21 @@ export function checkCampaign(campaign, readLevel, { strict = false, levelChecks
     }
     levelData.set(id, d);
   }
+  // the inventory (CAMPAIGN_FORMAT.md §4.2): its larger backpacks' conditions are reads; the
+  // starting equipment is used, each a declared item for that slot
+  const inv = campaign.inventory;
+  if (inv) {
+    for (const [k, g] of inv.grow.entries()) {
+      checkCondition(g.when, 'flag', `campaign.json: inventory.grow[${k}]: when`);
+      useCondition(g.when, `campaign.json › inventory.grow[${k}] › when`);
+    }
+    for (const [slot, id] of Object.entries(inv.equipment)) {
+      startItems.add(id);
+      const it = story?.items[id];
+      if (story && !it) warn(`campaign.json: inventory.equipment.${slot}: "${id}" is not an item the story files declare`);
+      else if (it && it.slot !== slot) warn(`campaign.json: inventory.equipment.${slot}: item "${id}" is ${it.slot ? `for the ${it.slot} slot` : 'no equipment (no "slot")'}`);
+    }
+  }
   // the atlas (CAMPAIGN_FORMAT.md §4.1): every place with a road is a journey from the hub's map
   // table (a travel of the hub's file); its conditions and its sketch's are reads
   const atlas = campaign.atlas;

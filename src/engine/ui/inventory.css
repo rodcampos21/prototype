@@ -1,0 +1,22 @@
+/* ------------------------------------------------------------------------------------------ */
+/* The resource bar (ResourceBar.js) and the journal's inventory tabs (InventoryPanel.js)      */
+/* ------------------------------------------------------------------------------------------ */
+
+.lu-root .lu-resbar.is-empty { display: none; }
+.lu-root .lu-resbar canvas.frame { pointer-events: none; }
+/* the combat skill bar's purse: the resource bar shows the gold instead */
+.lu-root--resources .lu-skills__gold { display: none; }
+
+/* the cells: buttons laid over their sockets */
+.lu-root .lu-inv__cell {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+.lu-root .lu-inv__cell:focus-visible { outline: none; }
+/* the chosen cell's socket lit */
+.lu-root .lu-inv__cell.is-sel canvas.frame { filter: brightness(1.7) saturate(1.2); }
+.lu-journal:not(.is-open) .lu-inv__cursor { animation-play-state: paused; }

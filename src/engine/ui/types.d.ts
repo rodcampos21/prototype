@@ -19,7 +19,7 @@ declare module 'lil-gui' {
 // -------------------------------------------------------------------------------------------------
 
 /** The journal's tabs ('codex' only when the data carries a Códex). */
-export type JournalTab = 'quests' | 'items' | 'codex';
+export type JournalTab = 'quests' | 'items' | 'pack' | 'gear' | 'codex';
 
 /** An objective of a quest: shown with a box, ticked (and struck through) once `done`. */
 export interface JournalGoal {
@@ -91,6 +91,63 @@ export interface JournalData {
   gold?: number;
   /** the Códex tab's pages, in number order; absent: no Códex tab (a level without combat) */
   codex?: JournalCodexEntry[];
+  /** a campaign's backpack and equipment: the Backpack and Equipment tabs instead of Items */
+  inventory?: InventoryData | null;
+}
+
+/** An item of `InventoryData` (texts already translated). */
+export interface InventoryItem {
+  id: string;
+  name: string;
+  text?: string;
+  /** an item icon's name (art/icons/items.js; unknown or '': a gem) */
+  icon?: string;
+  /** a backpack item (counted by its limit) */
+  pack?: boolean;
+  key?: boolean;
+  /** carried */
+  count: number;
+  /** in the camp's stock */
+  stock?: number;
+}
+
+/** A slot of `InventoryData.equipment`: the item worn there (id '' when empty). */
+export interface InventorySlot {
+  slot: 'weapon' | 'body' | 'head' | 'hands' | 'feet' | 'accessory';
+  id: string;
+  name: string;
+  text?: string;
+  icon?: string;
+  bonus?: Partial<Record<'hp' | 'mp' | 'atk' | 'def', number>>;
+}
+
+/** The player's numbers beside the equipment (absent ones are not shown). */
+export interface InventoryStats {
+  level?: number;
+  hp?: number; hpMax?: number;
+  mp?: number; mpMax?: number;
+  atk?: number; def?: number;
+}
+
+/**
+ * `JournalData.inventory` (the journal's Backpack and Equipment tabs, InventoryPanel.js) and
+ * `ResourceBar.setData(…)` (StoryRunner.inventoryData, plus the game's own: the stats, the
+ * player's name and look). Untrusted like the journal's data.
+ */
+export interface InventoryData {
+  gold?: number;
+  /** the backpack's use and limit; null: no backpack (no limit shown) */
+  pack?: { used: number; limit: number } | null;
+  /** at the camp: the stock is shown (and the resource bar counts it) */
+  home?: boolean;
+  items?: InventoryItem[];
+  /** null: no equipment half */
+  equipment?: InventorySlot[] | null;
+  stats?: InventoryStats | null;
+  /** the player's name, class and figure (a frame of the character sheet, facing the camera) */
+  name?: string;
+  role?: string;
+  figure?: HTMLCanvasElement | null;
 }
 
 /**

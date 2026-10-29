@@ -276,5 +276,21 @@
         "name": "Riacho"
       }
     ]
+  },
+  "inventory": {
+    "pack": 8,
+    "grow": [
+      {
+        "when": "obra.silo",
+        "pack": 16
+      }
+    ],
+    "equipment": {
+      "weapon": "espada-de-viagem",
+      "body": "cota-de-viagem",
+      "head": "elmo-amassado",
+      "hands": "luvas-de-couro",
+      "feet": "botas-de-estrada"
+    }
   }
 }

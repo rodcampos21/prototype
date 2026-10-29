@@ -175,6 +175,14 @@ export class Minimap {
     this._offScale = onScale(parent, this._place);
   }
 
+  /**
+   * Where a panel under the minimap starts (art px of the 640 × 360 frame, from the top): below its
+   * window while it shows, at its place when it is hidden (the resource bar).
+   */
+  get bottom() {
+    return this.visible ? this._y + MM_S + MM_GAP : this._y;
+  }
+
   /** Follow the anchor (the clock): G's y, or its bottom + MM_GAP when that is lower. */
   _placeBelowAnchor() {
     const a = this._anchor;

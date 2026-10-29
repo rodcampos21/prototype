@@ -26,6 +26,9 @@ const table = {
     'item.receivedCount': 'Recebido: {item} ×{n}',
     'item.given': 'Entregue: {item}',
     'item.givenCount': 'Entregue: {item} ×{n}',
+    /** the backpack (CAMPAIGN_FORMAT.md §4.2): full while gathering; `{items}` what was stored at home ("6 Madeira, 2 Pedra") */
+    'pack.full': 'A mochila está cheia. Volte ao acampamento para guardar.',
+    'pack.stored': 'Guardado no estoque: {items}',
     'ending.default': 'Fim',
     /** the player's name (`player:` lines, `${player}`) where no character was made */
     'player.default': 'Viajante',
@@ -41,6 +44,8 @@ const table = {
     'item.receivedCount': 'Received: {item} ×{n}',
     'item.given': 'Handed over: {item}',
     'item.givenCount': 'Handed over: {item} ×{n}',
+    'pack.full': 'The backpack is full. Go back to the camp to store it.',
+    'pack.stored': 'Stored in the stock: {items}',
     'ending.default': 'The End',
     'player.default': 'Traveller',
   },

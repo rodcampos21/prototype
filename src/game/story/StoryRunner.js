@@ -52,7 +52,7 @@ import { textKeyOf } from '../../engine/i18n/ContentKeys.js';
 import { createCharacterSheet } from '../../engine/pixel/CharacterSprites.js';
 import { CONVERSATIONS, levelConversation } from '../dialogue.js';
 import { Nav } from '../combat/Nav.js';
-import { titleCase } from '../campaign/StoryFormat.js';
+import { titleCase, EQUIP_SLOTS } from '../campaign/StoryFormat.js';
 import { storyReader } from './StoryState.js';
 import storyStrings from './strings.js';
 
@@ -263,6 +263,7 @@ export class StoryRunner {
      * @type {(o: LevelObject) => boolean}
      */
     this.present = (o) => storyAllows(o, this.holds) && !(o?.type === 'npc' && this.partyHolds(o));
+    this._startEquipment();
   }
 
   /**
@@ -329,6 +330,124 @@ export class StoryRunner {
   get gold() {
     const pc = this.game.combat?.pc;
     return pc ? pc.gold : this.state.gold;
+  }
+
+  // ---------------------------------------------------------------------------------------------
+  // The backpack, the camp's stock and the equipment (CAMPAIGN_FORMAT.md §4.2)
+  // ---------------------------------------------------------------------------------------------
+
+  /** The campaign's `inventory` (null: none — no backpack limit, no equipment). */
+  get inventory() {
+    return this.game.campaign?.campaign?.inventory ?? null;
+  }
+
+  /** Is the player at the camp (the atlas's home), where the backpack is stored? */
+  get atHome() {
+    const home = this.game.campaign?.campaign?.atlas?.home;
+    return !!home && home === this.levelId;
+  }
+
+  /** The story's items the backpack carries (`pack: true`), in the story files' order. */
+  packIds() {
+    return Object.entries(this.story?.items ?? {}).filter(([, it]) => it.pack).map(([id]) => id);
+  }
+
+  /** Is `id` an item the backpack carries? @param {string} id */
+  isPack(id) {
+    return !!ownValue(this.story?.items ?? {}, id)?.pack;
+  }
+
+  /** How many pack items the player carries now. */
+  packUsed() {
+    let n = 0;
+    for (const id of this.packIds()) n += this.state.carried(id);
+    return n;
+  }
+
+  /** The backpack's limit now: `inventory.pack`, or the largest `grow` step that holds (0: none). */
+  packLimit() {
+    const inv = this.inventory;
+    if (!inv) return 0;
+    let n = inv.pack;
+    for (const g of inv.grow) if (g.pack > n && this.test(g.when)) n = g.pack;
+    return n;
+  }
+
+  /**
+   * How many more of `id` the player can gather now: any number at home or for an item the
+   * backpack does not hold, else the room the backpack has left.
+   * @param {string} id
+   */
+  packRoom(id) {
+    const limit = this.packLimit();
+    if (!limit || this.atHome || !this.isPack(id)) return Infinity;
+    return Math.max(0, limit - this.packUsed());
+  }
+
+  /**
+   * Gather `n` of `id` (Game.harvest): as much as the backpack takes (a toast when it is full); at
+   * home straight into the stock. Returns how many were given.
+   * @param {string} id
+   * @param {number} n
+   */
+  gather(id, n) {
+    const fit = Math.min(n, this.packRoom(id));
+    if (fit > 0) this._items(id, fit, { fast: false });
+    if (fit < n) this.game.ui.hud.toast(t('story.pack.full'), 2.2, { kind: 'item' });
+    if (fit > 0 && this.atHome && this.isPack(id)) this.state.storeItems([id]);
+    return Math.max(0, fit);
+  }
+
+  /**
+   * Store the backpack in the camp's stock (arriving home: CampaignRuntime.travel), with a toast
+   * of what was stored. Returns what moved (id → count; empty: nothing).
+   */
+  storePack() {
+    if (!this.inventory) return {};
+    const moved = this.state.storeItems(this.packIds());
+    const parts = Object.entries(moved).map(([id, n]) => `${n} ${term(this.itemName(id))}`);
+    if (parts.length) this.game.ui.hud.toast(t('story.pack.stored', { items: parts.join(', ') }), 3, { kind: 'item' });
+    return moved;
+  }
+
+  /** A new journey's equipment (`inventory.equipment`), given once. */
+  _startEquipment() {
+    const inv = this.inventory;
+    if (!inv || this.state.equipped) return;
+    for (const [slot, id] of Object.entries(inv.equipment)) this.state.setEquip(slot, id);
+    this.state.equipped = true;
+  }
+
+  /**
+   * What the inventory window and the resource bar show (translated): the gold; the backpack's
+   * use and limit; whether the player is at home; each item the player has (carried and stocked,
+   * its icon); the equipment by slot.
+   * @returns {import('../../engine/ui/types.js').InventoryData}
+   */
+  inventoryData() {
+    const s = this.state;
+    const declared = this.story?.items ?? {};
+    const inv = this.inventory;
+    /** @param {string} id */
+    const info = (id) => {
+      const it = ownValue(declared, id);
+      return { id, name: term(this.itemName(id)), text: it ? loc(it.textKey ?? '', it.text) : '', icon: it?.icon ?? '', pack: !!it?.pack, key: !!it?.key };
+    };
+    const ids = new Set([...this.packIds(), ...Object.keys(s.items), ...Object.keys(s.stock)]);
+    const items = [...ids].filter((id) => s.count(id) > 0 || this.isPack(id))
+      .map((id) => ({ ...info(id), count: s.carried(id), stock: s.stocked(id) }));
+    const equipment = inv ? EQUIP_SLOTS.map((slot) => {
+      const id = Object.hasOwn(s.equip, slot) ? s.equip[slot] : '';
+      const it = id ? ownValue(declared, id) : null;
+      return { slot, ...(id ? { ...info(id), bonus: { ...(it?.bonus ?? {}) } } : { id: '', name: '', text: '', icon: '', bonus: {} }) };
+    }) : null;
+    return {
+      gold: this.gold,
+      pack: inv ? { used: this.packUsed(), limit: this.packLimit() } : null,
+      home: this.atHome,
+      items,
+      equipment,
+    };
   }
 
   /**
@@ -2449,9 +2568,10 @@ export class StoryRunner {
         goals: (d?.goals ?? []).map((gl) => ({ text: interpolate(loc(gl.textKey ?? '', gl.text), this.reader), done: !!gl.done && this.test(gl.done) })),
       };
     });
-    const items = Object.entries(s.items).map(([id, count]) => {
+    // (carried and in the camp's stock together)
+    const items = [...new Set([...Object.keys(s.items), ...Object.keys(s.stock)])].map((id) => {
       const it = ownValue(this.story?.items ?? {}, id);
-      return { id, name: term(this.itemName(id)), count, text: it ? loc(it.textKey ?? '', it.text) : '', key: !!it?.key };
+      return { id, name: term(this.itemName(id)), count: s.count(id), text: it ? loc(it.textKey ?? '', it.text) : '', key: !!it?.key };
     });
     return { quests, items, gold: this.gold };
   }
@@ -2462,6 +2582,9 @@ export class StoryRunner {
       level: this.levelId,
       vars: { ...this.state.vars },
       items: { ...this.state.items },
+      stock: { ...this.state.stock },
+      equip: { ...this.state.equip },
+      pack: this.inventory ? { used: this.packUsed(), limit: this.packLimit(), home: this.atHome } : null,
       gold: this.gold,
       quests: Object.fromEntries(Object.entries(this.state.quests).map(([k, q]) => [k, { state: q.state, stage: q.stage }])),
       day: this.state.day,

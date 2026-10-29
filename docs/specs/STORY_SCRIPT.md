@@ -448,7 +448,10 @@ with a warning). They are merged in that order; a name declared twice keeps the 
 ```
 
 - `vars`: declared names and their values on a new game (`true` = 1).
-- `items`: display name, journal text, `key` (a key item, listed apart). `gold` is built in.
+- `items`: display name, journal text, `key` (a key item, listed apart). `gold` is built in. A
+  campaign with an `inventory` also reads `pack: true` (a backpack item), `icon`, `slot` and
+  `bonus` (an equipment item) — [CAMPAIGN_FORMAT.md §4.2](CAMPAIGN_FORMAT.md#42-the-inventory-backpack-stock-and-equipment);
+  an item's count (`item:<id>`) is then what is carried and what the camp's stock holds.
 - `quests`: title, text, named `stages` (their order is what `stage:x >= y` compares), `goals`
   (ticked in the journal while `done` holds — a condition as scripts write it: `done: gold >= 10`
   reads the purse).

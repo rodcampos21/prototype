@@ -117,6 +117,7 @@ levels stay in `public/levels/`; a campaign cannot use them (copy one into its `
 | `player` | `{ create }` | absent (`create: false`) | *(Optional; additive, October 2026.)* The player's character. `create: true`: a new journey opens with the **character creation** after the title (a name of at most 16 characters, a class of `src/game/campaign/PlayerClasses.js`; the field left empty is the suggested name), kept in the save (`player`, [§7](#7-saved-games)); story text shows the name as `${player}` and `player:` lines speak as the character ([STORY_SCRIPT.md](STORY_SCRIPT.md), Speakers). A save with no character is not read (the page closed during the creation): the journey begins afresh. Written only when `create` is true. |
 | `party` | `{ menu }` | absent (`menu: true`) | *(Optional; additive, October 2026.)* The party. `menu: false`: the player cannot open the tactics panel — no G, no *G — Party* in the legend, no *Tactics…* in a member's conversation; companions follow the rules the story gives them (`party join … as <class> <preset>`, `party rule`). The party HUD still shows who travels along. Written only when `menu` is false. |
 | `atlas` | object | absent | *(Optional; additive, October 2026.)* The hand-drawn map the player travels by from the hub's map table: its places, the sketch of the land and each journey's hours ([§4.1](#41-the-atlas)). |
+| `inventory` | `{ pack, grow?, equipment? }` | absent | *(Optional; additive, October 2026.)* The backpack's limit, the camp's stock and the starting equipment ([§4.2](#42-the-inventory-backpack-stock-and-equipment)). Absent: no limit, the journal's plain Items tab. |
 
 Every text a player reads carries a **text key**, a GUID that keys its translation
 ([I18N.md §4.2](I18N.md#42-keys-and-lookup)): `campaign.json`'s own texts and each chapter's in
@@ -272,6 +273,50 @@ at midnight and `time` events run, as for the `time` command).
 **Checks.** `level:check --campaign` counts every place with a road as a travel from the hub (so it
 is reachable), reads the places' and the sketch's conditions, and fails on an `entrance` the hub or
 the place lacks.
+
+### 4.2 The inventory: backpack, stock and equipment
+
+*(Optional; additive, October 2026.)* `inventory` gives the player a **backpack** with a limit, the
+camp's **stock** and the **equipment** slots, shown in the journal (B: its Backpack and
+Equipment tabs take the Items tab's place) and the HUD's
+resource bar ([PIXEL_UI.md §5](PIXEL_UI.md#5-component-recipes)):
+
+```json
+"inventory": {
+  "pack": 8,
+  "grow": [{ "when": "obra.silo", "pack": 16 }],
+  "equipment": { "weapon": "espada-de-viagem", "body": "cota-de-viagem", "head": "elmo-amassado" }
+}
+```
+
+| Field | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `pack` | integer 1–999 | 10 | How many backpack items the player can carry in all. |
+| `grow` | `[{ when, pack }]` | `[]` | A larger backpack while `when` (a story condition) holds: the largest step that holds wins. |
+| `equipment` | slot → item id | `{}` | What a new journey wears (given once; a later change leaves a save as it is). Slots: `weapon`, `body`, `head`, `hands`, `feet`, `accessory`. |
+
+The story files' items say what goes where ([STORY_SCRIPT.md §8](STORY_SCRIPT.md#8-story-files)):
+`pack: true` marks a **backpack item** (a gathered resource: `madeira`, `pedra` …), `icon` names its
+icon (`src/engine/ui/art/icons/items.js`: `wood`, `stone`, `herbs`, `sword`, `armor`, `helm`,
+`gloves`, `boots`, `ring`, `pack` and the core icons; an unknown name shows a gem), `slot` and
+`bonus` (`{ hp, mp, atk, def }`, whole numbers) make an **equipment** item.
+
+- **Gathering.** A `resource` ([OBJECT_CATALOG.md](OBJECT_CATALOG.md#resource)) gives its item into
+  the backpack, as much as it has room for (`StoryRunner.gather`); with the backpack full the
+  player cannot strike it (a toast: go back to the camp). A script's `give` is never limited.
+- **Home.** Arriving at the atlas's `home` ([§4.1](#41-the-atlas)) stores everything the backpack
+  holds in the stock (a toast lists it; the game saves). At home, gathered items go straight into
+  the stock. Without an atlas there is no home: the backpack is never emptied.
+- **Counting.** An item's count — what `item:madeira` reads, what the journal shows — is what the
+  player carries **and** what the stock holds. `take` takes from the stock first, then from the
+  backpack, so a building's cost is paid from both.
+- **Equipment.** The slots show what is worn and the item's bonus; **equipping is not there yet**
+  (the bonuses are not applied). The data is the final shape, so the mechanic only adds logic.
+- **The save.** The story part keeps `stock` (item → count), `equip` (slot → item) and `equipped`
+  (the starting equipment was given) — each absent while empty ([§7](#7-saved-games)).
+
+**Checks.** `level:check --campaign` reads the `grow` conditions, warns when a starting item is
+not declared or is not for its slot, and counts the starting equipment as used.
 
 ## 5. Story: flags, conditions, chapters
 

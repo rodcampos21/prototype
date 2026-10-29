@@ -554,6 +554,26 @@ shrink; the roles are `roles()`)
 - **Skip hint**: anchored bottom right, centred on the bottom bar: a 15 × 15 ring of 12 segments,
   then "Hold {key} to skip" with a keycap.
 
+**Inventory** (a campaign with an `inventory`, CAMPAIGN_FORMAT.md §4.2; the bar: `UI.useResourceBar()`):
+- **Resource bar** (`.lu-resbar`, in the HUD): an XS window with gold corner gems as wide as the
+  minimap (76), 7 under it (at its place while the minimap is hidden), anchored top right. Rows
+  15 apart: the coin and the gold, each backpack item's 16 × 16 icon and how many are carried (at
+  the camp: how many the stock holds), dim at 0; under a dim rule the backpack and `used/limit`
+  (hp3 when full), at the camp the chest and *Estoque*. The combat skill bar's purse is hidden
+  (`lu-root--resources`): the bar shows the gold.
+- **The journal's Backpack and Equipment tabs** (InventoryPanel.js): with `JournalData.inventory`
+  they take the Items tab's place (QUESTS · BACKPACK · EQUIPMENT · CODEX; the gold shows on
+  Backpack). On them Q / E switch tabs and the arrows move over the cells; the panel draws under
+  the header instead of the list and detail boxes. Backpack: 24 × 24 sockets 27 apart, 8 to a
+  row at G's width (5 at least), two rows at least; the section heading's end shows `used/limit`;
+  under them the stock's sockets at the camp, a line elsewhere. The chosen socket lit, G's cursor
+  beside it; at the right the item's icon at 2×, its name, *Na mochila* / *No estoque* and its
+  text. Equipment: the figure (frame 0 of the character sheet at 2×) in a 70-wide glass panel, the
+  slots 34 apart either side (head, body, hands; weapon, feet, accessory) with their names in the
+  tiny role, an empty one dim; the name and class under the figure; at the right the slot, the
+  item, its text and bonus, the attributes in two columns and *equipping comes later*. Item icons:
+  `art/icons/items.js`.
+
 **The game layer** (Story integration, Game integration: `StoryRunner.js`, `dialogue.js`, `CampaignRuntime.js`,
 `Game.js`, `src/main.js`) draws nothing; it hands the components translated text (§8.1):
 - `Game.js` exports the helpers (I18N.md §4.8): `villagerName(npc)`, a villager's name plate (a
@@ -608,6 +628,7 @@ shrink; the roles are `roles()`)
 | World labels | `WorldLabels.js`, `worldfx.css`, `strings/worldfx.js` |
 | Party UI | `PartyFrames.js`, `PartyPanel.js`, `party.css`, `src/game/party/Party.js` (strings, localised rules, portraits), `party/types.d.ts`, `src/game/party/strings.js`, `sandbox/party_ui.*` |
 | Story UI | `Journal.js`, `Emotes.js`, `EndCard.js`, `story.css`, `UI.js` (letterbox, skip hint, the death prime's strings), `strings/story-ui.js` |
+| Inventory | `InventoryPanel.js` (the journal's tabs), `ResourceBar.js`, `inventory.css`, `art/icons/items.js`, `strings/inventory.js` |
 | Story integration | `StoryRunner.js`, `dialogue.js`, `CampaignRuntime.js`, `CampaignStart.js`; `src/game/story/strings.js`, `src/game/campaign/strings.js`; the content-text display sites there |
 | Game integration | `Game.js`, `src/main.js`, `World.js`, `Weather.js`, `levels.js`, `Npc.js`; `strings/game.js`; the title's language switch (save + reload), `fontsReady` await, dialogue portraits, the content-text display sites there, `state()` / `__luminati` additions |
 | Translators | `public/i18n/**` only |

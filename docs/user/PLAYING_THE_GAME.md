@@ -661,6 +661,11 @@ place of the campaign side by side; places you have not been to yet are dimmed.
 - **The journal** (**B**; B or Esc closes it): *Quests* — the active ones first, what you have
   learned so far and the objectives (ticked when done) — and *Items* with your gold. ←/→ or Q/E
   switch tabs, ↑/↓ choose an entry.
+- **The inventory**, in a campaign with a backpack, is in the journal: *Backpack* — what you carry
+  and, at the camp, the stock — and *Equipment* — what you wear and your attributes — take the
+  *Items* tab's place. There Q/E switch tabs and the arrows choose. A bar under the minimap shows
+  your gold and resources; the backpack has a limit (go back to the camp to store what you
+  gathered).
 - **Cutscenes** take the camera for a moment (black bars at the top and bottom): people walk, the
   camera looks at what matters, the screen may fade. **Hold Esc** to skip one (a choice in it is
   still asked).
