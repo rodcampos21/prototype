@@ -1633,8 +1633,25 @@ function drawSharkSide(p, key) {
   p.end();
   // torso: the deep chest, the white belly in front, the back's dorsal fin
   p.begin(null);
-  fillPoly(p, [[tor[0] + 6, 34 + bob], [tor[0] + 12, 14 + bob], [tor[0] + 16, 16 + bob], [tor[0] + 16, 38 + bob]], M.FUR, (x) => (x < tor[0] + 12 ? 3 : 2));
   blob(p, tor[0], tor[1], 14, 16, M.FUR, { hi: 0.45, lo: -0.25 });
+  // the dorsal fin, part of the back (same part: no outline between them): a wide base sunk into
+  // the shoulders, a convex leading edge sweeping up and back, a concave trailing edge
+  {
+    const bx = tor[0], by = 40 + bob;
+    const fin = [];
+    // leading edge: up from the shoulders, convex, to the point swept back
+    for (let i = 0; i <= 10; i++) { const t = i / 10; fin.push([bx - 3 + 18 * t ** 1.6, by - 25 * Math.sin(t * Math.PI / 2)]); }
+    // trailing edge: down from the point, bowed in, to the back
+    for (let i = 1; i <= 8; i++) { const t = i / 8; fin.push([bx + 15 - 6 * t - 3 * Math.sin(t * Math.PI), by - 25 + 24 * t]); }
+    fin.push([bx + 10, by + 3]);
+    fillPoly(p, fin, M.FUR, (x, y) => (x < bx + 3 + (by - y) * 0.45 ? 3 : 2));
+    // the fin's dark trailing rim and a lit leading edge
+    for (let y = by - 19; y <= by - 2; y++) {
+      let x = bx + 16;
+      while (x > bx && p.get(x, y) !== M.FUR) x--;
+      if (x > bx + 6) p.set(x, y, M.FUR2, 1);
+    }
+  }
   blob(p, tor[0] + 1, 61 + bob, 10, 6, M.FUR, { hi: 0.45, lo: -0.25 });
   fillPoly(p, [[tor[0] - 13, 40 + bob], [tor[0] - 6, 38 + bob], [tor[0] - 4, 64 + bob], [tor[0] - 10, 62 + bob]], M.FUR3, (x) => (x < tor[0] - 9 ? 3 : 2));
   p.end();
