@@ -1300,29 +1300,36 @@ function drawFera(p, view, key) {
 // ---------------------------------------------------------------------------
 
 /**
- * Per pose, in the front view's coordinates (96 × 96, ground 93): body drop, lean, head offset,
- * mouth (0 shut … 3 roaring), eyes, the two hands, the anchor's ring and crown, the feet.
+ * Per pose, in the front view's coordinates (96 × 96, ground 93): body drop, lean, chest swell
+ * (breath), head offset, mouth (0 shut … 3 roaring), eyes, the two hands, the anchor's ring and
+ * crown, the feet ([x, lift]) and the tail ([swing, lift]: how far the tip swings out past its rest
+ * — negative swings it behind the legs to the other side — and how high it is raised). New
+ * poses (the boss skills to come) are one more case here: every view reads the same rig.
  */
 function sharkRig(key) {
   const R = {
-    bob: 0, lean: 0, head: [0, 0], mouth: 1, eye: 'open',
+    bob: 0, lean: 0, chest: 0, head: [0, 0], mouth: 1, eye: 'open',
     hands: [[66, 56], [70, 64]], ring: [74, 30], crown: [70, 88],
-    feet: [[35, 0], [61, 0]], dead: false,
+    feet: [[35, 0], [61, 0]], tail: [0, 0], dead: false,
   };
   switch (key) {
-    case 'idle1': R.bob = 1; R.mouth = 0; R.hands = [[66, 57], [70, 65]]; break;
-    case 'move0': R.feet = [[33, 3], [62, 0]]; R.bob = -1; break;
-    case 'move1': R.bob = 1; break;
-    case 'move2': R.feet = [[35, 0], [64, 3]]; R.bob = -1; break;
-    case 'move3': R.bob = 1; break;
-    // the slam: the anchor raised high over the head, then brought down in front
-    case 'windup': R.bob = -1; R.lean = 1; R.mouth = 2; R.hands = [[44, 20], [52, 18]]; R.ring = [42, 26]; R.crown = [76, 6]; break;
-    case 'attack': R.bob = 4; R.mouth = 3; R.hands = [[44, 60], [52, 64]]; R.ring = [46, 52]; R.crown = [44, 90]; R.feet = [[31, 0], [65, 0]]; break;
-    // the sweep: drawn back to its right, then swung wide across
-    case 'sweepWind': R.lean = 2; R.mouth = 2; R.hands = [[66, 50], [74, 52]]; R.ring = [62, 50]; R.crown = [92, 58]; break;
-    case 'sweep': R.lean = -2; R.mouth = 3; R.hands = [[30, 54], [24, 56]]; R.ring = [34, 54]; R.crown = [4, 62]; R.feet = [[33, 0], [63, 0]]; break;
-    case 'roar': R.bob = -1; R.head = [0, -3]; R.mouth = 3; R.hands = [[78, 56], [18, 46]]; R.ring = [80, 40]; R.crown = [78, 88]; break;
-    case 'hurt': R.head = [2, -2]; R.lean = 2; R.mouth = 2; R.eye = 'shut'; R.hands = [[68, 58], [72, 66]]; R.ring = [78, 34]; R.crown = [72, 89]; break;
+    case 'idle1': R.bob = 1; R.chest = 1; R.mouth = 0; R.hands = [[66, 57], [70, 65]]; R.tail = [2, 2]; break;
+    // the tail swings against the stride
+    case 'move0': R.feet = [[33, 3], [62, 0]]; R.bob = -1; R.tail = [-4, 1]; break;
+    case 'move1': R.bob = 1; R.tail = [0, 2]; break;
+    case 'move2': R.feet = [[35, 0], [64, 3]]; R.bob = -1; R.tail = [4, 1]; break;
+    case 'move3': R.bob = 1; R.tail = [0, 2]; break;
+    // the slam: the anchor raised high over the head (the tail lifted to balance), then brought
+    // down in front (the tail slapped flat)
+    case 'windup': R.bob = -1; R.lean = 1; R.chest = 1; R.mouth = 2; R.hands = [[52, 18], [44, 20]]; R.ring = [42, 26]; R.crown = [76, 6]; R.tail = [3, 10]; break;
+    // (each hand on its own side of the shaft: the arms meet at the grip, they do not cross)
+    case 'attack': R.bob = 4; R.mouth = 3; R.hands = [[49, 59], [43, 66]]; R.ring = [46, 52]; R.crown = [44, 90]; R.feet = [[31, 0], [65, 0]]; R.tail = [8, -1]; break;
+    // the sweep: drawn back to its right (the tail swung out the other way), then swung wide across
+    // (the tail whipped behind the legs to its right)
+    case 'sweepWind': R.lean = 2; R.mouth = 2; R.hands = [[66, 50], [74, 52]]; R.ring = [62, 50]; R.crown = [92, 58]; R.tail = [7, 5]; break;
+    case 'sweep': R.lean = -2; R.mouth = 3; R.hands = [[30, 54], [24, 56]]; R.ring = [34, 54]; R.crown = [4, 62]; R.feet = [[33, 0], [63, 0]]; R.tail = [-50, 4]; break;
+    case 'roar': R.bob = -1; R.chest = 2; R.head = [0, -3]; R.mouth = 3; R.hands = [[78, 56], [18, 46]]; R.ring = [80, 40]; R.crown = [78, 88]; R.tail = [4, 18]; break;
+    case 'hurt': R.head = [2, -2]; R.lean = 2; R.mouth = 2; R.eye = 'shut'; R.hands = [[68, 58], [72, 66]]; R.ring = [78, 34]; R.crown = [72, 89]; R.tail = [-4, 7]; break;
     case 'dead': R.dead = true; R.eye = 'dead'; break;
     default: break;
   }
@@ -1371,12 +1378,79 @@ function drawAnchor(p, ring, crown, w = 4) {
   p.over(Math.round(cx - nx * 8 - ux * 3), Math.round(cy - ny * 8 - uy * 3), M.BONE, 4);
 }
 
-/** A thick limb with a lit side: from a to b, `w` px. */
-function sharkLimb(p, a, b, w, mat = M.FUR) {
-  thickLine(p, a[0], a[1], b[0], b[1], w, mat, (t, x, y) => {
-    const dx = x + 0.5 - (a[0] + (b[0] - a[0]) * t);
-    return dx < -w * 0.15 ? 3 : dx > w * 0.25 ? 1 : 2;
+/**
+ * A muscled limb from a to b: `w0` px wide at a, `w1` at b, swelling by `bulge` px at `at` (0 … 1
+ * along it: the biceps, the forearm, the calf), round at both ends. Shaded as a cylinder lit from
+ * the upper left (the blob light), whatever its angle: the shade comes from the distance across
+ * the limb, so a raised or level arm keeps its lit and shadowed sides. `dim` darkens it (the far
+ * limbs).
+ * @param {InstanceType<typeof Painter>} p
+ * @param {number[]} a
+ * @param {number[]} b
+ * @param {number} w0
+ * @param {number} [w1]
+ * @param {{ bulge?: number, at?: number, mat?: number, dim?: number }} [opts]
+ */
+function sharkLimb(p, a, b, w0, w1 = w0, { bulge = 0, at = 0.4, mat = M.FUR, dim = 0 } = {}) {
+  const [ax, ay] = a, [bx, by] = b;
+  const len = Math.hypot(bx - ax, by - ay) || 1;
+  const ux = (bx - ax) / len, uy = (by - ay) / len;
+  const half = (t) => {
+    const s = t < at ? t / at : (1 - t) / (1 - at);
+    return (w0 + (w1 - w0) * t) / 2 + bulge * Math.sin(Math.max(0, Math.min(1, s)) * Math.PI / 2) ** 2;
+  };
+  const m = Math.max(w0, w1) / 2 + bulge + 1;
+  for (let y = Math.floor(Math.min(ay, by) - m); y <= Math.ceil(Math.max(ay, by) + m); y++) {
+    for (let x = Math.floor(Math.min(ax, bx) - m); x <= Math.ceil(Math.max(ax, bx) + m); x++) {
+      const px = x + 0.5 - ax, py = y + 0.5 - ay;
+      const t = Math.max(0, Math.min(1, (px * ux + py * uy) / len));
+      // the offset from the nearest point of the axis, over the radius there: the surface normal
+      const r = half(t);
+      const dx = (px - ux * len * t) / r, dy = (py - uy * len * t) / r;
+      if (dx * dx + dy * dy > 1) continue;
+      const l = dx * -0.55 + dy * -0.8;
+      p.set(x, y, mat, Math.max(0, (l > 0.4 ? 3 : l > -0.25 ? 2 : l > -0.75 ? 1 : 0) - dim));
+    }
+  }
+}
+
+/** A clawed fist round the anchor's shaft at h (bigger than the wrist), knuckles and claws. */
+function sharkFist(p, h, side = 0) {
+  blob(p, h[0], h[1], 5, 4.4, M.FUR, { hi: 0.35, lo: -0.3 });
+  for (let k = -3; k <= 3; k += 2) p.set(h[0] + k, h[1] - 1, M.FUR, 1); // the knuckles' creases
+  for (const dx of side ? [-4, -1] : [-3, 0, 3]) { p.set(h[0] + dx, h[1] + 4, M.BONE, 4); p.set(h[0] + dx, h[1] + 5, M.BONE, 2); }
+}
+
+/**
+ * The tail out of the back of the hips at `base`: a tapering, cylinder-shaded stalk bending to
+ * `tip`, the crescent tail fin there (the upper lobe the longer, lit; the lower dark). Kept off
+ * the ground line `G`.
+ */
+function sharkTail(p, base, ctrl, tip, G, dim = 0) {
+  const N = 7;
+  const pts = [];
+  for (let i = 0; i <= N; i++) {
+    const t = i / N, s = 1 - t;
+    pts.push([s * s * base[0] + 2 * s * t * ctrl[0] + t * t * tip[0], s * s * base[1] + 2 * s * t * ctrl[1] + t * t * tip[1]]);
+  }
+  for (let i = 0; i < N; i++) sharkLimb(p, pts[i], pts[i + 1], 10 - i * 0.9, 10 - (i + 1) * 0.9, { dim });
+  const [tx, ty] = pts[N];
+  const len = Math.hypot(tx - pts[N - 1][0], ty - pts[N - 1][1]) || 1;
+  const dx = (tx - pts[N - 1][0]) / len, dy = (ty - pts[N - 1][1]) / len;
+  // "up" across the stalk: the perpendicular that points up the frame
+  let nx = -dy, ny = dx;
+  if (ny > 0) { nx = -nx; ny = -ny; }
+  const at = (u, v) => [tx + nx * u + dx * v, Math.min(G, ty + ny * u + dy * v)];
+  const fin = [at(2.5, -1), at(15, 7), at(4, 4), at(2, 6), at(-9, 7), at(-2.5, -1)];
+  fillPoly(p, fin, M.FUR, (x, y) => {
+    const u = (x + 0.5 - tx) * nx + (y + 0.5 - ty) * ny; // across: + the upper lobe
+    return Math.max(0, (u > 6 ? 3 : u > 0 ? 2 : 1) - dim);
   });
+  // the trailing edge of the fin a shade darker
+  for (let k = 0; k <= 10; k++) {
+    const [x, y] = at(15 - k * 1.1, 7 - Math.abs(5 - k) * 0.5);
+    p.over(Math.round(x), Math.round(y), M.FUR2, 2);
+  }
 }
 
 /** Rope wraps round a limb segment (bands across it). */
@@ -1386,33 +1460,125 @@ function ropeWraps(p, a, b, n) {
   for (let i = 0; i < n; i++) {
     const t = 0.2 + (i / Math.max(1, n - 1)) * 0.6;
     const x = a[0] + (b[0] - a[0]) * t, y = a[1] + (b[1] - a[1]) * t;
-    p.line2(x - nx * 4, y - ny * 4, x + nx * 4, y + ny * 4 + 1, M.WOOD, i % 2 ? 2 : 3);
+    p.line2(x - nx * 5, y - ny * 5, x + nx * 5, y + ny * 5 + 1, M.WOOD, i % 2 ? 2 : 3);
   }
 }
 
-/** A barnacled boot with clawed toes, its top at y0 (front or side). */
-function sharkBoot(p, x, y0, ground, side) {
-  for (let y = y0; y <= ground; y++) {
-    const w = y > ground - 3 ? 12 : 10;
-    const x0 = Math.round(x - w / 2) + (side && y > ground - 3 ? -2 : 0);
-    for (let i = 0; i < w; i++) p.set(x0 + i, y, M.LEATHER, i < 3 ? 3 : i > w - 3 ? 1 : 2);
+/**
+ * A leg from the hip through the knee to the foot on `ground` (front view: toes to the viewer;
+ * side: toes to the left), in a barnacled hide boot that follows the shin: the shaft is the
+ * lower shin in leather, a turned-over cuff casting its shadow, the foot a rounded toe with a
+ * dark sole, a rope strap over the instep (the rope of the forearms and belt) and the claws
+ * through the toe. The thigh and calf swell; `dim` shades the far leg.
+ */
+function sharkLeg(p, hip, knee, fx, ground, side, dim = 0) {
+  const ankle = [fx + (side ? 1 : 0), ground - 8];
+  p.begin(null);
+  sharkLimb(p, hip, knee, 14, 11, { bulge: 2, at: 0.3, dim });
+  sharkLimb(p, knee, ankle, 11, 9, { bulge: 1.5, at: 0.25, dim });
+  // the shaft over the lower shin, flaring a little at the ankle
+  const ux = ankle[0] - knee[0], uy = ankle[1] - knee[1];
+  const top = [knee[0] + ux * 0.4, knee[1] + uy * 0.4];
+  sharkLimb(p, top, ankle, side ? 10 : 11, side ? 11 : 12, { mat: M.LEATHER, dim });
+  // the foot: a broad rounded toe to the viewer, or in profile a long foot — the heel under the
+  // ankle, the instep sloping down to a blunt toe; the sole a dark row along the ground
+  const fcx = side ? fx - 3 : fx;
+  if (side) {
+    fillPoly(p, [[fx + 5, ground - 7], [fx + 6, ground + 0.99], [fx - 11, ground + 0.99], [fx - 12, ground - 2], [fx - 9, ground - 4], [fx - 3, ground - 6]], M.LEATHER,
+      (x, y) => Math.max(0, (y < ground - 3 ? 3 : x > fx + 2 ? 1 : 2) - dim));
+  } else blob(p, fcx, ground - 3, 6.8, 3.4, M.LEATHER, { hi: 0.4, lo: -0.25, maxShade: 3 - dim });
+  for (let x = fcx - 10; x <= fcx + 10; x++) p.over(x, ground, M.LEATHER, 0);
+  for (let x = fcx - 10; x <= fcx + 10; x++) if (p.get(x, ground - 6) === M.LEATHER && p.get(x, ground - 4) === M.LEATHER) p.over(x, ground - 5, M.WOOD, (x & 1) ? 2 : 3);
+  p.end();
+  // the cuff: a turned-over band of hide (its own part: a shadow on the shaft below it)
+  p.begin('below', 0);
+  const cl = Math.hypot(ux, uy) || 1;
+  sharkLimb(p, [top[0] - ux / cl * 1.5, top[1] - uy / cl * 1.5], [top[0] + ux / cl * 1.5, top[1] + uy / cl * 1.5], side ? 12 : 13, side ? 12 : 13, { mat: M.LEATHER, dim: dim - 1 });
+  // barnacles crusted on the cuff
+  for (const [dx, dy] of [[-4, 0], [3, -1], [5, 1]]) {
+    const x = Math.round(top[0] + dx), y = Math.round(top[1] + dy);
+    p.over(x, y, M.STONE, 3); p.over(x + 1, y, M.STONE, 2); p.over(x, y - 1, M.BONE, 4);
   }
-  // barnacles on the cuff and the toe, the turned-over cuff, claws
-  for (const [dx, dy] of [[-3, 1], [0, 2], [3, 1], [-2, 9], [2, 10]]) p.set(x + dx, y0 + dy, M.STONE, (dx + dy) % 2 ? 4 : 3);
-  for (let i = -5; i <= 4; i++) p.set(x + i, y0, M.LEATHER, 3);
-  for (const dx of side ? [-8, -6, -4] : [-5, -2, 1, 4]) { p.set(x + dx, ground, M.BONE, 4); p.set(x + dx - (side ? 1 : 0), ground - 1, M.BONE, 3); }
+  p.end();
+  // the claws through the toe
+  p.begin(null);
+  if (side) for (const dy of [0, -2]) { p.set(fx - 12, ground + dy, M.BONE, 4); p.set(fx - 13, ground + dy, M.BONE, 3); }
+  else for (const dx of [-4, 0, 4]) { p.set(fx + dx, ground, M.BONE, 4); p.set(fx + dx, ground - 1, M.BONE, 3); }
+  p.end();
+}
+
+/**
+ * The torn kilt over the hips — old sailcloth, faded (it reads apart from the hide boots and the
+ * blue skin): a rope belt following the round of the body, knotted, the cloth flaring out below it
+ * in soft folds (lit on the left), a wrapped flap with a lit edge, a ragged
+ * hem of torn points that swings with the stride (`sway`) and lags behind a lean. `x0`…`x1` is
+ * the belt, `y` its height, `len` the hide's length; `knot` the belt knot's x.
+ */
+function sharkKilt(p, x0, x1, y, len, sway, knot, flap) {
+  const cx = (x0 + x1) / 2, hw = (x1 - x0) / 2;
+  const belt = (x) => y + Math.round(((x - cx) / hw) ** 2 * 2);
+  const TEAR = [0, 2, 4, 2, 1, 0, 3, 6, 3, 1, 0, 1, 3, 1, 0, 2, 5, 2];
+  p.begin('belowSides', 1);
+  for (let row = 1; row <= len; row++) {
+    const spread = hw + 0.5 + row * 0.15;
+    const shift = Math.round(sway * row / len);
+    for (let x = Math.floor(cx - spread) + shift; x <= Math.ceil(cx + spread) + shift; x++) {
+      const yy = belt(x - shift) + row;
+      const hem = len - TEAR[((x - shift) % TEAR.length + TEAR.length) % TEAR.length];
+      if (row > hem) continue;
+      const fold = ((x - shift - Math.round(x0)) % 7 + 7) % 7;
+      let s = [3, 3, 2, 2, 2, 1, 2][fold];
+      if (row < 3) s = 2; // gathered under the belt
+      if (x - shift > cx + hw * 0.55) s -= 1; // the side away from the light
+      if (row >= hem - 1) s = Math.min(s, 1); // the frayed edge
+      p.set(x, yy, M.BOTTOM, Math.max(0, s));
+    }
+  }
+  // the wrapped flap's edge, lit, running down from the belt
+  for (let row = 1; row < len - 1; row++) p.over(Math.round(flap + row * 0.35 + sway * row / len), belt(flap) + row, M.BOTTOM, 4);
+  p.end();
+  // the rope belt, twisted, and its knot with the two ends hanging
+  p.begin(null);
+  for (let x = Math.round(x0); x <= Math.round(x1); x++) {
+    const b = belt(x);
+    p.set(x, b - 1, M.WOOD, (x % 3) ? 3 : 2);
+    p.set(x, b, M.WOOD, (x % 3) === 1 ? 1 : 2);
+  }
+  blob(p, knot, belt(knot), 2.2, 1.8, M.WOOD, { hi: 0.2, lo: -0.4 });
+  for (const [dx, l] of [[-1, 6], [1, 4]]) for (let i = 1; i <= l; i++) p.set(knot + dx + Math.round(sway * i / 12), belt(knot) + 1 + i, M.WOOD, i === l ? 1 : 2);
+  p.end();
+}
+
+/**
+ * The neck that a shark does not have: a thick wedge of muscle from the shoulders up into the back
+ * of the skull, and the white of the jaw running down the throat into the belly (the great white's
+ * countershading, its edge jagged) — painted with the torso, so the head grows out of the body.
+ * `sh` the shoulders' y; (hx, hy) the skull's centre; `x0`…`x1` the shoulders.
+ */
+function sharkNeck(p, x0, x1, sh, hx, hy, throat) {
+  fillPoly(p, [[x0, sh + 3], [hx - 11, hy + 1], [hx + 11, hy + 1], [x1, sh + 3]], M.FUR, (x, y) => {
+    const u = (x - hx) / 12;
+    return u < -0.45 ? 3 : u > 0.5 ? 1 : 2;
+  });
+  if (!throat) return;
+  const [tx0, tx1, ty] = throat;
+  fillPoly(p, [[hx - 8, hy + 5], [hx + 8, hy + 5], [tx1, ty], [tx0, ty]], M.FUR3, (x) => (x < hx - 2 ? 3 : x > hx + 4 ? 1 : 2));
+  // the jagged edge where the grey meets the white
+  for (let y = hy + 5; y < ty; y++) {
+    const t = (y - hy - 5) / Math.max(1, ty - hy - 5);
+    const l = Math.round(hx - 8 + (tx0 - hx + 8) * t), r = Math.round(hx + 8 + (tx1 - hx - 8) * t);
+    if (y % 3 === 0) { p.set(l - 1, y, M.FUR3, 2); p.set(r + 1, y, M.FUR3, 1); }
+    if (y % 3 === 2) { p.over(l, y, M.FUR, 2); p.over(r, y, M.FUR, 1); }
+  }
 }
 
 /** The shark's head facing the camera at (hx, hy) = the skull's centre. */
 function sharkHeadFront(p, hx, hy, R) {
-  // the dorsal fin rising behind the head
-  p.begin(null);
-  fillPoly(p, [[hx - 3, hy - 6], [hx + 1, hy - 20], [hx + 4, hy - 19], [hx + 4, hy - 6]], M.FUR, (x) => (x < hx ? 3 : 2));
-  p.end();
-  p.begin('all', 1);
+  // the skull (over the neck it grows from: an inner line on its sides only, none under the jaw)
+  p.begin('sides', 1);
   // the skull: a broad wedge, grey-blue on top, the snout pointed down toward the viewer
-  blob(p, hx, hy, 12, 9, M.FUR, { hi: 0.35, lo: -0.3 });
-  fillPoly(p, [[hx - 9, hy + 2], [hx + 9, hy + 2], [hx + 6, hy + 9], [hx - 6, hy + 9]], M.FUR3, (x, y) => (y < hy + 4 ? 3 : 2));
+  blob(p, hx, hy, 12.5, 9, M.FUR, { hi: 0.35, lo: -0.3 });
+  fillPoly(p, [[hx - 9, hy + 2], [hx + 9, hy + 2], [hx + 7, hy + 10], [hx - 7, hy + 10]], M.FUR3, (x, y) => (y < hy + 4 ? 3 : 2));
   p.end();
   p.begin(null);
   // gill slits down both sides of the neck
@@ -1439,7 +1605,7 @@ function sharkHeadFront(p, hx, hy, R) {
 
 /** The shark's head in profile (facing left) at (hx, hy) = the skull's centre. */
 function sharkHeadSide(p, hx, hy, R) {
-  p.begin('all', 1);
+  p.begin('sides', 1);
   // the skull and the long pointed snout; the white jaw below a hard line
   blob(p, hx + 2, hy, 11, 8, M.FUR, { hi: 0.35, lo: -0.3 });
   fillPoly(p, [[hx - 6, hy - 6], [hx - 17, hy - 1], [hx - 16, hy + 2], [hx - 6, hy + 4]], M.FUR, (x, y) => (y < hy - 2 ? 3 : 2));
@@ -1472,27 +1638,60 @@ function drawSharkFront(p, key, back) {
   const cx = 48 + R.lean;
   const bob = R.bob;
   if (R.dead) { drawSharkDead(p); return; }
+  const hx = cx + R.head[0], hy = 22 + bob + R.head[1];
+  // from the front, the dorsal fin rises from the back behind the head and shoulders
+  if (!back) {
+    p.begin(null);
+    fillPoly(p, [[hx - 3, 36 + bob], [hx + 1, hy - 20], [hx + 4, hy - 19], [hx + 7, 36 + bob]], M.FUR, (x) => (x < hx + 1 ? 2 : 1));
+    p.end();
+  }
   // from behind, the anchor he holds in front of him is behind his body
   if (back) { p.begin(null); drawAnchor(p, R.ring, R.crown); p.end(); }
-  // the tail fin: down behind the legs to the ground, to the viewer's left (right from behind)
-  p.begin(null);
-  const tx = back ? 76 : 20;
-  thickLine(p, cx + (back ? 6 : -6), 64 + bob, tx, 84, 7, M.FUR, 2);
-  fillPoly(p, back ? [[tx - 2, 80], [tx + 10, 70], [tx + 8, 82], [tx + 12, 92], [tx, 88]] : [[tx + 2, 80], [tx - 10, 70], [tx - 8, 82], [tx - 12, 92], [tx, 88]], M.FUR, (x) => (x < tx ? 3 : 2));
-  p.end();
+  // the tail: out of the back of the hips and down to the ground on the viewer's left (right from
+  // behind), swinging with the pose; behind the legs from the front, nearest the viewer from behind
+  const side = back ? 1 : -1;
+  const [sw, tl] = R.tail;
+  const drawTail = () => {
+    p.begin(back ? 'sides' : null, 1);
+    sharkTail(p, [cx + side * 4, 66 + bob], [cx + side * (12 + sw * 0.35), 84 + bob - tl * 0.3], [cx + side * (28 + sw), 84 - tl], G);
+    p.end();
+  };
+  if (!back) drawTail();
   // legs: thick, bowed, knees out; barnacled boots
-  p.begin(null);
   const hips = [[cx - 8, 64 + bob], [cx + 8, 64 + bob]];
-  R.feet.forEach(([fx, lift], i) => {
-    const knee = [i ? fx + 4 : fx - 4, 78 + bob - lift];
-    sharkLimb(p, hips[i], knee, 12);
-    sharkLimb(p, knee, [fx, 84 - lift], 10);
-    sharkBoot(p, fx, 82 - lift, G - lift, false);
-  });
-  p.end();
-  // the torso: a broad muscled chest over the white belly, abs, the strap, the kilt
+  R.feet.forEach(([fx, lift], i) => sharkLeg(p, hips[i], [i ? fx + 4 : fx - 4, 78 + bob - lift], fx, G - lift, false));
+  // from behind, the tail over the legs but out from under the kilt
+  if (back) drawTail();
+  // arms: shoulders (the deltoid's mass) to elbows to the fists on the shaft; the biceps and the
+  // forearm swell; rope round the forearms. Hand 0 is his right hand: on the viewer's right from
+  // the front, on the left from behind. `upper` / `fore` draw the shoulder and upper arm / the
+  // forearm and fist
+  const shoulders = back ? [[cx - 15, 36 + bob], [cx + 15, 36 + bob]] : [[cx + 15, 36 + bob], [cx - 15, 36 + bob]];
+  const drawArms = (upper, fore) => {
+    p.begin('sides', 1);
+    R.hands.forEach((h, i) => {
+      const sh = shoulders[i];
+      const out = sh[0] > cx ? 1 : -1;
+      const elbow = [Math.round((sh[0] + h[0]) / 2 + out * 6), Math.round((sh[1] + h[1]) / 2 + 2)];
+      if (fore) {
+        sharkLimb(p, elbow, h, 9, 7, { bulge: 2.5, at: 0.3 });
+        ropeWraps(p, elbow, h, 3);
+        sharkFist(p, h);
+      }
+      if (upper) {
+        blob(p, sh[0] - out, sh[1] + 1, 7, 6.5, M.FUR, { hi: 0.4, lo: -0.25 });
+        sharkLimb(p, sh, elbow, 11, 9, { bulge: 2, at: 0.45 });
+      }
+    });
+    p.end();
+  };
+  // from behind, the forearms and the fists on the shaft are in front of him: behind the body
+  if (back) drawArms(false, true);
+  // the torso: the neck's muscle and the white throat, a broad muscled chest over the white belly,
+  // abs, the strap, the kilt
   p.begin(null);
-  blob(p, cx, 46 + bob, 17, 16, M.FUR, { hi: 0.45, lo: -0.25 });
+  sharkNeck(p, cx - 15, cx + 15, 36 + bob, hx, hy, back ? null : [cx - 8, cx + 8, 40 + bob]);
+  blob(p, cx, 46 + bob, 17 + R.chest, 16, M.FUR, { hi: 0.45, lo: -0.25 });
   blob(p, cx, 60 + bob, 12, 7, M.FUR, { hi: 0.45, lo: -0.25 });
   if (!back) {
     fillPoly(p, [[cx - 8, 38 + bob], [cx + 8, 38 + bob], [cx + 7, 64 + bob], [cx - 7, 64 + bob]], M.FUR3, (x, y) => (x < cx - 2 ? 3 : x > cx + 3 ? 1 : 2));
@@ -1514,30 +1713,14 @@ function drawSharkFront(p, key, back) {
     for (let k = 0; k < 5; k++) p.set(x, y + k, M.LEATHER, k === 0 ? 4 : k === 4 ? 1 : k === 2 && i % 3 === 0 ? 4 : 3);
   }
   p.set(cx, 47 + bob, M.GOLD, 4); p.set(cx + 1, 47 + bob, M.GOLD, 3); p.set(cx, 48 + bob, M.GOLD, 2); p.set(cx + 1, 48 + bob, M.GOLD, 2);
-  // the torn kilt: a belt and ragged strips of hide
-  for (let x = cx - 13; x <= cx + 13; x++) { p.set(x, 63 + bob, M.LEATHER, 3); p.set(x, 64 + bob, M.LEATHER, 2); }
-  for (let x = cx - 13; x <= cx + 13; x++) {
-    const len = 9 + ((x * 7) % 5) + (Math.abs(x - cx) < 4 ? 3 : 0);
-    for (let y = 65; y < 65 + len; y++) p.set(x, y + bob, M.LEATHER, (x * 5) % 7 === 0 ? 1 : x < cx - 6 ? 3 : 2);
-  }
   p.end();
+  // the torn kilt, swinging against the stride and lagging behind the lean
+  const sway = (R.feet[1][1] - R.feet[0][1]) * 0.7 - R.lean;
+  sharkKilt(p, cx - 14, cx + 14, 63 + bob, 10, sway, back ? cx + 7 : cx - 7, back ? cx - 4 : cx + 4);
   // the anchor, held in front (behind the hands)
   if (!back) { p.begin(null); drawAnchor(p, R.ring, R.crown); p.end(); }
-  // arms: shoulders to elbows to the hands on the shaft; rope round the forearms; the pauldron
-  p.begin('sides', 1);
-  // hand 0 is his right hand: on the viewer's right from the front, on the left from behind
-  const shoulders = back ? [[cx - 15, 36 + bob], [cx + 15, 36 + bob]] : [[cx + 15, 36 + bob], [cx - 15, 36 + bob]];
-  R.hands.forEach((h, i) => {
-    const sh = shoulders[i];
-    const out = sh[0] > cx ? 1 : -1;
-    const elbow = [Math.round((sh[0] + h[0]) / 2 + out * 6), Math.round((sh[1] + h[1]) / 2 + 2)];
-    sharkLimb(p, sh, elbow, 10);
-    sharkLimb(p, elbow, h, 9);
-    ropeWraps(p, elbow, h, 3);
-    blob(p, h[0], h[1], 4, 3.4, M.FUR, { hi: 0.3, lo: -0.3 }); // the fist
-    p.set(h[0] - 2, h[1] + 2, M.BONE, 3); p.set(h[0] + 1, h[1] + 3, M.BONE, 3); // claws
-  });
-  p.end();
+  // the arms over the body (from behind only the shoulders and upper arms), then the pauldron
+  drawArms(true, !back);
   p.begin(null);
   const pa = back ? [cx + 16, 33 + bob] : [cx - 16, 33 + bob];
   rock(p, pa[0], pa[1], 9, 6.5, M.STONE, 11, { facets: 9, lift: 0 });
@@ -1549,16 +1732,19 @@ function drawSharkFront(p, key, back) {
   }
   p.end();
   // the head
-  const hx = cx + R.head[0], hy = 22 + bob + R.head[1];
   if (back) {
-    p.begin('all', 1);
-    blob(p, hx, hy, 12, 9, M.FUR, { hi: 0.4, lo: -0.2 });
+    p.begin('sides', 1);
+    blob(p, hx, hy, 12.5, 9, M.FUR, { hi: 0.4, lo: -0.2 });
     p.end();
     p.begin(null);
     for (const sgn of [-1, 1]) for (let k = 0; k < 3; k++) for (let y = hy + 2; y <= hy + 6; y++) p.set(hx + sgn * (10 - k * 2), y + k, M.FUR2, 0);
-    // the dorsal fin rising from the back of the head, its edge dark
-    fillPoly(p, [[hx - 3, hy + 2], [hx + 1, hy - 20], [hx + 4, hy - 19], [hx + 4, hy + 2]], M.FUR, (x) => (x < hx + 1 ? 3 : 2));
-    for (let y = hy - 18; y <= hy + 1; y++) p.set(hx + 4, y, M.FUR2, 1);
+    p.end();
+    // the dorsal fin, nearest the viewer: rising from the spine between the shoulder blades, seen
+    // edge-on, swept back toward the viewer (its point stops under the skull) — lit on the left,
+    // its trailing edge dark
+    p.begin('sides', 1);
+    fillPoly(p, [[cx - 5, 56 + bob], [cx - 1, 31 + bob], [cx + 2, 32 + bob], [cx + 5, 56 + bob]], M.FUR, (x, y) => (x < cx - 1 + (56 + bob - y) * 0.04 ? 3 : 2));
+    for (let y = 34 + bob; y <= 54 + bob; y++) p.over(cx + 4 - Math.round((54 + bob - y) * 0.12), y, M.FUR2, 1);
     p.end();
   } else sharkHeadFront(p, hx, hy, R);
 }
@@ -1581,30 +1767,35 @@ function drawSharkSide(p, key) {
   if (F.dead) { drawSharkDead(p); return; }
   const lean = F.lean;
   const tor = [52 + lean, 48 + bob];
-  // the far arm and the tail
+  const hx = tor[0] - 12 + F.head[0], hy = 24 + bob + F.head[1];
+  // the tail out of the back of the hips, swinging with the pose (a swing across reads as the tail
+  // coming round toward the viewer: shorter)
+  const [sw, tl] = F.tail;
   p.begin(null);
-  thickLine(p, tor[0] + 10, 64 + bob, 80, 84, 8, M.FUR, 2);
-  fillPoly(p, [[78, 80], [90, 68], [89, 80], [92, 92], [80, 88]], M.FUR, (x) => (x < 84 ? 2 : 1));
+  sharkTail(p, [tor[0] + 9, 64 + bob], [tor[0] + 18 + sw * 0.1, 82 + bob - tl * 0.3], [tor[0] + 32 + Math.max(-14, sw * 0.4), 84 - tl], G);
+  p.end();
+  // the far arm, in shadow
+  p.begin(null);
   const farSh = [tor[0] + 4, 36 + bob];
   const fh = S.hands[1];
   const fe = [Math.round((farSh[0] + fh[0]) / 2 + 2), Math.round((farSh[1] + fh[1]) / 2 + 3)];
-  sharkLimb(p, farSh, fe, 9); sharkLimb(p, fe, fh, 8);
+  sharkLimb(p, farSh, fe, 10, 8, { bulge: 1.5, at: 0.45, dim: 1 });
+  sharkLimb(p, fe, fh, 8, 7, { bulge: 2, at: 0.3, dim: 1 });
+  sharkFist(p, fh, 1);
   p.end();
   // legs: the near one striding forward, the far one back
-  p.begin(null);
   const [[f0, l0], [f1, l1]] = F.feet;
   const step = (f0 - 35) + (f1 - 61);
+  /** @type {[number, number, number, number, boolean][]} hip x, hip y, foot x, lift, far */
   const legs = [[tor[0] + 4, 66 + bob, tor[0] + 8 - step, l1, true], [tor[0] - 2, 66 + bob, tor[0] - 6 + step, l0, false]];
   for (const [hx0, hy0, fx, lift, far] of legs) {
-    const knee = [Math.round((hx0 + fx) / 2) - 4, 79 + bob - lift];
-    sharkLimb(p, [hx0, hy0], knee, far ? 10 : 12);
-    sharkLimb(p, knee, [fx, 84 - lift], far ? 9 : 10);
-    sharkBoot(p, fx, 82 - lift, G - lift, true);
+    sharkLeg(p, [hx0, hy0], [Math.round((hx0 + fx) / 2) - 4, 79 + bob - lift], fx, G - lift, true, far ? 1 : 0);
   }
-  p.end();
-  // torso: the deep chest, the white belly in front, the back's dorsal fin
+  // torso: the neck's muscle and the white throat, the deep chest, the white belly in front, the
+  // back's dorsal fin
   p.begin(null);
-  blob(p, tor[0], tor[1], 14, 16, M.FUR, { hi: 0.45, lo: -0.25 });
+  sharkNeck(p, tor[0] - 12, tor[0] + 10, 36 + bob, hx + 2, hy, [tor[0] - 13, tor[0] - 6, 42 + bob]);
+  blob(p, tor[0], tor[1], 14 + F.chest, 16, M.FUR, { hi: 0.45, lo: -0.25 });
   // the dorsal fin, part of the back (same part: no outline between them): a wide base sunk into
   // the shoulders, a convex leading edge sweeping up and back, a concave trailing edge
   {
@@ -1632,12 +1823,9 @@ function drawSharkSide(p, key) {
     const x = Math.round(tor[0] - 10 + 18 * t), y = Math.round(36 + bob + 24 * t);
     for (let k = 0; k < 4; k++) p.set(x, y + k, M.LEATHER, k === 0 ? 3 : k === 3 ? 1 : 2);
   }
-  for (let x = tor[0] - 12; x <= tor[0] + 11; x++) { p.set(x, 63 + bob, M.LEATHER, 3); p.set(x, 64 + bob, M.LEATHER, 2); }
-  for (let x = tor[0] - 12; x <= tor[0] + 11; x++) {
-    const len = 9 + ((x * 7) % 5);
-    for (let y = 65; y < 65 + len; y++) p.set(x, y + bob, M.LEATHER, (x * 5) % 7 === 0 ? 1 : x < tor[0] - 4 ? 3 : 2);
-  }
   p.end();
+  // the kilt: the stride swings its hem, a lean leaves it behind
+  sharkKilt(p, tor[0] - 12, tor[0] + 11, 63 + bob, 10, (l0 - l1) * 0.6 - lean, tor[0] - 8, tor[0] - 4);
   p.begin(null);
   drawAnchor(p, S.ring, S.crown);
   p.end();
@@ -1646,10 +1834,10 @@ function drawSharkSide(p, key) {
   const sh = [tor[0] - 4, 37 + bob];
   const h = S.hands[0];
   const el = [Math.round((sh[0] + h[0]) / 2 - 3), Math.round((sh[1] + h[1]) / 2 + 3)];
-  sharkLimb(p, sh, el, 10); sharkLimb(p, el, h, 9);
+  sharkLimb(p, sh, el, 11, 9, { bulge: 2, at: 0.45 });
+  sharkLimb(p, el, h, 9, 7, { bulge: 2.5, at: 0.3 });
   ropeWraps(p, el, h, 3);
-  blob(p, h[0], h[1], 4, 3.4, M.FUR, { hi: 0.3, lo: -0.3 });
-  p.set(h[0] - 3, h[1] + 1, M.BONE, 3); p.set(h[0] - 2, h[1] + 3, M.BONE, 3);
+  sharkFist(p, h, 1);
   p.end();
   p.begin(null);
   rock(p, sh[0] + 1, sh[1] - 3, 8.5, 6.5, M.STONE, 11, { facets: 9 });
@@ -1658,7 +1846,7 @@ function drawSharkSide(p, key) {
     for (let i = 0; i < hgt; i++) p.set(sh[0] + 1 + dx + Math.round(l * i / 3), sh[1] - 8 - i, M.SCARF, i === hgt - 1 ? 4 : i % 2 ? 2 : 3);
   }
   p.end();
-  sharkHeadSide(p, tor[0] - 12 + F.head[0], 24 + bob + F.head[1], F);
+  sharkHeadSide(p, hx, hy, F);
 }
 
 /**
@@ -1680,11 +1868,14 @@ function drawSharkDead(p) {
   sharkLimb(p, [70, G - 9], [74, G - 19], 7);
   p.end();
   p.begin(null);
+  // the boots, soles up: the shaft round the shin, the rounded foot, its dark sole, the claws
   for (const [bx, by] of [[75, G - 25], [84, G - 21]]) {
-    for (let y = by; y <= by + 7; y++) for (let x = bx - 3; x <= bx + 3; x++) p.set(x, y, M.LEATHER, x < bx - 1 ? 3 : x > bx + 1 ? 1 : 2);
-    for (let x = bx - 3; x <= bx + 3; x++) p.set(x, by, M.LEATHER, 1);
-    p.set(bx - 2, by - 1, M.BONE, 4); p.set(bx, by - 1, M.BONE, 4); p.set(bx + 2, by - 1, M.BONE, 3);
-    p.set(bx - 1, by + 3, M.STONE, 4); p.set(bx + 1, by + 5, M.STONE, 3);
+    sharkLimb(p, [bx, by + 8], [bx, by + 3], 9, 9, { mat: M.LEATHER });
+    blob(p, bx, by + 2, 4.5, 3.4, M.LEATHER, { hi: 0.4, lo: -0.25 });
+    for (let x = bx - 4; x <= bx + 4; x++) p.over(x, by - 1, M.LEATHER, 0);
+    for (let x = bx - 4; x <= bx + 4; x++) p.over(x, by + 3, M.WOOD, (x & 1) ? 2 : 3);
+    p.set(bx - 3, by - 2, M.BONE, 4); p.set(bx, by - 2, M.BONE, 4); p.set(bx + 3, by - 2, M.BONE, 3);
+    p.over(bx - 2, by + 6, M.STONE, 3); p.over(bx + 2, by + 7, M.STONE, 2);
   }
   p.end();
   // the torso flat on the ground with the dorsal fin standing up from it
@@ -2184,6 +2375,8 @@ const KINDS = {
       [M.WOOD]: ramp5(['#5a4426', '#86683a', '#b0905a', '#cfb07a', '#e6d0a0']),
       [M.LEATHER]: ramp5(['#1e1410', '#36241a', '#523828', '#6e4e36', '#8e6a4a']),
       [M.GOLD]: ramp5(['#3a2410', '#6b4515', '#a5701f', '#d6a33a', '#f2d072']),
+      // the kilt: old sailcloth, sun-faded and salt-stained
+      [M.BOTTOM]: ramp5(['#2e3030', '#4c4c46', '#6e6a5c', '#948c76', '#b8ae94']),
       // the barnacled shell, the coral, the seaweed
       [M.STONE]: ramp5(['#2a3430', '#45524c', '#66766c', '#8e9c90', '#c4ccbe']),
       [M.SCARF]: ramp5(['#5a1420', '#8e2434', '#c4404c', '#e8707a', '#ffb0b0']),
