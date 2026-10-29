@@ -136,6 +136,23 @@ português e os checks de i18n passam sem japonês e chinês.
    voltar ao acampamento, a mochila é guardada no estoque. O silo dobra o limite. Junto com a
    reposição dos pontos de coleta só de manhã (item 3), isso faz cada obra pedir umas 4
    expedições (Caderno, *Coleta em várias expedições*).
+2b. **Janela de inventário** (pedida em 2026-10-28, entra no M3): uma janela do kit de UI pixel,
+   aberta por uma tecla própria (I, e o botão do controle), que pausa o jogo como o diário. Duas
+   metades:
+   - **Mochila**: a grade de espaços com o ícone e a quantidade de cada item (madeira, pedra,
+     ervas, itens de quest), o limite da mochila (`usados / limite`, maior com o silo) e, ao
+     escolher um item, o nome e a descrição (os textos dos itens de `story/main.json`). No
+     acampamento, mostra também o estoque.
+   - **Equipamento**: o cavaleiro em pé (o sprite da classe, virado para a câmera) cercado pelos
+     espaços de equipamento — arma, armadura, cabeça, mãos, pés, acessório — e os atributos ao
+     lado (HP, MP, ATK, DEF, nível). **A mecânica de equipar ainda não existe**: os espaços já
+     aparecem (vazios ou com o equipamento inicial da classe, só para ver), com o formato de dados
+     pensado para ela (cada item com `slot` e bônus), para que equipar depois seja só ligar a
+     lógica, sem refazer a tela.
+   - Teclado, controle e mouse como no diário (setas ou abas trocam de metade; Enter mostra o
+     detalhe; Esc fecha). Textos traduzidos (pt / en).
+   Pede junto: os ícones dos itens (F4) e o modelo de item com `slot`, que serve depois ao sistema
+   de experiência, habilidades e classes.
 3. **Pontos de coleta**: um novo tipo de objeto `resourceNode` (árvore cortável, veio de pedra, moita
    de ervas), com Espaço para coletar, quantidade e reposição a cada manhã. **Feito (2026-10-28)**
    como o tipo `resource` ([catálogo](../../specs/OBJECT_CATALOG.md#resource)): cada Espaço é um golpe
@@ -308,6 +325,26 @@ acampamento: a viagem é pela mesa do Surubin. Versão mínima:
 4. Cada nó tem um ponto de chegada (estaca com fita) que leva de volta ao acampamento; na volta, a
    mochila é guardada e o Surubin "desenha" o que foi descoberto.
 5. Só se viaja a partir da mesa; viagem direta entre nós vizinhos fica para depois.
+5a. **Cena de viagem** (pedida em 2026-10-28, entra no M3): no lugar da tela preta entre os mapas,
+   uma pequena cena de transição. Pode ser só texto: o nome do destino e uma linha de caminho
+   ("A trilha desce pela mata…", "De volta ao acampamento, o cheiro da fogueira…"), com as horas
+   de viagem passando (7:30 → 8:30) e, se cair de noite, um aviso. Cada lugar do atlas ganha uma ou
+   mais linhas de ida e de volta (texto traduzível, no `campaign.json`), sorteadas. Fica na tela
+   enquanto o mapa carrega (no mínimo uns 2 s, Espaço adianta). Depois dá para enriquecer: o
+   pergaminho do mapa com o pontilhado andando até o destino.
+5b. **Estaca de volta maior** (pedida em 2026-10-28, M3): a estaca com fita é pequena demais para
+   achar num mapa grande. Uma versão maior e bem visível (um mastro alto com uma flâmula vermelha,
+   talvez o peixe do culto), que se veja de longe e marque o ponto de retorno também no minimapa.
+5c. **Melhorar o minimapa** (pedida em 2026-10-28, M3: analisar primeiro). Com mapas grandes como a
+   Mata (100 × 84) ele precisa ajudar a explorar. A avaliar: zoom e área visível, marcadores do
+   ponto de retorno e dos lugares da fase (regiões nomeadas), recursos e baús, a névoa do que ainda
+   não foi visto (revelar ao andar), o norte e a legibilidade das trilhas e do riacho. Resultado
+   esperado da análise: o que o `Minimap.js` já faz, o que falta e uma proposta antes de mexer.
+   **Decidido (2026-10-28): névoa de exploração.** O minimapa (e o mapa-múndi da fase) mostra só o
+   que o jogador já percorreu; o resto fica coberto por uma névoa. Andar revela um raio em volta do
+   cavaleiro, com a borda suave. O que foi revelado fica guardado no save, por fase, e continua
+   revelado nas próximas expedições. Marcadores (baús, recursos, regiões) só aparecem na parte
+   revelada; o ponto de retorno aparece sempre.
 6. Estado no save: os nós e seus estados (boato, descoberto, explorado).
 
 **Feito (2026-10-28).** O campo `atlas` do `campaign.json` ([formato, §4.1](../../specs/CAMPAIGN_FORMAT.md#41-the-atlas)):
@@ -401,7 +438,7 @@ Design na Bíblia, seção *O protagonista*.
 | --- | --- | --- |
 | **M1, Idioma** | Jogo em português, sem japonês e chinês | A |
 | **M2, Acampamento jogável** | Campanha Ato I: criação de personagem → prólogo → C02 → acampamento na clareira → mapa do Surubin → Mata da Clareira → volta; cavaleiro com visual próprio e falando; clima sorteado por mapa; mais monstros à noite | B, G1, I, J, F1 (tenda, mesa do mapa, estandarte, altar), F2 (cavaleiro) |
-| **M3, Primeira obra** | Mochila e estoque, coleta em várias expedições (Mata, Riacho, Pedreira), C03 com a escolha forja / silo / alojamento, obra que avança a cada manhã, altar, dormir no alojamento (protótipo E1) | C, D, E1, F1 (forja, silo, alojamento, andaime) |
+| **M3, Primeira obra** | Mochila e estoque, janela de inventário (mochila + equipamento, C 2b), cena de viagem entre mapas (G1 5a), estaca de volta maior (5b), análise do minimapa (5c), coleta em várias expedições (Mata, Riacho, Pedreira), C03 com a escolha forja / silo / alojamento, obra que avança a cada manhã, altar, dormir no alojamento (protótipo E1) | C, D, E1, F1 (forja, silo, alojamento, andaime) |
 | **M4, Sistema de construção** | `buildSlot` + `BuildingSystem` + menu + editor; contagens EV01/EV02 | E2, D completo, F4 |
 | **M5, Fase 1–3 do Ato I** | Odo, Fumaça na Serra, Pedras Riscadas, duelo do mestre | F2 (NPCs), F3 |
 | **M6, Atlas completo** | Atlas do Ato I com os 12 (13) nós, contagens visíveis | G2 |
