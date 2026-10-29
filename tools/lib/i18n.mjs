@@ -72,7 +72,7 @@ export const UI_TABLE_DIRS = ['src/engine/i18n/strings'];
 export const UI_FEATURE_ROOT = 'src/game';
 /** The feature namespaces PIXEL_UI.md §8 places: the checker notes the ones not written yet. */
 export const UI_FEATURE_FILES = Object.freeze([
-  'src/engine/i18n/strings/worldfx.js', 'src/engine/i18n/strings/story-ui.js', 'src/game/combat/strings.js',
+  'src/engine/i18n/strings/worldfx.js', 'src/engine/i18n/strings/story-ui.js', 'src/engine/i18n/strings/inventory.js', 'src/game/combat/strings.js',
   'src/game/party/strings.js', 'src/game/story/strings.js', 'src/game/campaign/strings.js',
 ]);
 /** The reader of `common` that is no table: the code (its `loc('<code key>', …)` units, the common terms). */

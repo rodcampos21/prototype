@@ -1465,6 +1465,70 @@ begin('resources grow back in the morning (the res. flags a harvest sets)');
   ok('sleeping until morning: cleared', !r.state.has('res.mata.erva-04'));
 }
 
+begin('the backpack, the camp\'s stock and the equipment (CAMPAIGN_FORMAT.md §4.2)');
+{
+  // the campaign's `inventory`
+  const base = { format: 'luminati-campaign', levels: ['camp', 'woods'] };
+  const inv = (v) => normalizeCampaign({ ...base, inventory: v });
+  const good = inv({ pack: 8, grow: [{ when: 'obra.silo', pack: 16 }], equipment: { weapon: 'sword', head: 'helm' } });
+  eq('inventory: the limit, the larger steps, the equipment by slot', good.campaign.inventory, { pack: 8, grow: [{ when: 'obra.silo', pack: 16 }], equipment: { weapon: 'sword', head: 'helm' } });
+  eq('… no warnings', good.warnings, []);
+  const bad = inv({ pack: 0, grow: [{ pack: 4 }], equipment: { tail: 'x', feet: 'Not An Id!' } });
+  eq('a bad limit: 10, a step without `when` and unknown slots dropped', bad.campaign.inventory, { pack: 10, grow: [], equipment: {} });
+  ok('… each warned', bad.warnings.length === 4, bad.warnings);
+  eq('none: null, nothing written', [normalizeCampaign(base).campaign.inventory, serializeCampaign(normalizeCampaign(base).campaign).includes('"inventory"')], [null, false]);
+  ok('written back as read', isDeepStrictEqual(parseCampaign(serializeCampaign(good.campaign)).campaign.inventory, good.campaign.inventory));
+  // the items' fields
+  const files = [{ name: 'main.json', text: JSON.stringify({ format: 'luminati-story', items: {
+    wood: { name: 'Wood', pack: true, icon: 'wood' },
+    stone: { name: 'Stone', pack: true },
+    sword: { name: 'Sword', slot: 'weapon', bonus: { atk: 2, luck: 3 }, icon: 'sword' },
+    letter: { name: 'Letter', key: true, slot: 'pocket', icon: 'Bad Icon' },
+  } }) }];
+  const built = buildStory(files);
+  const it = built.story.items;
+  eq('items: pack, icon, slot and bonus kept', [it.wood.pack, it.wood.icon, it.stone.pack, it.sword.slot, it.sword.bonus, it.letter.slot, it.letter.icon], [true, 'wood', true, 'weapon', { atk: 2 }, undefined, undefined]);
+  ok('… an unknown bonus, slot and a bad icon warned', ['bonus "luck"', '"pocket" is not a slot', '"icon"'].every((w) => built.warnings.some((x) => x.includes(w))), built.warnings);
+  // the state: carried and stocked, taking from the stock first
+  const s = new StoryState(built.story);
+  s.addItem('wood', 5);
+  eq('given items are carried', [s.carried('wood'), s.stocked('wood'), s.count('wood')], [5, 0, 5]);
+  eq('storeItems: what is carried goes into the stock', [s.storeItems(['wood', 'stone']), s.carried('wood'), s.stocked('wood')], [Object.assign(Object.create(null), { wood: 5 }), 0, 5]);
+  s.addItem('wood', 3);
+  eq('… a count is both together', s.count('wood'), 8);
+  s.addItem('wood', -6);
+  eq('taking: from the stock first, then from what is carried', [s.stocked('wood'), s.carried('wood')], [0, 2]);
+  s.setEquip('weapon', 'sword');
+  s.equipped = true;
+  s.addItem('stone', 4);
+  s.storeItems(['stone']);
+  const back = StoryState.fromJSON(JSON.parse(JSON.stringify(s.toJSON())), built.story);
+  eq('saved and read back: the stock, the equipment, the start given', [back.carried('wood'), back.stocked('stone'), back.equip.weapon, back.equipped], [2, 4, 'sword', true]);
+  ok('a save without them has none', (() => { const e = StoryState.fromJSON({}, built.story); return !Object.keys(e.stock).length && !Object.keys(e.equip).length && !e.equipped; })());
+  // the runner: the limit, gathering, home
+  const camp = { campaign: { atlas: { home: 'camp' }, inventory: { pack: 6, grow: [{ when: 'silo', pack: 12 }], equipment: { weapon: 'sword' } } }, state: { visited: [] } };
+  const toasts = [];
+  const g = stubGame({ campaign: camp });
+  g.ui.hud.toast = (text) => { toasts.push(text); };
+  const r = new StoryRunner({ game: g, story: built.story, state: new StoryState(built.story), levelId: 'woods' });
+  eq('a new journey wears the starting equipment', [r.state.equip.weapon, r.state.equipped], ['sword', true]);
+  eq('packIds: the backpack\'s items', r.packIds(), ['wood', 'stone']);
+  eq('gather: as much as the backpack takes', [r.gather('wood', 4), r.gather('stone', 4), r.packUsed(), r.packRoom('wood')], [4, 2, 6, 0]);
+  ok('… a toast when it is full', toasts.some((x) => x.includes('mochila') || x.includes('backpack')), toasts);
+  eq('… an item the backpack does not hold: no limit', r.packRoom('sword'), Infinity);
+  r.state.setFlag('silo');
+  eq('a larger step while its condition holds', [r.packLimit(), r.packRoom('wood')], [12, 6]);
+  r.levelId = 'camp';
+  eq('at home: stored on arrival, gathered straight into the stock', [r.atHome, r.storePack(), r.gather('wood', 3), r.state.carried('wood'), r.state.stocked('wood')], [true, Object.assign(Object.create(null), { wood: 4, stone: 2 }), 3, 0, 7]);
+  const d = r.inventoryData();
+  eq('inventoryData: the pack, home, the items with carried and stocked, the equipment by slot',
+    [d.pack, d.home, d.items.map((x) => [x.id, x.count, x.stock, x.icon]), d.equipment?.map((e) => [e.slot, e.id])],
+    [{ used: 0, limit: 12 }, true, [['wood', 0, 7, 'wood'], ['stone', 0, 2, '']], [['weapon', 'sword'], ['body', ''], ['head', ''], ['hands', ''], ['feet', ''], ['accessory', '']]]);
+  ok('the journal counts both', r.journalData().items.find((x) => x.id === 'wood')?.count === 7);
+  const plain = new StoryRunner({ game: stubGame(), story: built.story, state: new StoryState(built.story), levelId: 'woods' });
+  eq('no campaign inventory: no limit, no equipment', [plain.packLimit(), plain.packRoom('wood'), plain.inventoryData().pack, plain.inventoryData().equipment], [0, Infinity, null, null]);
+}
+
 begin('the weather a map rolls (WeatherRoll.js), the story holding it');
 {
   eq('weatherPhase: morning from 5, afternoon from 12, night from 18:30', [4.9, 5, 11.99, 12, 18.49, 18.5, 23, -1, 29].map(weatherPhase), ['night', 'morning', 'morning', 'afternoon', 'afternoon', 'night', 'night', 'night', 'morning']);

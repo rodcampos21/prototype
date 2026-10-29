@@ -247,6 +247,11 @@ export class UI {
      */
     this.journey = null;
     /**
+     * The HUD's resource bar under the minimap (`useResourceBar()`; null otherwise).
+     * @type {import('./ResourceBar.js').ResourceBar|null}
+     */
+    this.resources = null;
+    /**
      * The cutscene's letterbox and skip hint (`useStoryUI()`; null without the story UI): the bars,
      * their gilt hairlines, the skip hint's group (laid out per scale) and its ring.
      * @type {{ letterbox: HTMLElement, bars: HTMLElement[], lines: HTMLCanvasElement[],
@@ -532,6 +537,23 @@ export class UI {
     return this.journey;
   }
 
+  /**
+   * The HUD's resource bar under the minimap (ResourceBar.js; a campaign with an `inventory`,
+   * CAMPAIGN_FORMAT.md §4.2 — the backpack and equipment themselves are journal tabs), made on the
+   * first call from the caller's class, like the story UI's; the root class `lu-root--resources`
+   * hides the combat skill bar's purse (the bar shows the gold). From then on `update()` keeps the
+   * bar under the minimap.
+   * @param {typeof import('./ResourceBar.js').ResourceBar} Cls
+   * @returns {import('./ResourceBar.js').ResourceBar}
+   */
+  useResourceBar(Cls) {
+    if (!this.resources) {
+      this.resources = new Cls(this.hud.element, { minimap: this.minimap });
+      this.root.classList.add('lu-root--resources');
+    }
+    return this.resources;
+  }
+
   useStoryUI(classes) {
     if (this._story) return { journal: this.journal, emotes: this.emotes, endCard: this.endCard };
     const { Journal, Emotes, EndCard } = classes ?? {};
@@ -755,6 +777,7 @@ export class UI {
       this.journey.update(dt, input);
       dialogInput = undefined;
     }
+    this.resources?.update();
     // the atlas (z 7, like the journal) takes it next
     if (this.atlas?.isOpen) {
       this.atlas.update(dt, dialogInput);
@@ -807,6 +830,9 @@ export class UI {
     this.atlas = null;
     this.journey?.dispose();
     this.journey = null;
+    this.resources?.dispose();
+    this.resources = null;
+    this.root.classList.remove('lu-root--resources');
     this.debug.dispose();
     this.worldMap.dispose();
     this.minimap.dispose();

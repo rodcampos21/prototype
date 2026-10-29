@@ -1445,9 +1445,15 @@ export class Game {
     this.story = new StoryRunner({ game: this, story: c?.story ?? null, state, levelId: c?.levelId ?? this._storyLevelId() });
     c?.attachStory(this.story);
     this.engine.input.addBindings({ journal: ['KeyB'] }, {});
-    const { storyUIClasses } = await import('./story/storyUI.js');
+    const { storyUIClasses, ResourceBar } = await import('./story/storyUI.js');
     this.ui.useStoryUI(storyUIClasses());
     if (this.ui.journal) this.ui.journal.onSound = (name) => this.audio.playSfx(name, { volume: 0.5 });
+    // a campaign with an inventory (CAMPAIGN_FORMAT.md §4.2): the resource bar (the backpack and the
+    // equipment are the journal's tabs: `journalData`)
+    if (this.story.inventory) {
+      this.ui.useResourceBar(ResourceBar);
+      this._resKey = '';
+    }
   }
 
   /**
@@ -1694,9 +1700,10 @@ export class Game {
    * Strike a resource (Space at a full `resource` object; OBJECT_CATALOG.md *resource*): the
    * knight's swing (the combat sheet's poses, on a combat level), chips, dust or leaves, a thud and a
    * small shake. Its `hits`-th strike spends it: its flag is set (`flag`, else `res.<level>.<id>` —
-   * the story shows its spent twin), the story gives `amount` of its `item` (a toast, the journal)
-   * and the story clears every `res.` flag at the next morning (StoryRunner: it grows back). Not
-   * while foes are on the player. The strikes are counted while the player stays in the level.
+   * the story shows its spent twin), the story gives `amount` of its `item` (a toast, the journal;
+   * into the backpack, as much as it takes: StoryRunner.gather) and the story clears every `res.`
+   * flag at the next morning (StoryRunner: it grows back). Not while foes are on the player, nor
+   * with the backpack full. The strikes are counted while the player stays in the level.
    * @param {import('./World.js').Interactable} it
    */
   async harvest(it) {
@@ -1708,6 +1715,12 @@ export class Game {
     }
     const ro = o.opts ?? {};
     const kind = ro.kind === 'stone' || ro.kind === 'herbs' ? ro.kind : 'tree';
+    const item = (typeof o.item === 'string' && o.item.trim()) || (kind === 'tree' ? 'madeira' : kind === 'stone' ? 'pedra' : 'ervas');
+    // (a full backpack: no strike — the resource stays for the next expedition)
+    if (this.story.packRoom(item) <= 0) {
+      this.ui.hud.toast(t('story.pack.full'), 2.2, { kind: 'item' });
+      return;
+    }
     const int = (v, d, lo, hi) => (Number.isFinite(v) ? Math.min(hi, Math.max(lo, Math.round(v))) : d);
     const hits = int(o.hits, 3, 1, 8);
     const hitKey = `${this.campaign?.levelId ?? ''}:${o.id}`;
@@ -1750,8 +1763,7 @@ export class Game {
     const flag = (typeof o.flag === 'string' && o.flag.trim()) || `res.${this.campaign?.levelId ?? 'level'}.${o.id}`;
     if (this.campaign) this.campaign.setFlag(flag);
     else this.story.state.setFlag(flag);
-    const item = (typeof o.item === 'string' && o.item.trim()) || (kind === 'tree' ? 'madeira' : kind === 'stone' ? 'pedra' : 'ervas');
-    this.story.giveItem(item, int(o.amount, 2, 1, 20));
+    this.story.gather(item, int(o.amount, 2, 1, 20));
     this.particles.burst(kind === 'herbs' ? 'sparkle' : 'footstep', this._tmp.set(o.x, this.tileMap.getHeight(o.x, o.z) + 0.3, o.z), kind === 'herbs' ? 4 : 10);
   }
 
@@ -1819,6 +1831,8 @@ export class Game {
    */
   journalData() {
     const data = this.story ? this.story.journalData() : {};
+    // a campaign's backpack and equipment: the journal's Backpack and Equipment tabs
+    if (this.story?.inventory) Object.assign(data, { inventory: this.inventoryData() });
     const live = this.combat?.codex;
     if (live) return { ...data, codex: live.entries() };
     // a campaign's level without combat: the Códex as the save holds it, once a combat level was
@@ -1864,6 +1878,42 @@ export class Game {
   /** Is the story journal open? */
   get journalOpen() {
     return !!this.ui?.journal?.isOpen;
+  }
+
+  /**
+   * What the journal's Backpack and Equipment tabs show: the story's (StoryRunner.inventoryData)
+   * with the player's numbers (a combat level's, else the campaign save's), name, class and figure.
+   * @returns {import('../engine/ui/types.js').InventoryData}
+   */
+  inventoryData() {
+    const data = this.story ? this.story.inventoryData() : {};
+    const pc = this.combat?.pc;
+    const saved = this.campaign?.state.combat;
+    const stats = pc
+      ? { level: pc.level, hp: pc.hp, hpMax: pc.hpMax, mp: pc.mp, mpMax: pc.mpMax, atk: pc.atk, def: pc.def }
+      : saved ? { level: saved.level } : null;
+    const cls = this.campaign?.state.player?.cls;
+    const role = cls ? t(`campaign.class.${cls}`) : '';
+    return {
+      ...data,
+      stats,
+      name: this.campaign?.playerName || '',
+      role: role && role !== `campaign.class.${cls}` ? role : '',
+      figure: /** @type {any} */ (this.player)?.sheet?.canvas ?? null,
+    };
+  }
+
+  /**
+   * Keep the resource bar on what the story holds (every frame: the story's version, the gold and
+   * the place are compared, the bar is rebuilt only when one moved).
+   */
+  _updateResources() {
+    const bar = this.ui?.resources;
+    if (!bar || !this.story) return;
+    const key = `${this.story.state.version}|${this.story.gold}|${this.story.levelId}`;
+    if (key === this._resKey) return;
+    this._resKey = key;
+    bar.setData(this.story.inventoryData());
   }
 
   /**
@@ -2367,14 +2417,14 @@ export class Game {
           this.togglePartyMenu(false);
         }
       } else if (!talking && !this.photoMode && input.actionPressed('map')) this.toggleMap(true);
-      else if (this.story && !talking && !this.photoMode && input.actionPressed('journal')) this.toggleJournal(true);
-      else if (this.party && !talking && !this.photoMode && input.actionPressed('party')) {
+      else if (this.story && !talking && !this.photoMode && input.actionPressed('journal')) this.toggleJournal(true);      else if (this.party && !talking && !this.photoMode && input.actionPressed('party')) {
         input.consumeAction?.('party');
         this.togglePartyMenu(true);
       }
     }
     // (the journal and the party's tactics panel pause play like the map)
     const mapOpen = this.mapOpen || this.journalOpen || this.partyMenuOpen;
+    this._updateResources();
     // combat levels: photo mode is on an LS click, ignored while (and 0.3 s after) the move
     // vector is deflected (COMBAT.md §5.2)
     let photoPad = false;

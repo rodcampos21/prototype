@@ -47,6 +47,8 @@ const num = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : null);
 const clampN = (v) => Math.max(-LIMIT, Math.min(LIMIT, v));
 /** @returns {Record<string, any>} */
 const map = () => Object.create(null);
+/** Set a count in an item map (0 removes the entry). @param {Record<string, number>} m @param {string} id @param {number} n */
+const setCount = (m, id, n) => { if (n > 0) m[id] = n; else delete m[id]; };
 
 /**
  * A flag of the older, looser kind: a campaign's starting `flags`, a villager's `flag` — any short
@@ -286,6 +288,20 @@ export class StoryState {
      * @type {Record<string, string>}
      */
     this.itemNames = map();
+    /**
+     * The camp's stock: item id → count stored at home (CAMPAIGN_FORMAT.md §4.2). `items` holds what
+     * the player carries (the backpack and every other item); an item's count is both together.
+     * @type {Record<string, number>}
+     */
+    this.stock = map();
+    /**
+     * What the player wears: slot (EQUIP_SLOTS) → item id. A new journey's from the campaign's
+     * `inventory.equipment` (`equipped` set then); saved.
+     * @type {Record<string, string>}
+     */
+    this.equip = map();
+    /** The starting equipment was given (a later `inventory.equipment` change leaves a save as it is). */
+    this.equipped = false;
     this.gold = 0;
     /** @type {Record<string, QuestState>} */
     this.quests = map();
@@ -370,13 +386,24 @@ export class StoryState {
     return true;
   }
 
-  /** How many of an item the player has. @param {string} id */
+  /** How many of an item the player has: carried and in the camp's stock. @param {string} id */
   count(id) {
-    return id === 'gold' ? this.gold : Object.hasOwn(this.items, id) ? this.items[id] : 0;
+    return id === 'gold' ? this.gold : this.carried(id) + this.stocked(id);
+  }
+
+  /** How many of an item the player carries. @param {string} id */
+  carried(id) {
+    return Object.hasOwn(this.items, id) ? this.items[id] : 0;
+  }
+
+  /** How many of an item the camp's stock holds. @param {string} id */
+  stocked(id) {
+    return Object.hasOwn(this.stock, id) ? this.stock[id] : 0;
   }
 
   /**
    * Add (or with a negative `n`, take) items; returns how many changed hands. Gold is the `gold` item.
+   * Added items are carried; taken ones come out of the stock first, then from what is carried.
    * @param {string} id
    * @param {number} n
    */
@@ -386,10 +413,50 @@ export class StoryState {
     const next = Math.max(0, Math.min(LIMIT, have + Math.trunc(n)));
     if (next === have) return 0;
     if (id === 'gold') this.gold = next;
-    else if (next === 0) delete this.items[id];
-    else this.items[id] = next;
+    else if (next > have) this.items[id] = this.carried(id) + next - have;
+    else {
+      let take = have - next;
+      const fromStock = Math.min(take, this.stocked(id));
+      if (fromStock) setCount(this.stock, id, this.stocked(id) - fromStock);
+      take -= fromStock;
+      if (take) setCount(this.items, id, this.carried(id) - take);
+    }
     this.version++;
     return next - have;
+  }
+
+  /**
+   * Store what the player carries of `ids` in the camp's stock (arriving home with the backpack).
+   * Returns what moved: id → count (empty when nothing did).
+   * @param {Iterable<string>} ids
+   * @returns {Record<string, number>}
+   */
+  storeItems(ids) {
+    /** @type {Record<string, number>} */
+    const moved = map();
+    for (const id of ids) {
+      const n = this.carried(id);
+      if (!n) continue;
+      delete this.items[id];
+      this.stock[id] = Math.min(LIMIT, this.stocked(id) + n);
+      moved[id] = n;
+    }
+    if (Object.keys(moved).length) this.version++;
+    return moved;
+  }
+
+  /**
+   * Wear `id` in `slot` ('' takes it off). Returns true when it changed.
+   * @param {string} slot
+   * @param {string} id
+   */
+  setEquip(slot, id) {
+    if (!isStoryName(slot) || (id && !isStoryName(id))) return false;
+    if ((Object.hasOwn(this.equip, slot) ? this.equip[slot] : '') === id) return false;
+    if (id) this.equip[slot] = id;
+    else delete this.equip[slot];
+    this.version++;
+    return true;
   }
 
   /**
@@ -544,6 +611,10 @@ export class StoryState {
       items: { ...this.items },
       // (the names shop items were given by — absent without any)
       ...(Object.keys(this.itemNames).length ? { itemNames: { ...this.itemNames } } : {}),
+      // (the camp's stock and the equipment — each absent without any)
+      ...(Object.keys(this.stock).length ? { stock: { ...this.stock } } : {}),
+      ...(Object.keys(this.equip).length ? { equip: { ...this.equip } } : {}),
+      ...(this.equipped ? { equipped: true } : {}),
       gold: this.gold,
       // (a script's stage texts with their content keys and English beside them — each absent
       // without any)
@@ -581,6 +652,9 @@ export class StoryState {
     for (const [k, v] of entries(d.items)) if (isStoryName(k) && k !== 'gold' && num(v) !== null && v > 0) s.items[k] = Math.min(LIMIT, Math.floor(v));
     // (absent without any: the ids' title case is shown)
     for (const [k, v] of entries(d.itemNames)) if (typeof v === 'string') s.nameItem(k, v);
+    for (const [k, v] of entries(d.stock)) if (isStoryName(k) && k !== 'gold' && num(v) !== null && v > 0) s.stock[k] = Math.min(LIMIT, Math.floor(v));
+    for (const [k, v] of entries(d.equip)) if (isStoryName(k) && isStoryName(v) && v !== 'gold') s.equip[k] = v;
+    s.equipped = d.equipped === true;
     s.gold = Math.max(0, Math.min(LIMIT, Math.floor(num(d.gold) ?? 0)));
     for (const [k, q] of entries(d.quests)) {
       if (!isStoryName(k) || !isPlain(q)) continue;

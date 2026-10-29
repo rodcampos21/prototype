@@ -131,12 +131,22 @@ português e os checks de i18n passam sem japonês e chinês.
 1. Recursos são **itens declarados** em `story/main.json`: `madeira`, `pedra`, `comida`, `ervas`,
    `minerio`, `couro`, `osso`, `minerio-raro`, `pedra-raiz`.
 2. **HUD de recursos** (novo componente no kit de UI pixel): uma faixa com ícone e quantidade dos
-   recursos principais, visível no acampamento e nas expedições.
+   recursos principais, visível no acampamento e nas expedições. **Feito (2026-10-29)**: a faixa
+   fica sob o minimapa, com o ouro primeiro (a bolsa do combate some, para não repetir), cada item
+   da mochila e, embaixo, `usados/limite` (vermelho quando cheia); no acampamento conta o estoque.
 2a. **Mochila e estoque**: o que se coleta numa expedição vai para a mochila, que tem limite; ao
    voltar ao acampamento, a mochila é guardada no estoque. O silo dobra o limite. Junto com a
    reposição dos pontos de coleta só de manhã (item 3), isso faz cada obra pedir umas 4
-   expedições (Caderno, *Coleta em várias expedições*).
-2b. **Janela de inventário** (pedida em 2026-10-28, entra no M3): uma janela do kit de UI pixel,
+   expedições (Caderno, *Coleta em várias expedições*). **Feito (2026-10-29)** como o campo
+   `inventory` do `campaign.json` ([formato, §4.2](../../specs/CAMPAIGN_FORMAT.md#42-the-inventory-backpack-stock-and-equipment)):
+   limite 8, 16 com a flag `obra.silo` (a C03 vai ligá-la; números a balancear). Com a mochila
+   cheia não se coleta (aviso para voltar). Ao chegar ao acampamento, tudo vai para o estoque e o
+   jogo salva. A contagem de um item (`item:madeira`, o diário) soma mochila e estoque, e `take`
+   tira do estoque primeiro: o custo da obra sai dos dois.
+2b. **Janela de inventário** (pedida em 2026-10-28, entra no M3; **feita em 2026-10-29 dentro do
+   diário** (B), a pedido: as abas *Mochila* e *Equipamento* ficam no lugar de *Itens*, ao lado de
+   Missões e Códex, para toda a interface ficar num lugar só; Q/E trocam de aba, as setas escolhem).
+   O plano original abaixo pedia uma janela do kit de UI pixel,
    aberta por uma tecla própria (I, e o botão do controle), que pausa o jogo como o diário. Duas
    metades:
    - **Mochila**: a grade de espaços com o ícone e a quantidade de cada item (madeira, pedra,
@@ -455,7 +465,7 @@ Design na Bíblia, seção *O protagonista*.
 | --- | --- | --- |
 | **M1, Idioma** | Jogo em português, sem japonês e chinês | A |
 | **M2, Acampamento jogável** | Campanha Ato I: criação de personagem → prólogo → C02 → acampamento na clareira → mapa do Surubin → Mata da Clareira → volta; cavaleiro com visual próprio e falando; clima sorteado por mapa; mais monstros à noite | B, G1, I, J, F1 (tenda, mesa do mapa, estandarte, altar), F2 (cavaleiro) |
-| **M3, Primeira obra** | Mochila e estoque, janela de inventário (mochila + equipamento, C 2b), ~~cena de viagem entre mapas (G1 5a), estaca de volta maior (5b), recursos visíveis (5d)~~ (feitos em 2026-10-29), névoa no minimapa (5c), coleta em várias expedições (Mata, Riacho, Pedreira), C03 com a escolha forja / silo / alojamento, obra que avança a cada manhã, altar, dormir no alojamento (protótipo E1) | C, D, E1, F1 (forja, silo, alojamento, andaime) |
+| **M3, Primeira obra** | ~~Mochila e estoque, HUD de recursos, janela de inventário (mochila + equipamento, C 2, 2a, 2b), cena de viagem entre mapas (G1 5a), estaca de volta maior (5b), recursos visíveis (5d)~~ (feitos em 2026-10-29), névoa no minimapa (5c), coleta em várias expedições (Mata, Riacho, Pedreira), C03 com a escolha forja / silo / alojamento, obra que avança a cada manhã, altar, dormir no alojamento (protótipo E1) | C, D, E1, F1 (forja, silo, alojamento, andaime) |
 | **M4, Sistema de construção** | `buildSlot` + `BuildingSystem` + menu + editor; contagens EV01/EV02 | E2, D completo, F4 |
 | **M5, Fase 1–3 do Ato I** | Odo, Fumaça na Serra, Pedras Riscadas, duelo do mestre | F2 (NPCs), F3 |
 | **M6, Atlas completo** | Atlas do Ato I com os 12 (13) nós, contagens visíveis | G2 |
