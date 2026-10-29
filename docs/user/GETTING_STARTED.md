@@ -219,6 +219,20 @@ npm run preview -- --base=/luminati/  # dist/ under the sub-path, as a host serv
 > In Git Bash on Windows, prefix the command with `MSYS_NO_PATHCONV=1`, otherwise the shell rewrites
 > `/luminati/` into a Windows path.
 
+**GitHub Pages** — [`.github/workflows/deploy-pages.yml`](../../.github/workflows/deploy-pages.yml)
+publishes the game on every push to `main` (or by hand: Actions → *Deploy to GitHub Pages* → *Run
+workflow*): `npm ci`, `npm run build`, then
+[`tools/pages-front.mjs`](../../tools/pages-front.mjs), which moves the launcher to `launcher.html`
+and writes an `index.html` that opens `game.html` (the query and hash kept: `…/?lang=en`). The site
+is `https://<user>.github.io/<repo>/`. Once per repository: Settings → Pages → Build and deployment →
+Source: **GitHub Actions**. To check the published shape locally:
+
+```bash
+npm run build
+node tools/pages-front.mjs dist
+npm run preview -- --base=/prototype/   # http://127.0.0.1:4173/prototype/ opens the game
+```
+
 ### What only exists under `npm run dev`
 
 | Feature | Dev server | Built site (`dist/`, `npm run preview`) |
