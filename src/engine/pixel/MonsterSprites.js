@@ -8,7 +8,7 @@
  * `sprite.setFrame(poses[name], row)`. `spriteOptions` holds only Sprite3D option keys; the game
  * spreads it into the sprite options (`{ ...CHARACTER_SPRITE_OPTS, ...sheet.spriteOptions, combatFx: true }`).
  *
- * Art: the monsters (slime, bat, boar, wolf, fera, dummy, golem) are painted like the creatures of
+ * Art: the monsters (slime, bat, boar, wolf, fera, shark, dummy, golem) are painted like the creatures of
  * CharacterSprites.js — shaded parts in a (material, shade) label buffer, 5-tone ramps, the dark
  * plum silhouette outline, light from the upper left — through its `_painterKit`. The humanoids
  * (goblin, archer, shaman) are `createCharacterSheet(spec, { combat: true })` sheets. Glow texels
@@ -27,12 +27,13 @@ const { Painter, resolvePainter, M, blob, quadGait, quadLeg, rampForKind, finish
 
 /**
  * Every enemy kind with a sheet (ObjectCatalog.ENEMY_KINDS, plus `wolf` — the Lobo-de-Capim of the
- * Ato I bestiary — and `fera` — A Fera Maculada, the Ato I boss: a giant iguana corrupted by the Baiacu Rei — whose
+ * Ato I bestiary — `fera` — A Fera Maculada, the Ato I boss: a giant iguana corrupted by the Baiacu Rei — and
+ * `shark` — the shark boss, a giant humanoid great white with an anchor — whose
  * sheets come before their gameplay: no ENEMY_DEFS entry or brain yet; the `kind` of
  * createEnemySheet).
- * @type {readonly ('slime'|'goblin'|'archer'|'shaman'|'bat'|'boar'|'dummy'|'golem'|'wolf'|'fera')[]}
+ * @type {readonly ('slime'|'goblin'|'archer'|'shaman'|'bat'|'boar'|'dummy'|'golem'|'wolf'|'fera'|'shark')[]}
  */
-export const ENEMY_SHEET_KINDS = Object.freeze(['slime', 'goblin', 'archer', 'shaman', 'bat', 'boar', 'dummy', 'golem', 'wolf', 'fera']);
+export const ENEMY_SHEET_KINDS = Object.freeze(['slime', 'goblin', 'archer', 'shaman', 'bat', 'boar', 'dummy', 'golem', 'wolf', 'fera', 'shark']);
 
 /** Columns 0–9 shared by the monster (non-humanoid) sheets. */
 const COMMON = ['idle0', 'idle1', 'move0', 'move1', 'move2', 'move3', 'windup', 'attack', 'hurt', 'dead'];
@@ -1290,6 +1291,394 @@ function drawFera(p, view, key) {
 }
 
 // ---------------------------------------------------------------------------
+// Shark (the shark boss, kind `shark`) — a giant humanoid great white with a rusted anchor (96 ×
+// 96, the boss size planned for the dragon): blue-grey hide over a white belly, a shark's head with
+// rows of teeth, gills and orange eyes, the dorsal fin on its back, the tail fin reaching the
+// ground; a barnacled shell pauldron with coral on its right shoulder, a leather strap across the
+// chest, a torn hide kilt, rope wrapped round the forearms, barnacled boots with claws. The anchor
+// (rust, rope, seaweed) is held two-handed: carried, raised and slammed down, swung wide.
+// ---------------------------------------------------------------------------
+
+/**
+ * Per pose, in the front view's coordinates (96 × 96, ground 93): body drop, lean, head offset,
+ * mouth (0 shut … 3 roaring), eyes, the two hands, the anchor's ring and crown, the feet.
+ */
+function sharkRig(key) {
+  const R = {
+    bob: 0, lean: 0, head: [0, 0], mouth: 1, eye: 'open',
+    hands: [[66, 56], [70, 64]], ring: [74, 30], crown: [70, 88],
+    feet: [[35, 0], [61, 0]], dead: false,
+  };
+  switch (key) {
+    case 'idle1': R.bob = 1; R.mouth = 0; R.hands = [[66, 57], [70, 65]]; break;
+    case 'move0': R.feet = [[33, 3], [62, 0]]; R.bob = -1; break;
+    case 'move1': R.bob = 1; break;
+    case 'move2': R.feet = [[35, 0], [64, 3]]; R.bob = -1; break;
+    case 'move3': R.bob = 1; break;
+    // the slam: the anchor raised high over the head, then brought down in front
+    case 'windup': R.bob = -1; R.lean = 1; R.mouth = 2; R.hands = [[44, 20], [52, 18]]; R.ring = [42, 26]; R.crown = [76, 6]; break;
+    case 'attack': R.bob = 4; R.mouth = 3; R.hands = [[44, 60], [52, 64]]; R.ring = [46, 52]; R.crown = [44, 90]; R.feet = [[31, 0], [65, 0]]; break;
+    // the sweep: drawn back to its right, then swung wide across
+    case 'sweepWind': R.lean = 2; R.mouth = 2; R.hands = [[66, 50], [74, 52]]; R.ring = [62, 50]; R.crown = [92, 58]; break;
+    case 'sweep': R.lean = -2; R.mouth = 3; R.hands = [[30, 54], [24, 56]]; R.ring = [34, 54]; R.crown = [4, 62]; R.feet = [[33, 0], [63, 0]]; break;
+    case 'roar': R.bob = -1; R.head = [0, -3]; R.mouth = 3; R.hands = [[78, 56], [18, 46]]; R.ring = [80, 40]; R.crown = [78, 88]; break;
+    case 'hurt': R.head = [2, -2]; R.lean = 2; R.mouth = 2; R.eye = 'shut'; R.hands = [[68, 58], [72, 66]]; R.ring = [78, 34]; R.crown = [72, 89]; break;
+    case 'dead': R.dead = true; R.eye = 'dead'; break;
+    default: break;
+  }
+  return R;
+}
+
+/** The anchor from its ring to its crown: shaft, stock, two barbed flukes, rust, rope and weed. */
+function drawAnchor(p, ring, crown, w = 4) {
+  const [rx, ry] = ring, [cx, cy] = crown;
+  const len = Math.hypot(cx - rx, cy - ry) || 1;
+  const ux = (cx - rx) / len, uy = (cy - ry) / len; // along the shaft, ring → crown
+  const nx = -uy, ny = ux; // across it
+  const rust = (t, x, y) => ((x * 3 + y * 5) % 11 === 0 ? 1 : (x + y) % 2 ? 2 : 3);
+  // the stock: a bar across the shaft near the ring
+  const sx = rx + ux * 6, sy = ry + uy * 6;
+  thickLine(p, sx - nx * 9, sy - ny * 9, sx + nx * 9, sy + ny * 9, 3, M.METAL, (t) => (t < 0.5 ? 3 : 2));
+  // the shaft
+  thickLine(p, rx + ux * 3, ry + uy * 3, cx, cy, w, M.METAL, rust);
+  // the flukes: arms sweeping back from the crown, barbed palms at their tips
+  for (const sgn of [-1, 1]) {
+    const tx = cx + nx * sgn * 11 - ux * 8, ty = cy + ny * sgn * 11 - uy * 8;
+    thickLine(p, cx, cy, cx + nx * sgn * 6 + ux * 1, cy + ny * sgn * 6 + uy * 1, w, M.METAL, 2);
+    thickLine(p, cx + nx * sgn * 6 + ux * 1, cy + ny * sgn * 6 + uy * 1, tx, ty, w - 1, M.METAL, (t) => (t > 0.7 ? 3 : 2));
+    fillPoly(p, [[tx - ux * 3, ty - uy * 3], [tx + nx * sgn * 3 + ux * 2, ty + ny * sgn * 3 + uy * 2], [tx - nx * sgn * 2 + ux * 3, ty - ny * sgn * 2 + uy * 3]], M.METAL, 3);
+  }
+  // the ring at the top
+  for (let a = 0; a < 16; a++) {
+    const ang = (a / 16) * Math.PI * 2;
+    const x = Math.round(rx - ux * 2 + Math.cos(ang) * 3.2), y = Math.round(ry - uy * 2 + Math.sin(ang) * 3.2);
+    p.set(x, y, M.METAL, Math.sin(ang) < 0 ? 3 : 1);
+  }
+  // rope: wrapped round the shaft, a loop hanging from the ring
+  for (let t = 0.12; t < 0.6; t += 0.07) {
+    const x = rx + (cx - rx) * t, y = ry + (cy - ry) * t;
+    p.line2(x - nx * 2.5, y - ny * 2.5, x + nx * 2.5 + ux, y + ny * 2.5 + uy, M.WOOD, 3);
+  }
+  for (let i = 0; i < 10; i++) {
+    const t = i / 9;
+    p.set(Math.round(rx + nx * (3 + Math.sin(t * 3) * 3) + ux * t * 14), Math.round(ry + ny * (3 + Math.sin(t * 3) * 3) + uy * t * 14 + Math.sin(t * Math.PI) * 4), M.WOOD, i % 2 ? 2 : 3);
+  }
+  // seaweed hanging off the crown, barnacles on the flukes
+  for (const [k, l] of [[-4, 5], [1, 7], [5, 4]]) {
+    for (let i = 0; i < l; i++) p.set(Math.round(cx + nx * k + (i % 3 === 1 ? 1 : 0)), Math.round(cy + ny * k - uy * 2 + i * 0.9), M.GEL, i < 2 ? 3 : 2);
+  }
+  p.over(Math.round(cx + nx * 7), Math.round(cy + ny * 7), M.BONE, 3);
+  p.over(Math.round(cx - nx * 8 - ux * 3), Math.round(cy - ny * 8 - uy * 3), M.BONE, 4);
+}
+
+/** A thick limb with a lit side: from a to b, `w` px. */
+function sharkLimb(p, a, b, w, mat = M.FUR) {
+  thickLine(p, a[0], a[1], b[0], b[1], w, mat, (t, x, y) => {
+    const dx = x + 0.5 - (a[0] + (b[0] - a[0]) * t);
+    return dx < -w * 0.15 ? 3 : dx > w * 0.25 ? 1 : 2;
+  });
+}
+
+/** Rope wraps round a limb segment (bands across it). */
+function ropeWraps(p, a, b, n) {
+  const len = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1;
+  const nx = -(b[1] - a[1]) / len, ny = (b[0] - a[0]) / len;
+  for (let i = 0; i < n; i++) {
+    const t = 0.2 + (i / Math.max(1, n - 1)) * 0.6;
+    const x = a[0] + (b[0] - a[0]) * t, y = a[1] + (b[1] - a[1]) * t;
+    p.line2(x - nx * 4, y - ny * 4, x + nx * 4, y + ny * 4 + 1, M.WOOD, i % 2 ? 2 : 3);
+  }
+}
+
+/** A barnacled boot with clawed toes, its top at y0 (front or side). */
+function sharkBoot(p, x, y0, ground, side) {
+  for (let y = y0; y <= ground; y++) {
+    const w = y > ground - 3 ? 12 : 10;
+    const x0 = Math.round(x - w / 2) + (side && y > ground - 3 ? -2 : 0);
+    for (let i = 0; i < w; i++) p.set(x0 + i, y, M.LEATHER, i < 3 ? 3 : i > w - 3 ? 1 : 2);
+  }
+  // barnacles on the cuff and the toe, the turned-over cuff, claws
+  for (const [dx, dy] of [[-3, 1], [0, 2], [3, 1], [-2, 9], [2, 10]]) p.set(x + dx, y0 + dy, M.STONE, (dx + dy) % 2 ? 4 : 3);
+  for (let i = -5; i <= 4; i++) p.set(x + i, y0, M.LEATHER, 3);
+  for (const dx of side ? [-8, -6, -4] : [-5, -2, 1, 4]) { p.set(x + dx, ground, M.BONE, 4); p.set(x + dx - (side ? 1 : 0), ground - 1, M.BONE, 3); }
+}
+
+/** The shark's head facing the camera at (hx, hy) = the skull's centre. */
+function sharkHeadFront(p, hx, hy, R) {
+  // the dorsal fin rising behind the head
+  p.begin(null);
+  fillPoly(p, [[hx - 3, hy - 6], [hx + 1, hy - 20], [hx + 4, hy - 19], [hx + 4, hy - 6]], M.FUR, (x) => (x < hx ? 3 : 2));
+  p.end();
+  p.begin('all', 1);
+  // the skull: a broad wedge, grey-blue on top, the snout pointed down toward the viewer
+  blob(p, hx, hy, 12, 9, M.FUR, { hi: 0.35, lo: -0.3 });
+  fillPoly(p, [[hx - 9, hy + 2], [hx + 9, hy + 2], [hx + 6, hy + 9], [hx - 6, hy + 9]], M.FUR3, (x, y) => (y < hy + 4 ? 3 : 2));
+  p.end();
+  p.begin(null);
+  // gill slits down both sides of the neck
+  for (const sgn of [-1, 1]) for (let k = 0; k < 3; k++) for (let y = hy + 2; y <= hy + 6; y++) p.set(hx + sgn * (10 - k * 2), y + k, M.FUR2, 0);
+  // the eyes: small, set wide, orange
+  for (const sgn of [-1, 1]) {
+    const ex = hx + sgn * 7, ey = hy - 1;
+    p.set(ex, ey - 1, M.FUR2, 0); p.set(ex - sgn, ey - 1, M.FUR2, 0); p.set(ex + sgn, ey - 1, M.FUR2, 1);
+    if (R.eye === 'shut') { p.set(ex, ey, M.FUR3, 2); p.set(ex - sgn, ey, M.FUR3, 2); }
+    else if (R.eye === 'dead') { p.set(ex, ey, M.FUR2, 0); p.set(ex - sgn, ey + 1, M.FUR2, 0); p.set(ex - sgn, ey - 1, M.FUR2, 0); }
+    else { p.set(ex, ey, M.EYE, 3); p.set(ex - sgn, ey, M.EYE, 1); }
+  }
+  // the mouth: a wide grin of teeth, opening wider as it snarls and roars
+  const m = R.mouth;
+  const my = hy + 4;
+  for (let x = hx - 8; x <= hx + 8; x++) {
+    const curve = Math.round(Math.abs(x - hx) * 0.25);
+    const top = my - curve, bot = my + m + 1 - curve;
+    for (let y = top; y <= bot; y++) p.set(x, y, M.NOSE, y === top ? 0 : 1);
+    if ((x - hx) % 2 === 0) { p.set(x, top, M.BONE, 4); if (m > 0) p.set(x, bot, M.BONE, 3); }
+  }
+  p.end();
+}
+
+/** The shark's head in profile (facing left) at (hx, hy) = the skull's centre. */
+function sharkHeadSide(p, hx, hy, R) {
+  p.begin('all', 1);
+  // the skull and the long pointed snout; the white jaw below a hard line
+  blob(p, hx + 2, hy, 11, 8, M.FUR, { hi: 0.35, lo: -0.3 });
+  fillPoly(p, [[hx - 6, hy - 6], [hx - 17, hy - 1], [hx - 16, hy + 2], [hx - 6, hy + 4]], M.FUR, (x, y) => (y < hy - 2 ? 3 : 2));
+  fillPoly(p, [[hx - 14, hy + 2], [hx + 10, hy + 3], [hx + 8, hy + 8], [hx - 6, hy + 7]], M.FUR3, (x, y) => (y < hy + 5 ? 3 : 2));
+  p.end();
+  p.begin(null);
+  for (let k = 0; k < 4; k++) for (let y = hy + 1; y <= hy + 5; y++) p.set(hx + 6 + k * 2, y + (k > 1 ? 1 : 0), M.FUR2, 0); // gills
+  const ex = hx - 6, ey = hy - 2;
+  p.set(ex - 1, ey - 1, M.FUR2, 0); p.set(ex, ey - 1, M.FUR2, 0); p.set(ex + 1, ey - 1, M.FUR2, 1);
+  if (R.eye === 'shut') { p.set(ex, ey, M.FUR3, 2); p.set(ex + 1, ey, M.FUR3, 2); }
+  else if (R.eye === 'dead') { p.set(ex, ey, M.FUR2, 0); p.set(ex + 1, ey + 1, M.FUR2, 0); p.set(ex + 1, ey - 1, M.FUR2, 0); }
+  else { p.set(ex, ey, M.EYE, 3); p.set(ex + 1, ey, M.EYE, 1); }
+  p.set(hx - 15, hy - 1, M.FUR2, 0); // nostril
+  // the jaw line, the teeth, the mouth opening downward
+  const m = R.mouth;
+  for (let x = hx - 14; x <= hx + 2; x++) {
+    const y0 = hy + 2 + Math.round((x - hx + 14) * 0.06);
+    for (let y = y0; y <= y0 + m; y++) p.set(x, y, M.NOSE, y === y0 ? 0 : 1);
+    if ((x + 14 - hx) % 2 === 0) { p.set(x, y0, M.BONE, 4); if (m > 0) p.set(x, y0 + m, M.BONE, 3); }
+  }
+  p.end();
+}
+
+function drawSharkFront(p, key, back) {
+  const G = 93;
+  const R0 = sharkRig(key);
+  // from behind everything held is mirrored (his right hand is on the viewer's left)
+  const mx = (/** @type {number[]} */ a) => (back ? [96 - a[0], a[1]] : a);
+  const R = { ...R0, hands: R0.hands.map(mx), ring: mx(R0.ring), crown: mx(R0.crown), feet: R0.feet.map((f) => (back ? [96 - f[0], f[1]] : f)) };
+  const cx = 48 + R.lean;
+  const bob = R.bob;
+  if (R.dead) {
+    // on his back: the body flat, the head to one side, the anchor dropped beside him
+    p.begin(null);
+    drawAnchor(p, [70, 74], [92, 86], 3);
+    p.end();
+    p.begin(null);
+    blob(p, 46, G - 9, 24, 7, M.FUR, { hi: 0.35, lo: -0.3 });
+    for (let x = 30; x <= 60; x++) p.over(x, G - 5, M.FUR3, 2);
+    fillPoly(p, [[60, G - 12], [70, G - 22], [72, G - 21], [68, G - 11]], M.FUR, 2); // the dorsal fin, sideways
+    p.end();
+    p.begin(null);
+    fillPoly(p, [[34, G - 10], [58, G - 10], [60, G - 3], [32, G - 3]], M.LEATHER, 2);
+    for (const [x, y] of [[14, G - 6], [76, G - 6]]) sharkBoot(p, x, y - 4, G, false);
+    blob(p, 22, G - 9, 9, 6, M.FUR, { hi: 0.35, lo: -0.3 });
+    for (let x = 16; x <= 28; x += 2) p.set(x, G - 5, M.BONE, 4);
+    p.set(20, G - 11, M.FUR2, 0); p.set(21, G - 12, M.FUR2, 0); p.set(21, G - 10, M.FUR2, 0);
+    p.end();
+    return;
+  }
+  // from behind, the anchor he holds in front of him is behind his body
+  if (back) { p.begin(null); drawAnchor(p, R.ring, R.crown); p.end(); }
+  // the tail fin: down behind the legs to the ground, to the viewer's left (right from behind)
+  p.begin(null);
+  const tx = back ? 76 : 20;
+  thickLine(p, cx + (back ? 6 : -6), 64 + bob, tx, 84, 7, M.FUR, 2);
+  fillPoly(p, back ? [[tx - 2, 80], [tx + 10, 70], [tx + 8, 82], [tx + 12, 92], [tx, 88]] : [[tx + 2, 80], [tx - 10, 70], [tx - 8, 82], [tx - 12, 92], [tx, 88]], M.FUR, (x) => (x < tx ? 3 : 2));
+  p.end();
+  // legs: thick, bowed, knees out; barnacled boots
+  p.begin(null);
+  const hips = [[cx - 8, 64 + bob], [cx + 8, 64 + bob]];
+  R.feet.forEach(([fx, lift], i) => {
+    const knee = [i ? fx + 4 : fx - 4, 78 + bob - lift];
+    sharkLimb(p, hips[i], knee, 12);
+    sharkLimb(p, knee, [fx, 84 - lift], 10);
+    sharkBoot(p, fx, 82 - lift, G - lift, false);
+  });
+  p.end();
+  // the torso: a broad muscled chest over the white belly, abs, the strap, the kilt
+  p.begin(null);
+  blob(p, cx, 46 + bob, 17, 16, M.FUR, { hi: 0.45, lo: -0.25 });
+  blob(p, cx, 60 + bob, 12, 7, M.FUR, { hi: 0.45, lo: -0.25 });
+  if (!back) {
+    fillPoly(p, [[cx - 8, 38 + bob], [cx + 8, 38 + bob], [cx + 7, 64 + bob], [cx - 7, 64 + bob]], M.FUR3, (x, y) => (x < cx - 2 ? 3 : x > cx + 3 ? 1 : 2));
+    // pecs and abs
+    for (let x = cx - 12; x <= cx + 12; x++) if (Math.abs(x - cx) > 1) p.over(x, 45 + bob + Math.round(Math.abs(x - cx) * 0.15), M.FUR2, 1);
+    for (const y of [51, 56, 61]) for (let x = cx - 5; x <= cx + 5; x++) if (x !== cx) p.over(x, y + bob, M.FUR3, 1);
+    for (let y = 47; y <= 63; y++) p.over(cx, y + bob, M.FUR3, 1);
+  } else {
+    // the back: shoulder blades, the spine, the big dorsal fin
+    for (let y = 36; y <= 62; y++) p.over(cx, y + bob, M.FUR2, 1);
+    for (const sgn of [-1, 1]) for (let y = 40; y <= 50; y++) p.over(cx + sgn * 8 + (y > 45 ? -sgn : 0), y + bob, M.FUR2, 2);
+  }
+  p.end();
+  p.begin(null);
+  // the leather strap across the chest (or the back), a bronze buckle
+  for (let i = 0; i <= 30; i++) {
+    const t = i / 30;
+    const x = Math.round((back ? cx + 14 : cx - 14) + (back ? -28 : 28) * t), y = Math.round(34 + bob + 26 * t);
+    for (let k = 0; k < 5; k++) p.set(x, y + k, M.LEATHER, k === 0 ? 4 : k === 4 ? 1 : k === 2 && i % 3 === 0 ? 4 : 3);
+  }
+  p.set(cx, 47 + bob, M.GOLD, 4); p.set(cx + 1, 47 + bob, M.GOLD, 3); p.set(cx, 48 + bob, M.GOLD, 2); p.set(cx + 1, 48 + bob, M.GOLD, 2);
+  // the torn kilt: a belt and ragged strips of hide
+  for (let x = cx - 13; x <= cx + 13; x++) { p.set(x, 63 + bob, M.LEATHER, 3); p.set(x, 64 + bob, M.LEATHER, 2); }
+  for (let x = cx - 13; x <= cx + 13; x++) {
+    const len = 9 + ((x * 7) % 5) + (Math.abs(x - cx) < 4 ? 3 : 0);
+    for (let y = 65; y < 65 + len; y++) p.set(x, y + bob, M.LEATHER, (x * 5) % 7 === 0 ? 1 : x < cx - 6 ? 3 : 2);
+  }
+  p.end();
+  // the anchor, held in front (behind the hands)
+  if (!back) { p.begin(null); drawAnchor(p, R.ring, R.crown); p.end(); }
+  // arms: shoulders to elbows to the hands on the shaft; rope round the forearms; the pauldron
+  p.begin('sides', 1);
+  const shoulders = [[cx + 15, 36 + bob], [cx - 15, 36 + bob]];
+  R.hands.forEach((h, i) => {
+    const sh = shoulders[i];
+    const out = sh[0] > cx ? 1 : -1;
+    const elbow = [Math.round((sh[0] + h[0]) / 2 + out * 6), Math.round((sh[1] + h[1]) / 2 + 2)];
+    sharkLimb(p, sh, elbow, 10);
+    sharkLimb(p, elbow, h, 9);
+    ropeWraps(p, elbow, h, 3);
+    blob(p, h[0], h[1], 4, 3.4, M.FUR, { hi: 0.3, lo: -0.3 }); // the fist
+    p.set(h[0] - 2, h[1] + 2, M.BONE, 3); p.set(h[0] + 1, h[1] + 3, M.BONE, 3); // claws
+  });
+  p.end();
+  p.begin(null);
+  const pa = back ? [cx + 16, 33 + bob] : [cx - 16, 33 + bob];
+  rock(p, pa[0], pa[1], 9, 6.5, M.STONE, 11, { facets: 9, lift: 0 });
+  for (const [dx, dy] of [[-4, -1], [0, -3], [3, 0], [-1, 2], [5, -2]]) p.set(pa[0] + dx, pa[1] + dy, M.BONE, 4); // barnacles
+  // coral branching up from the shell
+  for (const [dx, h, lean] of [[-3, 7, -1], [0, 9, 0], [3, 6, 1]]) {
+    for (let i = 0; i < h; i++) p.set(pa[0] + dx + Math.round(lean * i / 3), pa[1] - 5 - i, M.SCARF, i === h - 1 ? 4 : i % 2 ? 2 : 3);
+    p.set(pa[0] + dx + lean * 2 + (lean || 1), pa[1] - 5 - Math.round(h * 0.6), M.SCARF, 3);
+  }
+  p.end();
+  // the head
+  const hx = cx + R.head[0], hy = 22 + bob + R.head[1];
+  if (back) {
+    p.begin('all', 1);
+    blob(p, hx, hy, 12, 9, M.FUR, { hi: 0.4, lo: -0.2 });
+    p.end();
+    p.begin(null);
+    for (const sgn of [-1, 1]) for (let k = 0; k < 3; k++) for (let y = hy + 2; y <= hy + 6; y++) p.set(hx + sgn * (10 - k * 2), y + k, M.FUR2, 0);
+    // the dorsal fin rising from the back of the head, its edge dark
+    fillPoly(p, [[hx - 3, hy + 2], [hx + 1, hy - 20], [hx + 4, hy - 19], [hx + 4, hy + 2]], M.FUR, (x) => (x < hx + 1 ? 3 : 2));
+    for (let y = hy - 18; y <= hy + 1; y++) p.set(hx + 4, y, M.FUR2, 1);
+    p.end();
+  } else sharkHeadFront(p, hx, hy, R);
+}
+
+function drawSharkSide(p, key) {
+  const G = 93;
+  const F = sharkRig(key);
+  // the side view's own layout (facing left): the anchor held out in front
+  const S = {
+    idle0: { ring: [22, 36], crown: [30, 89], hands: [[30, 56], [28, 66]] },
+    idle1: { ring: [22, 37], crown: [30, 89], hands: [[30, 57], [28, 67]] },
+    windup: { ring: [44, 20], crown: [80, 6], hands: [[42, 18], [48, 16]] },
+    attack: { ring: [26, 54], crown: [10, 90], hands: [[28, 60], [24, 64]] },
+    sweepWind: { ring: [60, 50], crown: [92, 58], hands: [[62, 52], [68, 54]] },
+    sweep: { ring: [28, 52], crown: [4, 60], hands: [[28, 54], [22, 56]] },
+    roar: { ring: [20, 40], crown: [26, 89], hands: [[26, 58], [60, 44]] },
+    hurt: { ring: [24, 38], crown: [32, 90], hands: [[32, 58], [30, 68]] },
+  }[key] ?? { ring: [22, 36], crown: [30, 89], hands: [[30, 56], [28, 66]] };
+  const bob = F.bob;
+  if (F.dead) {
+    p.begin(null);
+    drawAnchor(p, [20, 78], [6, 88], 3);
+    fillPoly(p, [[78, G - 4], [90, G - 14], [90, G - 2]], M.FUR, 2); // the tail fin
+    blob(p, 52, G - 7, 26, 6, M.FUR, { hi: 0.35, lo: -0.3 });
+    for (let x = 30; x <= 72; x++) p.over(x, G - 2, M.FUR3, 2);
+    fillPoly(p, [[50, G - 12], [58, G - 24], [62, G - 23], [62, G - 12]], M.FUR, 2);
+    p.end();
+    p.begin(null);
+    sharkHeadSide(p, 34, G - 8, { mouth: 1, eye: 'dead' });
+    p.end();
+    return;
+  }
+  const lean = F.lean;
+  const tor = [52 + lean, 48 + bob];
+  // the far arm and the tail
+  p.begin(null);
+  thickLine(p, tor[0] + 10, 64 + bob, 80, 84, 8, M.FUR, 2);
+  fillPoly(p, [[78, 80], [90, 68], [89, 80], [92, 92], [80, 88]], M.FUR, (x) => (x < 84 ? 2 : 1));
+  const farSh = [tor[0] + 4, 36 + bob];
+  const fh = S.hands[1];
+  const fe = [Math.round((farSh[0] + fh[0]) / 2 + 2), Math.round((farSh[1] + fh[1]) / 2 + 3)];
+  sharkLimb(p, farSh, fe, 9); sharkLimb(p, fe, fh, 8);
+  p.end();
+  // legs: the near one striding forward, the far one back
+  p.begin(null);
+  const [[f0, l0], [f1, l1]] = F.feet;
+  const step = (f0 - 35) + (f1 - 61);
+  const legs = [[tor[0] + 4, 66 + bob, tor[0] + 8 - step, l1, true], [tor[0] - 2, 66 + bob, tor[0] - 6 + step, l0, false]];
+  for (const [hx0, hy0, fx, lift, far] of legs) {
+    const knee = [Math.round((hx0 + fx) / 2) - 4, 79 + bob - lift];
+    sharkLimb(p, [hx0, hy0], knee, far ? 10 : 12);
+    sharkLimb(p, knee, [fx, 84 - lift], far ? 9 : 10);
+    sharkBoot(p, fx, 82 - lift, G - lift, true);
+  }
+  p.end();
+  // torso: the deep chest, the white belly in front, the back's dorsal fin
+  p.begin(null);
+  fillPoly(p, [[tor[0] + 6, 34 + bob], [tor[0] + 12, 14 + bob], [tor[0] + 16, 16 + bob], [tor[0] + 16, 38 + bob]], M.FUR, (x) => (x < tor[0] + 12 ? 3 : 2));
+  blob(p, tor[0], tor[1], 14, 16, M.FUR, { hi: 0.45, lo: -0.25 });
+  blob(p, tor[0] + 1, 61 + bob, 10, 6, M.FUR, { hi: 0.45, lo: -0.25 });
+  fillPoly(p, [[tor[0] - 13, 40 + bob], [tor[0] - 6, 38 + bob], [tor[0] - 4, 64 + bob], [tor[0] - 10, 62 + bob]], M.FUR3, (x) => (x < tor[0] - 9 ? 3 : 2));
+  p.end();
+  p.begin(null);
+  for (let i = 0; i <= 24; i++) {
+    const t = i / 24;
+    const x = Math.round(tor[0] - 10 + 18 * t), y = Math.round(36 + bob + 24 * t);
+    for (let k = 0; k < 4; k++) p.set(x, y + k, M.LEATHER, k === 0 ? 3 : k === 3 ? 1 : 2);
+  }
+  for (let x = tor[0] - 12; x <= tor[0] + 11; x++) { p.set(x, 63 + bob, M.LEATHER, 3); p.set(x, 64 + bob, M.LEATHER, 2); }
+  for (let x = tor[0] - 12; x <= tor[0] + 11; x++) {
+    const len = 9 + ((x * 7) % 5);
+    for (let y = 65; y < 65 + len; y++) p.set(x, y + bob, M.LEATHER, (x * 5) % 7 === 0 ? 1 : x < tor[0] - 4 ? 3 : 2);
+  }
+  p.end();
+  p.begin(null);
+  drawAnchor(p, S.ring, S.crown);
+  p.end();
+  // the near arm, the pauldron on the near shoulder
+  p.begin('sides', 1);
+  const sh = [tor[0] - 4, 37 + bob];
+  const h = S.hands[0];
+  const el = [Math.round((sh[0] + h[0]) / 2 - 3), Math.round((sh[1] + h[1]) / 2 + 3)];
+  sharkLimb(p, sh, el, 10); sharkLimb(p, el, h, 9);
+  ropeWraps(p, el, h, 3);
+  blob(p, h[0], h[1], 4, 3.4, M.FUR, { hi: 0.3, lo: -0.3 });
+  p.set(h[0] - 3, h[1] + 1, M.BONE, 3); p.set(h[0] - 2, h[1] + 3, M.BONE, 3);
+  p.end();
+  p.begin(null);
+  rock(p, sh[0] + 1, sh[1] - 3, 8.5, 6.5, M.STONE, 11, { facets: 9 });
+  for (const [dx, dy] of [[-4, -1], [0, -3], [3, 0], [-1, 2]]) p.set(sh[0] + 1 + dx, sh[1] - 3 + dy, M.BONE, 4);
+  for (const [dx, hgt, l] of [[-2, 7, -1], [1, 9, 0], [4, 6, 1]]) {
+    for (let i = 0; i < hgt; i++) p.set(sh[0] + 1 + dx + Math.round(l * i / 3), sh[1] - 8 - i, M.SCARF, i === hgt - 1 ? 4 : i % 2 ? 2 : 3);
+  }
+  p.end();
+  sharkHeadSide(p, tor[0] - 12 + F.head[0], 24 + bob + F.head[1], F);
+}
+
+function drawShark(p, view, key) {
+  if (view === 'side') drawSharkSide(p, key);
+  else drawSharkFront(p, key, view === 'up');
+}
+
+// ---------------------------------------------------------------------------
 // Straw dummy on a post with a painted target (16 × 24)
 // ---------------------------------------------------------------------------
 
@@ -1731,6 +2120,30 @@ const KINDS = {
       [M.NOSE]: ramp5(['#2a0c12', '#4a1620', '#6e2430', '#94404a', '#b8666a']),
     }, M.FUR),
   },
+  shark: {
+    fw: 96, fh: 96, columns: [...COMMON, 'sweepWind', 'sweep', 'roar'], aliases: {},
+    spriteOptions: { blobSize: /** @type {[number, number]} */ ([3.2, 1.3]) }, draw: drawShark,
+    ramps: () => makeRamps({
+      // the hide: blue-grey shark skin, its dark edges and fins, the white belly and jaw
+      [M.FUR]: ramp5(['#1a2632', '#2c4050', '#46627a', '#6a8aa2', '#9cb8cc']),
+      [M.FUR2]: ramp5(['#0a1018', '#121c26', '#1c2a38', '#2a3e50', '#3e566c']),
+      [M.FUR3]: ramp5(['#7a8a94', '#a4b2ba', '#c8d2d8', '#e2e8ec', '#f6f9fa']),
+      // the anchor's rusted iron
+      [M.METAL]: ramp5(['#2a140c', '#4e2614', '#7a3c1c', '#a85a2a', '#cc8a4e']),
+      // rope, leather, the buckle
+      [M.WOOD]: ramp5(['#5a4426', '#86683a', '#b0905a', '#cfb07a', '#e6d0a0']),
+      [M.LEATHER]: ramp5(['#1e1410', '#36241a', '#523828', '#6e4e36', '#8e6a4a']),
+      [M.GOLD]: ramp5(['#3a2410', '#6b4515', '#a5701f', '#d6a33a', '#f2d072']),
+      // the barnacled shell, the coral, the seaweed
+      [M.STONE]: ramp5(['#2a3430', '#45524c', '#66766c', '#8e9c90', '#c4ccbe']),
+      [M.SCARF]: ramp5(['#5a1420', '#8e2434', '#c4404c', '#e8707a', '#ffb0b0']),
+      [M.GEL]: ramp5(['#10260e', '#1e4018', '#2e5e22', '#4a7e32', '#72a04a']),
+      // teeth, claws and barnacles; the mouth; the orange eyes
+      [M.BONE]: ramp5(['#7a7468', '#aaa294', '#d4ccbc', '#eee8da', '#ffffff']),
+      [M.NOSE]: ramp5(['#1a080c', '#3a1018', '#5a1c24', '#7a2e34', '#9a4448']),
+      [M.EYE]: eyeRamp('#d2641a', '#ffa040'),
+    }, M.FUR),
+  },
   dummy: {
     fw: 16, fh: 24, columns: [...COMMON, 'hurt2'], aliases: {},
     spriteOptions: { blobSize: /** @type {[number, number]} */ ([0.7, 0.35]) }, draw: drawDummy,
@@ -1753,7 +2166,7 @@ const KINDS = {
 
 /**
  * Create an enemy sprite sheet (callers cache it: one sheet per kind is shared by every sprite).
- * @param {'slime'|'goblin'|'archer'|'shaman'|'bat'|'boar'|'dummy'|'golem'|'wolf'|'fera'} kind
+ * @param {'slime'|'goblin'|'archer'|'shaman'|'bat'|'boar'|'dummy'|'golem'|'wolf'|'fera'|'shark'} kind
  * @returns {{texture: THREE.Texture, canvas: HTMLCanvasElement, frameWidth: number, frameHeight: number,
  *   columns: number, rows: number, pixelsPerUnit: number, anchor: [number, number],
  *   animations: Record<string, {frames: {col:number,row:number}[], fps: number, loop: boolean}>,
