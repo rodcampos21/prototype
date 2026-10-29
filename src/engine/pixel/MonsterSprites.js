@@ -1471,25 +1471,7 @@ function drawSharkFront(p, key, back) {
   const R = { ...R0, hands: R0.hands.map(mx), ring: mx(R0.ring), crown: mx(R0.crown), feet: R0.feet.map((f) => (back ? [96 - f[0], f[1]] : f)) };
   const cx = 48 + R.lean;
   const bob = R.bob;
-  if (R.dead) {
-    // on his back: the body flat, the head to one side, the anchor dropped beside him
-    p.begin(null);
-    drawAnchor(p, [70, 74], [92, 86], 3);
-    p.end();
-    p.begin(null);
-    blob(p, 46, G - 9, 24, 7, M.FUR, { hi: 0.35, lo: -0.3 });
-    for (let x = 30; x <= 60; x++) p.over(x, G - 5, M.FUR3, 2);
-    fillPoly(p, [[60, G - 12], [70, G - 22], [72, G - 21], [68, G - 11]], M.FUR, 2); // the dorsal fin, sideways
-    p.end();
-    p.begin(null);
-    fillPoly(p, [[34, G - 10], [58, G - 10], [60, G - 3], [32, G - 3]], M.LEATHER, 2);
-    for (const [x, y] of [[14, G - 6], [76, G - 6]]) sharkBoot(p, x, y - 4, G, false);
-    blob(p, 22, G - 9, 9, 6, M.FUR, { hi: 0.35, lo: -0.3 });
-    for (let x = 16; x <= 28; x += 2) p.set(x, G - 5, M.BONE, 4);
-    p.set(20, G - 11, M.FUR2, 0); p.set(21, G - 12, M.FUR2, 0); p.set(21, G - 10, M.FUR2, 0);
-    p.end();
-    return;
-  }
+  if (R.dead) { drawSharkDead(p); return; }
   // from behind, the anchor he holds in front of him is behind his body
   if (back) { p.begin(null); drawAnchor(p, R.ring, R.crown); p.end(); }
   // the tail fin: down behind the legs to the ground, to the viewer's left (right from behind)
@@ -1543,7 +1525,8 @@ function drawSharkFront(p, key, back) {
   if (!back) { p.begin(null); drawAnchor(p, R.ring, R.crown); p.end(); }
   // arms: shoulders to elbows to the hands on the shaft; rope round the forearms; the pauldron
   p.begin('sides', 1);
-  const shoulders = [[cx + 15, 36 + bob], [cx - 15, 36 + bob]];
+  // hand 0 is his right hand: on the viewer's right from the front, on the left from behind
+  const shoulders = back ? [[cx - 15, 36 + bob], [cx + 15, 36 + bob]] : [[cx + 15, 36 + bob], [cx - 15, 36 + bob]];
   R.hands.forEach((h, i) => {
     const sh = shoulders[i];
     const out = sh[0] > cx ? 1 : -1;
@@ -1595,19 +1578,7 @@ function drawSharkSide(p, key) {
     hurt: { ring: [24, 38], crown: [32, 90], hands: [[32, 58], [30, 68]] },
   }[key] ?? { ring: [22, 36], crown: [30, 89], hands: [[30, 56], [28, 66]] };
   const bob = F.bob;
-  if (F.dead) {
-    p.begin(null);
-    drawAnchor(p, [20, 78], [6, 88], 3);
-    fillPoly(p, [[78, G - 4], [90, G - 14], [90, G - 2]], M.FUR, 2); // the tail fin
-    blob(p, 52, G - 7, 26, 6, M.FUR, { hi: 0.35, lo: -0.3 });
-    for (let x = 30; x <= 72; x++) p.over(x, G - 2, M.FUR3, 2);
-    fillPoly(p, [[50, G - 12], [58, G - 24], [62, G - 23], [62, G - 12]], M.FUR, 2);
-    p.end();
-    p.begin(null);
-    sharkHeadSide(p, 34, G - 8, { mouth: 1, eye: 'dead' });
-    p.end();
-    return;
-  }
+  if (F.dead) { drawSharkDead(p); return; }
   const lean = F.lean;
   const tor = [52 + lean, 48 + bob];
   // the far arm and the tail
@@ -1688,6 +1659,68 @@ function drawSharkSide(p, key) {
   }
   p.end();
   sharkHeadSide(p, tor[0] - 12 + F.head[0], 24 + bob + F.head[1], F);
+}
+
+/**
+ * Fallen (every view): on his belly with the head turned to the viewer's left, slack-jawed; the
+ * dorsal fin up, the near arm limp on the ground, the legs bent behind with the boots' soles up,
+ * the tail fin flopped over the hips, the anchor dropped behind him.
+ */
+function drawSharkDead(p) {
+  const G = 93;
+  // the anchor where it fell: planted upright in the ground behind him
+  p.begin(null);
+  drawAnchor(p, [80, G - 50], [80, G - 6], 3);
+  p.end();
+  // the legs bent at the knee, shins up, and the tail fin over the hips
+  p.begin(null);
+  sharkLimb(p, [60, G - 7], [74, G - 4], 10);
+  sharkLimb(p, [74, G - 4], [82, G - 14], 8);
+  sharkLimb(p, [60, G - 10], [70, G - 9], 9);
+  sharkLimb(p, [70, G - 9], [74, G - 19], 7);
+  p.end();
+  p.begin(null);
+  for (const [bx, by] of [[75, G - 25], [84, G - 21]]) {
+    for (let y = by; y <= by + 7; y++) for (let x = bx - 3; x <= bx + 3; x++) p.set(x, y, M.LEATHER, x < bx - 1 ? 3 : x > bx + 1 ? 1 : 2);
+    for (let x = bx - 3; x <= bx + 3; x++) p.set(x, by, M.LEATHER, 1);
+    p.set(bx - 2, by - 1, M.BONE, 4); p.set(bx, by - 1, M.BONE, 4); p.set(bx + 2, by - 1, M.BONE, 3);
+    p.set(bx - 1, by + 3, M.STONE, 4); p.set(bx + 1, by + 5, M.STONE, 3);
+  }
+  p.end();
+  // the torso flat on the ground with the dorsal fin standing up from it
+  p.begin(null);
+  blob(p, 44, G - 9, 18, 8, M.FUR, { hi: 0.45, lo: -0.25 });
+  {
+    const bx = 40, by = G - 15;
+    const fin = [];
+    for (let i = 0; i <= 10; i++) { const t = i / 10; fin.push([bx - 2 + 14 * t ** 1.6, by - 20 * Math.sin(t * Math.PI / 2)]); }
+    for (let i = 1; i <= 8; i++) { const t = i / 8; fin.push([bx + 12 - 4 * t - 2 * Math.sin(t * Math.PI), by - 20 + 19 * t]); }
+    fin.push([bx + 9, by + 3]);
+    fillPoly(p, fin, M.FUR, (x, y) => (x < bx + 2 + (by - y) * 0.45 ? 3 : 2));
+  }
+  // the tail: out of the hips, a crescent fin lying over the ground
+  thickLine(p, 58, G - 12, 64, G - 20, 6, M.FUR, 2);
+  fillPoly(p, [[60, G - 19], [62, G - 33], [67, G - 23], [72, G - 28], [68, G - 18]], M.FUR, (x) => (x < 64 ? 3 : 2));
+  for (let x = 30; x <= 60; x++) p.over(x, G - 2, M.FUR3, 2);
+  p.end();
+  p.begin(null);
+  for (let x = 32; x <= 54; x++) for (let k = 0; k < 3; k++) p.set(x, G - 14 + Math.round((x - 32) * 0.3) + k, M.LEATHER, k === 0 ? 3 : 2);
+  for (let x = 54; x <= 63; x++) {
+    const len = 7 + ((x * 7) % 4);
+    for (let y = G - 13; y < G - 13 + len; y++) p.set(x, y, M.LEATHER, (x * 5) % 7 === 0 ? 1 : 2);
+  }
+  p.end();
+  // the near arm limp in front, the pauldron on the shoulder
+  p.begin('sides', 1);
+  sharkLimb(p, [34, G - 10], [44, G - 3], 9);
+  blob(p, 46, G - 3, 3.5, 2.6, M.FUR, { hi: 0.3, lo: -0.3 });
+  p.set(48, G - 1, M.BONE, 3); p.set(46, G, M.BONE, 3);
+  p.end();
+  p.begin(null);
+  rock(p, 31, G - 15, 7, 5, M.STONE, 11, { facets: 9 });
+  for (const [dx, h] of [[-2, 5], [1, 7], [4, 4]]) for (let i = 0; i < h; i++) p.set(31 + dx + (i > 3 ? 1 : 0), G - 19 - i, M.SCARF, i === h - 1 ? 4 : i % 2 ? 2 : 3);
+  p.end();
+  sharkHeadSide(p, 19, G - 9, { mouth: 2, eye: 'dead' });
 }
 
 function drawShark(p, view, key) {
