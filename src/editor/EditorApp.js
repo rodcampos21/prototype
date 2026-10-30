@@ -21,7 +21,7 @@ import {
 } from '../engine/level/LevelStorage.js';
 import { levelExits, inExit, travelIssues } from '../engine/level/Travel.js';
 import { storyIssues, formatStoryIssue } from '../engine/level/StoryChecks.js';
-import { campaignStoryContext, storyCheckContext, onStoryContext, otherFileTexts } from './story.js';
+import { campaignStoryContext, cachedStoryContext, storyCheckContext, onStoryContext, otherFileTexts } from './story.js';
 import { mayHide, shownOnly, hiddenOnly, leftOutMessage, revealPatch } from './visibility.js';
 import { createRoomLevel, isRoom } from './rooms.js';
 import { EditorState } from './EditorState.js';
@@ -322,6 +322,8 @@ export class EditorApp {
         this.view2d.critterTestSource = () => (this.view3d === v3 ? v3.critterStartTest?.({ lazy: true }) ?? null : null);
       }
       v3.onPlacementChange = () => { if (this.view3d === v3) this.view2d?.placementChanged(); };
+      // (the build slots' buildings, when the campaign's story is read already)
+      this._syncSlotProps();
       Promise.resolve(this.view3d.ready).then(() => {
         this.vp3d.classList.add('is-ready');
         this._watch3DBuild();
@@ -1469,8 +1471,21 @@ export class EditorApp {
    */
   _storyInputsChanged() {
     const st = this.state;
+    this._syncSlotProps();
     if (st.view.storyPreview) st.emit('view', { ...st.view });
     this.inspector?.refresh();
+  }
+
+  /**
+   * The 3D preview's build slots show their buildings' props as the campaign's story files declare
+   * them (its story context's `buildings`), once that is read.
+   */
+  _syncSlotProps() {
+    const props = this.view3d?.props;
+    const ctx = cachedStoryContext(this._campaign());
+    const map = ctx?.buildings;
+    if (!props || !map) return;
+    props.setSlotProp((id) => map.get(id) ?? 'forge');
   }
 
   /** The campaign of the open level (a campaign's own project level), or ''. */

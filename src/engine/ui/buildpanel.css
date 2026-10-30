@@ -1,0 +1,42 @@
+/* ------------------------------------------------------------------------------------------ */
+/* The build window (BuildPanel.js): over the game like the journal (z 7), fading in            */
+/* ------------------------------------------------------------------------------------------ */
+
+.lu-build {
+  position: absolute;
+  inset: 0;
+  z-index: 7;
+  overflow: hidden;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  background: var(--g-veil);
+  transition: opacity 0.18s steps(3), visibility 0s linear 0.18s;
+}
+.lu-build.is-open {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transition: opacity 0.18s steps(3), visibility 0s;
+}
+.lu-root .lu-build__window { transform: translateY(calc(var(--px) * -2)); transition: transform 0.18s steps(2); }
+.lu-build.is-open .lu-build__window { transform: none; }
+.lu-root .lu-build canvas.frame { pointer-events: none; }
+
+/* the list's rows and the button: bare buttons over their art */
+.lu-root .lu-build__row,
+.lu-root .lu-build__btn {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+.lu-root .lu-build__row:focus-visible,
+.lu-root .lu-build__btn:focus-visible { outline: none; }
+.lu-root .lu-build__row.is-on { background: var(--g-card-sel0); box-shadow: inset 1px 0 0 var(--g-g3); }
+.lu-root .lu-build__btn.is-dim { cursor: default; }
+.lu-root .lu-build__icon-dim { filter: grayscale(0.8) brightness(0.6); }
+.lu-root .lu-build__row .tx,
+.lu-root .lu-build__btn .tx { pointer-events: none; }

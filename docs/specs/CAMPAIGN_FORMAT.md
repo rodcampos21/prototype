@@ -372,6 +372,7 @@ hold the **buildings** table ([STORY_SCRIPT.md §8](STORY_SCRIPT.md#8-story-file
 | `cost` | item → whole number ≥ 1 | `{}` | Paid **from the camp's chest** (the stock) when the player begins it. |
 | `days` | 1–365 | 1 | The mornings it takes to stand. |
 | `prop` | `forge` · `silo` · `lodge` · `altar` · `chest` | `forge` | The `building` prop it shows, going up (`frame`) and built. |
+| `icon` | icon name | its `prop` | Its icon in the build window and on the plot's sign (`forge`, `silo`, `lodge`, `altar`, `plot`, or any item icon). |
 | `start` | script id or lines | none | Run (a normal run: it may hold the player) when the player begins it at its slot. |
 | `done` | script id or lines | none | Run in the **background** the morning it stands. Inline lines are kept as the scripts `building.<id>.start` / `.done` (keyed like any script). |
 
@@ -380,11 +381,12 @@ hold the **buildings** table ([STORY_SCRIPT.md §8](STORY_SCRIPT.md#8-story-file
   empty, each building's frame (`<slot>.<building>.frame`) and the building (`<slot>.<building>`),
   and a marker in front (`<slot>.front`) for scripts. All of it is built at load; the slot's
   `when` / `unless` apply to all of it.
-- **The sign and Space.** While empty, a floating sign hangs over the plot: one building's name,
-  text, cost and days, or — several — a line each. Space on the plot (*Construir*) says what the
-  chest holds; with the cost there it offers to begin it (several: a choice), else it says what is
-  still missing. Beginning pays from the chest, puts the frame up and queues `start`
-  (`BuildingSystem`, `src/game/building/`).
+- **The sign and Space.** While empty, a floating sign hangs over the plot: one building's icon,
+  name, text, cost and days, or — several — the plot's icon and a line each. Space on the plot
+  (*Construir*) opens the **build window** ([PIXEL_UI.md](PIXEL_UI.md)): the slot's buildings, the
+  chosen one's cost as `have / need` (red what is missing), its days, the chest's contents and the
+  *Construir* button, disabled without the cost. Building pays from the chest, puts the frame up
+  and queues `start` (`BuildingSystem`, `src/game/building/`).
 - **Mornings.** Every morning (5:00 passing, a rest past it, a journey) a building going up is a
   morning nearer; the morning its days are done it stands and `done` runs — before the story files'
   `morning` events, which see it standing.

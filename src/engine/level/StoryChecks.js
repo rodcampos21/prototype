@@ -38,6 +38,7 @@ import { isOwnKey } from '../utils/own.js';
  * declarations, and `done:` keys only against the level's own events and `once` blocks.
  * @typedef {object} StoryContext
  * @property {Set<string>} [items]
+ * @property {Map<string, string>|Set<string>} [buildings]   the buildings a build slot may hold (→ their prop)
  * @property {Map<string, string[]>|Set<string>} [quests]   quest ids (→ their stage ids)
  * @property {Set<string>} [scripts]
  * @property {Map<string, string>} [actors]   actor id → display name
@@ -327,6 +328,7 @@ export function refIssues(r, ctx = {}, local = NO_LOCAL) {
   const out = [];
   const add = (severity, msg) => out.push({ severity, msg });
   if (ctx.items) for (const it of r.items) if (!ctx.items.has(it)) add('warning', `item "${it}" is not declared in the story files`);
+  if (ctx.buildings) for (const b of r.buildings ?? []) if (!ctx.buildings.has(b)) add('error', `build: building "${b}" is not in the story files' buildings`);
   if (ctx.quests) {
     for (const q of r.quests) {
       if (ctx.quests.has(q)) continue;
@@ -523,6 +525,12 @@ export function storyIssues(level, ctx = {}) {
     // (the editor's condition hint shows the same, field by field)
     for (const field of conditionFieldKeys(o)) {
       for (const i of conditionFieldIssues(o, field, ctx, { local, sets })) add(i.severity, id, field, 0, i.text !== undefined ? `${field} "${i.text}": ${i.msg}` : i.msg);
+    }
+    // a build slot: its buildings (the campaign's, when known — CAMPAIGN_FORMAT.md §4.3)
+    if (o?.type === 'buildSlot') {
+      const opts = slotOptions(o);
+      if (!opts.length) add('warning', id, 'options', 0, 'no building: the plot offers nothing');
+      if (ctx.buildings) for (const b of opts) if (!ctx.buildings.has(b)) add('error', id, 'options', 0, `building "${b}" is not in the story files' buildings`);
     }
     if (o?.type === 'npc') {
       if (o.talk !== undefined && !Array.isArray(o.talk) && typeof o.talk !== 'string') add('error', id, 'talk', 0, 'the talk script must be a list of lines');

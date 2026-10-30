@@ -25,6 +25,7 @@ import { enemyKind, bossArena, bossGate, dataColliders, levelStartTest } from '.
 import { isTypingTarget } from '../ui/dom.js';
 import { reportToolError } from '../EditorState.js';
 import { ownValue } from '../../engine/utils/own.js';
+import { slotOptions } from '../../engine/level/BuildSlots.js';
 
 /**
  * @import { EditorState } from '../EditorState.js'
@@ -1697,6 +1698,29 @@ export class Map2DView {
         ctx.restore();
         if (this.scale >= 9) labels.push({ x: o.minX, z: o.minZ, text: eventTag(o), kind: 'region', sub: this.scale >= 30 ? eventSub(o) : '', color: def.color });
         labels.push({ x: (o.minX + o.maxX) / 2, z: (o.minZ + o.maxZ) / 2, text: def.glyph, kind: 'glyph', color: def.color, size: 14, badge: true });
+        return;
+      }
+      case 'buildSlot': {
+        // a build slot: its roped plot (a dashed rectangle, a stake at each corner, its front edge
+        // solid), the glyph, and — zoomed in or selected — the buildings it may hold
+        const w = Number(o.opts?.width) || 4, d = Number(o.opts?.depth) || 3.5;
+        ctx.translate(o.x, o.z);
+        ctx.rotate(-(o.rotation ?? 0));
+        ctx.fillStyle = rgba(def.color, 0.14);
+        ctx.fillRect(-w / 2, -d / 2, w, d);
+        ctx.strokeStyle = rgba(def.color, 0.95);
+        ctx.lineWidth = Math.max(0.06, 1.4 * u);
+        ctx.setLineDash([4 * u, 3 * u]);
+        ctx.strokeRect(-w / 2, -d / 2, w, d);
+        ctx.setLineDash([]);
+        ctx.beginPath(); ctx.moveTo(-w / 2, d / 2); ctx.lineTo(w / 2, d / 2); ctx.stroke();
+        ctx.fillStyle = '#5a3a1e';
+        for (const [sx, sz] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) {
+          ctx.beginPath(); ctx.arc((sx * w) / 2, (sz * d) / 2, Math.max(0.08, 2.4 * u), 0, Math.PI * 2); ctx.fill();
+        }
+        ctx.restore();
+        labels.push({ x: o.x, z: o.z, text: def.glyph, kind: 'glyph', color: def.color, size: 15, badge: true });
+        if (zoomedIn || this.state.selection.includes(o.id)) labels.push({ x: o.x, z: o.z + d / 2, text: slotOptions(o).join(' · ') || o.id, kind: 'small', color: def.color });
         return;
       }
       case 'marker': {

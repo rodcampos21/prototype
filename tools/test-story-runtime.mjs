@@ -1624,6 +1624,16 @@ begin('build slots and buildings (BuildSlots.js, BuildingSystem.js, CAMPAIGN_FOR
     objs.map((o) => [o.type, o.id, o.when ?? '']),
     [['tree', 't', ''], ['stake', 'lot', '(camp) and slot:lot = empty'], ['building', 'lot.forge.frame', '(camp) and building:lot = forge and slot:lot = frame'], ['building', 'lot.forge', '(camp) and building:lot = forge and slot:lot = built'], ['marker', 'lot.front', '']]);
   eq('… the marker in front (local +z), the plot\'s options', [objs[4].x, objs[4].z, objs[1].slot.options], [10, 7.8, ['forge']]);
+  const { slotPreview } = await import('../src/engine/level/BuildSlots.js');
+  const { storyIssues } = await import('../src/engine/level/StoryChecks.js');
+  const slotObj = { type: 'buildSlot', id: 'lot', x: 1, z: 1, options: 'forge silo' };
+  eq('slotPreview (the editor): the plot, or the first building going up / built — by the slot\'s id',
+    [slotPreview(slotObj, () => 'forge'), slotPreview({ ...slotObj, opts: { preview: 'frame' } }, () => 'silo'), slotPreview({ ...slotObj, opts: { preview: 'built' } }, () => 'silo')].map((o) => [o.type, o.id, o.opts.kind, o.opts.stage ?? '']),
+    [['stake', 'lot', 'plot', ''], ['building', 'lot', 'silo', 'frame'], ['building', 'lot', 'silo', 'built']]);
+  const lvIssues = (o, ctx) => storyIssues(/** @type {any} */ ({ name: 'T', width: 8, depth: 8, objects: [o] }), ctx).filter((i) => i.field === 'options').map((i) => i.severity);
+  eq('checks: a slot with no building warns; one the campaign lacks is an error (only when the campaign is known)',
+    [lvIssues({ type: 'buildSlot', id: 's', x: 1, z: 1, options: '' }, {}), lvIssues(slotObj, { buildings: new Map([['forge', 'forge']]) }), lvIssues(slotObj, {})],
+    [['warning'], ['error'], []]);
   const same = [{ type: 'tree', id: 't' }];
   ok('… a level without slots: the same array', expandBuildSlots(same, () => '') === same);
   // conditions
@@ -1662,6 +1672,19 @@ begin('build slots and buildings (BuildSlots.js, BuildingSystem.js, CAMPAIGN_FOR
   const sign = B.sign(['forge']);
   eq('sign: one building — its name, text, cost and days', [sign.title, sign.lines.length, sign.lines[1].includes('3') && sign.lines[2].includes('2')], ['Forge', 3, true]);
   eq('… several: a plot, one line each (an unknown one left out)', [B.sign(['forge', 'shed', 'nothing']).lines.length, B.sign(['forge', 'nothing']).lines.length], [2, 3]);
+  eq('icon: its own, else its prop\'s (forge); several on a sign: the plot', [story.buildings.forge.icon, B.sign(['forge', 'shed']).icon], ['forge', 'plot']);
+  r.state.stock.wood = 2;
+  r.state.stock.food = 0;
+  const pd = B.panelData(['forge', 'shed', 'nothing']);
+  eq('panelData: the title (several: the plot), the chest, each building with its cost as have / need and whether it is paid',
+    [typeof pd.title, pd.chest.map((c) => [c.have]), pd.options.map((o) => [o.id, o.icon, o.affordable, o.cost.map((c) => [c.need, c.have])]), Object.values(pd.labels).every(Boolean)],
+    ['string', [[2]], [['forge', 'forge', false, [[3, 2], [1, 0]]], ['shed', 'forge', true, []]], true]);
+  eq('… one building: its name is the title', B.panelData(['forge']).title, 'Forge');
+  let shown = null;
+  g.ui.buildPanel = { open: async (data) => { shown = data; return 'shed'; } };
+  await B.use('lot4', ['shed']);
+  eq('use: opens the window and begins what it returns', [shown?.options.length, r.state.slot('lot4')?.b], [1, 'shed']);
+  g.ui.buildPanel = null;
   B.place('lot3', 'forge');
   r.state.version = 0;
   r._morning();

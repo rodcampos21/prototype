@@ -32,6 +32,24 @@ export function slotOptions(slot) {
   return out.slice(0, 16);
 }
 
+/** What the editor previews of a slot (`opts.preview`, an editor-only field: the game ignores it). */
+export const SLOT_PREVIEWS = /** @type {const} */ (['empty', 'frame', 'built']);
+
+/**
+ * The one object the level editor builds for a slot (its 3D preview, picked by the slot's id): the
+ * roped plot, or — `opts.preview` `frame` / `built` — its first building going up or built.
+ * @param {any} slot
+ * @param {(id: string) => string} propOf
+ */
+export function slotPreview(slot, propOf) {
+  const parts = expandBuildSlots([slot], propOf);
+  const stage = SLOT_PREVIEWS.includes(slot?.opts?.preview) ? slot.opts.preview : 'empty';
+  const b = slotOptions(slot)[0];
+  const want = stage === 'empty' || !b ? String(slot.id) : `${slot.id}.${b}${stage === 'frame' ? '.frame' : ''}`;
+  const part = parts.find((o) => o.id === want) ?? parts[0];
+  return { ...part, id: slot.id };
+}
+
 /** A number of `opts` within [lo, hi], else `d`. */
 const optNum = (v, d, lo, hi) => (typeof v === 'number' && Number.isFinite(v) ? Math.min(hi, Math.max(lo, v)) : d);
 

@@ -443,7 +443,27 @@ device pixels. The default label is `t('dialog.prompt.talk')`.
   small capitals (g4), then the lines in the line role — the first in tx1, the others (a cost, a
   time) in kw — wrapped at 156 art px. Shown while the spot is within 12 units of the player, its
   story group is there and it is on screen; fades in 3 steps; projected every frame (the prompt's
-  way), not occluded; hidden with the HUD and under a dialog.
+  way), not occluded; hidden with the HUD and under a dialog. A build slot's plate carries its
+  building's 16 × 16 icon left of the title (`icon` of the spec; the title row 19 art px tall).
+
+**The build window** (`BuildPanel.js`, `buildpanel.css`; Space at an empty build slot,
+CAMPAIGN_FORMAT.md §4.3)
+- Over the game at z 7 like the journal, on the veil; a 420 × 236 L window (crown, sides) centred.
+  The header: the slot's title (one building's name, else *Lote vazio*) in the head role tracked 1
+  with a gem glyph, the key hints (↑ ↓ choose, Esc close) at the right, a dim gilt hairline under it.
+- Left, 132 art px: one 22-px row per building — its icon (`art/icons/buildings.js`: `forge`,
+  `silo`, `lodge`, `altar`, `plot`; `itemIcon` finds them), its name in the line role (the chosen
+  row in g4 on the `card-sel0` band with a g3 edge; one the chest cannot pay for in tx3, its icon
+  greyed). A 1-px dm2 rule divides the columns.
+- Right: the icon at 2×, the name (name role, tx1), the days (small, tx3), the text (line role,
+  tx2, up to 3 lines), then the cost item by item — icon, name, `have / need` in the num role,
+  `heal` green when there is enough, `foe` red when not —, and the *Construir* button at the
+  bottom right (an XS gilt window; dim, disabled, without the cost).
+- Bottom: a dm2 hairline and the chest — *BAÚ* in tracked small capitals (g3), then each item it
+  holds of these costs as its icon and count.
+- Arrows choose, confirm builds (a refusal blips without the cost), cancel or a click outside
+  closes; rows and the button are buttons (a second click on the chosen row builds). `open(data)`
+  resolves with the building's id or ''. The data comes translated (`BuildingSystem.panelData`).
 
 **Title and loading screen** (`TitleScreen.js`, `title.css`, `art/logo.js`, `game.html`)
 - G's group `mc` (40, 50, 560 × 300). `star(25)` 2 over the logo.
@@ -653,6 +673,7 @@ shrink; the roles are `roles()`)
 | Party UI | `PartyFrames.js`, `PartyPanel.js`, `party.css`, `src/game/party/Party.js` (strings, localised rules, portraits), `party/types.d.ts`, `src/game/party/strings.js`, `sandbox/party_ui.*` |
 | Story UI | `Journal.js`, `Emotes.js`, `EndCard.js`, `story.css`, `UI.js` (letterbox, skip hint, the death prime's strings), `strings/story-ui.js` |
 | Inventory | `InventoryPanel.js` (the journal's tabs), `ResourceBar.js`, `inventory.css`, `art/icons/items.js`, `strings/inventory.js` |
+| Buildings | `BuildPanel.js` (the build window), `buildpanel.css`, `FloatSigns.js` (the plots' signs), `art/icons/buildings.js` |
 | Story integration | `StoryRunner.js`, `dialogue.js`, `CampaignRuntime.js`, `CampaignStart.js`; `src/game/story/strings.js`, `src/game/campaign/strings.js`; the content-text display sites there |
 | Game integration | `Game.js`, `src/main.js`, `World.js`, `Weather.js`, `levels.js`, `Npc.js`; `strings/game.js`; the title's language switch (save + reload), `fontsReady` await, dialogue portraits, the content-text display sites there, `state()` / `__luminati` additions |
 | Translators | `public/i18n/**` only |

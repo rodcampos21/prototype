@@ -515,7 +515,7 @@ Design na Bíblia, seção *O protagonista*.
 | **M1, Idioma** | Jogo em português, sem japonês e chinês | A |
 | **M2, Acampamento jogável** | Campanha Ato I: criação de personagem → prólogo → C02 → acampamento na clareira → mapa do Surubin → Mata da Clareira → volta; cavaleiro com visual próprio e falando; clima sorteado por mapa; mais monstros à noite | B, G1, I, J, F1 (tenda, mesa do mapa, estandarte, altar), F2 (cavaleiro) |
 | **M3, Primeira obra** | ~~Mochila e estoque, HUD de recursos, janela de inventário (mochila + equipamento, C 2, 2a, 2b), cena de viagem entre mapas (G1 5a), estaca de volta maior (5b), recursos visíveis (5d), névoa no minimapa (5c), C03 com a escolha forja / silo / alojamento, obra que avança a cada manhã, altar, dormir no alojamento (protótipo E1)~~ (concluído em 2026-10-29). As fases do Riacho e da Pedreira foram para o backlog (M6?) e a comida nos custos para o M4 | C, D, E1, F1 (forja, silo, alojamento, andaime) |
-| **M4, Sistema de construção** | ~~`buildSlot` + tabela de construções + `BuildingSystem` + comando `build` e condições `building:` / `slot:` (a campanha migrada, sem mudar o jogo); a comida nos custos (arbustos de frutas na Mata até o Riacho existir)~~ (núcleo feito em 2026-10-29). **Falta para fechar os conceitos:** a janela de construção, os ícones das construções e o suporte no editor de fases — plano detalhado em [§8](#8-m4-o-que-falta-plano-de-execução) | E2, F4 |
+| **M4, Sistema de construção** | ~~`buildSlot` + tabela de construções + `BuildingSystem` + comando `build` e condições `building:` / `slot:` (a campanha migrada, sem mudar o jogo); a comida nos custos (arbustos de frutas na Mata até o Riacho existir)~~ (núcleo feito em 2026-10-29); ~~a janela de construção, os ícones das construções e o suporte no editor de fases~~ (feitos em 2026-10-30, [§8](#8-m4-o-que-falta-plano-de-execução)). **M4 concluído** | E2, F4 |
 | **M5, Itens, personagem e habilidades** | Itens, equipar, atributos, experiência e habilidades do cavaleiro — o que já existe e as decisões em aberto em [§9](#9-m5-preparação) | C 2b (a lógica de equipar), J |
 | **M6 (provisório), Fases de expedição e o tempo da campanha** | Riacho dos Juncos (comida) e Pedreira da Encosta; coleta em várias expedições; rebalancear os custos; **níveis de construção** (forja nível 2: reabrir a obra num lote pronto); **contagens com prazo** EV01/EV02 (D 3) | B 1, C, D completo, E2 (níveis) |
 
@@ -538,6 +538,13 @@ história, build, capturas revisadas e documentação atualizada.
 - **Fases geradas só mudam pelo gerador**: o acampamento e os nós devem nascer de `tools/make-ato-1.mjs`.
 
 ## 8. M4: o que falta (plano de execução)
+
+**Feito (2026-10-30):** os ícones (`src/engine/ui/art/icons/buildings.js`, na galeria de
+`sandbox/ui_art.html`; `icon` na tabela, padrão o `prop`), a janela de construção
+(`src/engine/ui/BuildPanel.js`; substitui o diálogo) com o ícone também na placa flutuante, e o
+editor (lote no mapa 2D, prévia 3D pelo campo *Editor preview* — `empty` / `frame` / `built` — no
+lugar da integração com a *Story preview*, botões com as construções da campanha no inspetor e as
+checagens no *Check for problems*). Com isso o M4 está completo. O texto abaixo é o plano original.
 
 Escrito em 2026-10-30, para executar em seguida. O núcleo já existe (E2 acima;
 [CAMPAIGN_FORMAT.md §4.3](../../specs/CAMPAIGN_FORMAT.md#43-buildings-and-build-slots)). Os três itens

@@ -3,7 +3,7 @@ import './ui.css';
 import './floatsigns.css';
 import { pal, GEMS } from './art/palette.js';
 import { measure, txt, setOrigin, UP } from './layout/type.js';
-import { win, place } from './layout/layout.js';
+import { win, place, put } from './layout/layout.js';
 import { onScale, currentScale } from './UiScale.js';
 import { currentFonts } from './FontLoader.js';
 import { wrapLines } from './Journal.js';
@@ -25,8 +25,9 @@ const MAX_W = 156, PAD = 5, STEM = 6;
 
 /**
  * A sign to show: where its plate hangs (the stem's foot), its title and lines (translated), and
- * whether it is there now (its story group).
- * @typedef {{ position: THREE.Vector3, title: string, lines: string[], present?: () => boolean }} FloatSignSpec
+ * whether it is there now (its story group); an icon (16 × 16, a build slot's building) left of the
+ * title.
+ * @typedef {{ position: THREE.Vector3, title: string, lines: string[], icon?: HTMLCanvasElement|null, present?: () => boolean }} FloatSignSpec
  */
 
 const _v = new THREE.Vector3();
@@ -133,9 +134,13 @@ export class FloatSigns {
     // (each line wrapped; the first — what it is — in the text's colour, the rest — the cost, the
     // time — in the gold)
     const lines = s.spec.lines.flatMap((l, i) => wrapLines(String(l), 'line', MAX_W).map((text) => ({ text, gold: i > 0 })));
-    const tw = title ? measure(title, 'small', 1) : 0;
+    // (an icon: left of the title, the title row as tall as the icon)
+    const icon = s.spec.icon ?? null;
+    const iw = icon ? 19 : 0;
+    const head = icon ? 19 : title ? 10 : 0;
+    const tw = (title ? measure(title, 'small', 1) : 0) + iw;
     const w = Math.min(MAX_W, Math.max(tw, ...lines.map((l) => measure(l.text, 'line')), 40)) + PAD * 2;
-    const h = PAD + (title ? 10 : 0) + lines.length * 11 + PAD - 2;
+    const h = PAD + head + lines.length * 11 + PAD - 2;
     const x0 = -Math.floor(w / 2), y0 = -STEM - h;
     place(P, x0, y0, w, h + STEM);
     setOrigin(P, [x0, y0]);
@@ -147,7 +152,11 @@ export class FloatSigns {
     stem.style.background = k.g2 ?? '#5a4a2a';
     P.append(stem);
     let y = y0 + PAD + 3;
-    if (title) {
+    if (icon) {
+      put(P, icon, x0 + PAD, y0 + PAD);
+      if (title) txt(P, title, x0 + PAD + iw, y0 + PAD + 6, { font: 'small', track: 1, color: k.g4, drop: true });
+      y += head;
+    } else if (title) {
       txt(P, title, x0 + PAD, y, { font: 'small', track: 1, color: k.g4, drop: true });
       y += 10;
     }
