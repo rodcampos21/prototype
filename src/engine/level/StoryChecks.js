@@ -17,6 +17,7 @@ import {
 } from './StoryScript.js';
 import { levelEntrances, entranceName, LIVE_STORY_TYPES } from './Travel.js';
 import { OBJECT_TYPES } from './ObjectCatalog.js';
+import { slotOptions } from './BuildSlots.js';
 import { isOwnKey } from '../utils/own.js';
 
 /**
@@ -384,6 +385,11 @@ export function levelNames(level) {
   const villagers = new Set(['player']);
   for (const o of level?.objects ?? []) {
     if (typeof o?.id === 'string') places.add(o.id);
+    // (a build slot's expanded parts: BuildSlots.js — its marker in front, each building and its frame)
+    if (o?.type === 'buildSlot' && typeof o.id === 'string') {
+      places.add(`${o.id}.front`);
+      for (const b of slotOptions(o)) { places.add(`${o.id}.${b}`); places.add(`${o.id}.${b}.frame`); }
+    }
     if (o?.type === 'npc') {
       actors.add(o.id);
       if (typeof o.id === 'string') villagers.add(o.id.toLowerCase());

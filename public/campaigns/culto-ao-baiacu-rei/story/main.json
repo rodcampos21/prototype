@@ -2,9 +2,6 @@
   "format": "luminati-story",
   "version": 1,
   "vars": {
-    "obra.forja": 0,
-    "obra.silo": 0,
-    "obra.alojamento": 0,
     "obra.primeira": 0
   },
   "items": {
@@ -36,6 +33,16 @@
       "rarity": "comum",
       "textKeys": {
         "text": "A74D58FF698ACB80271C0F2F16FD2AD4"
+      }
+    },
+    "comida": {
+      "name": "Comida",
+      "text": "Frutas silvestres colhidas na mata. Quem ergue uma obra precisa comer.",
+      "pack": true,
+      "icon": "food",
+      "rarity": "comum",
+      "textKeys": {
+        "text": "638C1B5266770D93CD48486AFEE342E1"
       }
     },
     "espada-de-viagem": {
@@ -99,6 +106,62 @@
       }
     }
   },
+  "buildings": {
+    "forja": {
+      "name": "Forja",
+      "text": "Fogo e bigorna: aqui o aço toma forma.",
+      "cost": {
+        "madeira": 12,
+        "pedra": 10,
+        "comida": 4
+      },
+      "days": 1,
+      "prop": "forge",
+      "start": "obra.comecar-forja",
+      "done": [
+        "toast A forja do acampamento ficou pronta. #line:3BDB45CA7D6EB04F21609E768626355E"
+      ],
+      "textKeys": {
+        "text": "E3E4A761B047FD09F4ACFCC5C11AC11B"
+      }
+    },
+    "silo": {
+      "name": "Silo",
+      "text": "Guarda a colheita. A mochila passa a 12 espaços.",
+      "cost": {
+        "madeira": 14,
+        "pedra": 6,
+        "comida": 4
+      },
+      "days": 1,
+      "prop": "silo",
+      "start": "obra.comecar-silo",
+      "done": [
+        "toast O silo do acampamento ficou pronto. #line:C42CB62A116D8CAE0C2D5B22BF053FCA"
+      ],
+      "textKeys": {
+        "text": "4D2B63A7B71DB499E001ECB04EE90D1D"
+      }
+    },
+    "alojamento": {
+      "name": "Alojamento",
+      "text": "Um teto para dormir até a manhã.",
+      "cost": {
+        "madeira": 16,
+        "ervas": 6,
+        "comida": 4
+      },
+      "days": 1,
+      "prop": "lodge",
+      "start": "obra.comecar-alojamento",
+      "done": [
+        "toast O alojamento do acampamento ficou pronto. #line:D1499515754601FEDFE3E5679AE050A5"
+      ],
+      "textKeys": {
+        "text": "FF078FA651C17D84E11CAA592FE80CCF"
+      }
+    }
+  },
   "quests": {
     "resgate": {
       "title": "O resgate",
@@ -147,7 +210,7 @@
     "obra.primeira-forja": [
       "cutscene",
       "face player surubin",
-      "walk surubin frente-forja nowait",
+      "walk surubin lote-forja.front nowait",
       "camera surubin 0.8",
       "emote surubin ! 1",
       "Surubin: Uma forja? Sábio. Precisamos de força. #line:9820F766BEA0CF8CC193D0077655C5AC",
@@ -161,7 +224,7 @@
     "obra.primeira-silo": [
       "cutscene",
       "face player surubin",
-      "walk surubin frente-silo nowait",
+      "walk surubin lote-silo.front nowait",
       "camera surubin 0.8",
       "emote surubin ! 1",
       "Surubin: Um silo? Prudente. Quem guarda hoje come no inverno. #line:1716F7607DDA6FE4DD402E99320B2741",
@@ -175,7 +238,7 @@
     "obra.primeira-alojamento": [
       "cutscene",
       "face player surubin",
-      "walk surubin frente-alojamento nowait",
+      "walk surubin lote-alojamento.front nowait",
       "camera surubin 0.8",
       "emote surubin ! 1",
       "Surubin: Um teto! Então você me ouviu na fogueira. #line:EA7E69133A6D3E38AC0DC04E91E1BBB1",
@@ -189,40 +252,46 @@
       "camera reset 1"
     ],
     "obra.comecar-forja": [
-      "take madeira 12",
-      "take pedra 10",
       "fade out 1",
-      "var obra.forja = 1",
-      "teleport player frente-forja up",
+      "teleport player lote-forja.front up",
       "wait 0.4",
-      "camera obra-forja 0",
+      "camera lote-forja.forja.frame 0",
       "fade in 1",
       ": O cavaleiro e o Surubin passam horas marcando o alicerce da forja e erguendo os primeiros esteios. #line:FA55CFFD0C1AD0DC7480DAA5D62A27AC",
-      "camera reset 1"
+      "camera reset 1",
+      "if not c03",
+      "  var obra.primeira = 1",
+      "  call obra.primeira-forja",
+      "else",
+      "  bark surubin A forja! Amanhã cedo ela fica de pé. #line:F16E169C8A65751E2476D273F14A19A4"
     ],
     "obra.comecar-silo": [
-      "take madeira 14",
-      "take pedra 6",
       "fade out 1",
-      "var obra.silo = 1",
-      "teleport player frente-silo up",
+      "teleport player lote-silo.front up",
       "wait 0.4",
-      "camera obra-silo 0",
+      "camera lote-silo.silo.frame 0",
       "fade in 1",
       ": O cavaleiro e o Surubin passam horas marcando o alicerce do silo e erguendo os primeiros esteios. #line:F948A7AB250B5D9ECC52727F524A668D",
-      "camera reset 1"
+      "camera reset 1",
+      "if not c03",
+      "  var obra.primeira = 2",
+      "  call obra.primeira-silo",
+      "else",
+      "  bark surubin O silo! Amanhã cedo ele fica de pé. #line:4D806306086630C28FD5FD4B4046E404"
     ],
     "obra.comecar-alojamento": [
-      "take madeira 16",
-      "take ervas 6",
       "fade out 1",
-      "var obra.alojamento = 1",
-      "teleport player frente-alojamento up",
+      "teleport player lote-alojamento.front up",
       "wait 0.4",
-      "camera obra-alojamento 0",
+      "camera lote-alojamento.alojamento.frame 0",
       "fade in 1",
       ": O cavaleiro e o Surubin passam horas marcando o alicerce do alojamento e erguendo os primeiros esteios. #line:BD3AB54C6B4712D87D108E77873AC112",
-      "camera reset 1"
+      "camera reset 1",
+      "if not c03",
+      "  var obra.primeira = 3",
+      "  call obra.primeira-alojamento",
+      "else",
+      "  bark surubin Um teto! Amanhã cedo ele fica de pé. #line:BF93EDF7D9E6808DA9F6AA4F0F67C5E5"
     ],
     "altar": [
       "cutscene",
@@ -262,22 +331,12 @@
   },
   "events": [
     {
-      "id": "obras-de-manha",
+      "id": "altar-de-manha",
       "on": "morning",
       "background": true,
-      "if": "obra.forja = 1 or obra.silo = 1 or obra.alojamento = 1 or (c03 and not altar)",
+      "if": "c03 and not altar",
       "run": [
-        "if obra.forja = 1",
-        "  var obra.forja = 2",
-        "  toast A forja do acampamento ficou pronta. #line:C27A50349701C4458FD8348CB8FC7DAC",
-        "if obra.silo = 1",
-        "  var obra.silo = 2",
-        "  toast O silo do acampamento ficou pronto. #line:99AAFBA5691D08B0215D0EE841CD9EE1",
-        "if obra.alojamento = 1",
-        "  var obra.alojamento = 2",
-        "  toast O alojamento do acampamento ficou pronto. #line:EE8CFAC99022879A6174F760C8417B99",
-        "if c03 and not altar",
-        "  set altar"
+        "set altar"
       ]
     }
   ]

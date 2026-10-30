@@ -11,6 +11,7 @@ import { rockGeom } from './SmallProps.js';
  *   and the felled trunk lying beside it.
  * - `stone`: a grey boulder broken by pale veins of good stone → rubble.
  * - `herbs`: a low bush of leaves with small white and lilac flowers → bare twigs.
+ * - `berries`: a round berry bush hung with red fruit (food) → the same bush picked bare.
  * Anything else than a known kind builds a tree (level data is untrusted).
  *
  * @import { PropFactory } from '../Props.js'
@@ -24,14 +25,51 @@ const groundAO = (h = 0.5, k = 0.62) => (px, py) => k + (1 - k) * smoothstep(-0.
  * @param {PropFactory} f
  */
 export function buildResource(f, x, y, z, opts = {}) {
-  const kind = opts.kind === 'stone' || opts.kind === 'herbs' ? opts.kind : 'tree';
+  const kind = opts.kind === 'stone' || opts.kind === 'herbs' || opts.kind === 'berries' ? opts.kind : 'tree';
   const spent = opts.stage === 'spent';
   if (kind === 'tree') {
     if (!spent) return f.tree(x, y, z, { kind: opts.tree ?? 'oak', height: Math.min(6, Math.max(2.5, Number(opts.height) || 4)), seed: opts.seed, rotation: opts.rotation });
     return buildStump(f, x, y, z, opts);
   }
   if (kind === 'stone') return spent ? buildRubble(f, x, y, z, opts) : buildVein(f, x, y, z, opts);
+  if (kind === 'berries') return buildBerries(f, x, y, z, opts, spent);
   return buildHerbs(f, x, y, z, opts, spent);
+}
+
+/**
+ * A berry bush: a round mound of crossed leaf cards, darker and taller than the herbs, hung with
+ * clusters of red berries — spent, the same bush picked bare (a paler green).
+ * @param {PropFactory} f
+ */
+function buildBerries(f, x, y, z, opts, spent) {
+  const rng = f.rng('resource:berries', x, z, opts.seed);
+  const b = f.builder(groundAO(0.5, 0.66));
+  const leaf = f.foliageMaterial('leaves');
+  const H = rng.range(0.95, 1.1);
+  const R = 0.66;
+  for (let k = 0; k < 5; k++) {
+    const a = (k / 5) * Math.PI + rng.range(-0.12, 0.12);
+    const dx = Math.cos(a) * R;
+    const dz = Math.sin(a) * R;
+    const tint = (spent ? 1.05 : 0.9) + 0.06 * k;
+    b.quad(leaf, [[-dx, 0, -dz], [dx, 0, dz], [dx, H, dz], [-dx, H, -dz]], [[0, 0], [1, 0], [1, 0.9], [0, 0.9]], { color: [tint * 0.78, tint * 1.02, tint * 0.72] });
+  }
+  if (!spent) {
+    // the fruit: clusters of red berries round the crown and the flanks
+    for (let k = 0; k < 8; k++) {
+      const a = (k / 8) * Math.PI * 2 + rng.range(-0.3, 0.3);
+      const d = rng.range(0.22, 0.5);
+      const cy = H * rng.range(0.45, 0.95);
+      for (let j = 0; j < 3; j++) {
+        b.box('linen', [0.095, 0.095, 0.095], {
+          at: [Math.cos(a) * d + rng.range(-0.05, 0.05), cy + rng.range(-0.06, 0.04), Math.sin(a) * d + rng.range(-0.05, 0.05)],
+          color: j === 0 ? [1.6, 0.42, 0.38] : [1.25, 0.2, 0.22],
+        });
+      }
+    }
+  }
+  const group = f.finish(b, 'resource:berries', x, y, z, opts.rotation ?? 0);
+  return f.result(group, { colliders: [{ type: 'circle', x, z, r: 0.34 }] });
 }
 
 /**

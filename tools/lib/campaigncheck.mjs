@@ -37,6 +37,7 @@ import {
 import { isOwnKey } from '../../src/engine/utils/own.js';
 import { levelFile, levelVariants, acrossSeam } from '../../src/game/campaign/CampaignFormat.js';
 import { buildStory, storyFile } from '../../src/game/campaign/StoryFormat.js';
+import { slotOptions } from '../../src/engine/level/BuildSlots.js';
 import { levelTexts, campaignTexts, storyFileTexts, storyTextTexts, fileKeyIssues } from '../../src/engine/i18n/TextKeys.js';
 import { gridFromLevel, placerFromLevel, checkLevel } from './levelcheck.mjs';
 
@@ -591,6 +592,12 @@ export function checkCampaign(campaign, readLevel, { strict = false, levelChecks
         d.writes.add(setFlag);
       }
       if (o?.type === 'npc' && text(o.actor)) usedActors.add(text(o.actor));
+      // a build slot (CAMPAIGN_FORMAT.md §4.3): its buildings in the story's table
+      if (o?.type === 'buildSlot') {
+        const opts = slotOptions(o);
+        if (!opts.length) warn(`${where} › options: no building — the plot offers nothing`);
+        for (const b of opts) if (!has(story?.buildings ?? {}, b)) err(`${where} › options: building "${b}" is not in the story files' buildings`);
+      }
       for (const [field, v] of scriptFields(o)) {
         const r = useScript(parse(v).nodes, `${where} › ${field}`, (line) => `${where} › ${field}:${line}`);
         for (const w of r.writes) { d.writes.add(w); note(levelWrites, w, `${where} › ${field}`); }
@@ -717,6 +724,7 @@ export function checkCampaign(campaign, readLevel, { strict = false, levelChecks
         if (!story.quests[quest].stages.some((x) => x.id === stage)) err(`${loc(`stage:${quest}:${stage}`)}: quest "${quest}" has no stage "${stage}"`);
       }
       for (const it of r.items) if (!has(story.items, it)) warn(`${here}: item "${it}" is not declared in the story files`);
+      for (const b of r.buildings) if (!has(story.buildings, b)) err(`${here}: build: building "${b}" is not in the story files' buildings`);
       const named = new Set();
       for (const { speaker, line, quoted } of scriptSpeakers(s.lines, nodes)) {
         if (quoted || named.has(speaker.toLowerCase())) continue;
@@ -784,6 +792,15 @@ export function checkCampaign(campaign, readLevel, { strict = false, levelChecks
       }
     };
     for (const e of story.events) if (e.background) runInBackground([e.run], `story event "${e.id}"`, false);
+    // (a building's `done` script runs in the background the morning it stands)
+    for (const [bid, b] of Object.entries(story.buildings)) {
+      if (b.done) runInBackground([b.done], `building "${bid}" › done`, false);
+      for (const sid of [b.start, b.done]) if (sid && !has(story.scripts, sid)) err(`story: building "${bid}": script "${sid}" is not in the story files`);
+      for (const it of Object.keys(b.cost)) {
+        note(itemUses, it, `story: building "${bid}" › cost`);
+        if (!has(story.items, it)) warn(`story: building "${bid}": cost item "${it}" is not declared`);
+      }
+    }
     for (const [id, level] of files) {
       for (const o of level.objects ?? []) {
         if (o?.type === 'event' && o.background === true) runInBackground(scriptRefs(parse(o.run).nodes).scripts, `${levelFile(id)} › event ${o.id}`, true);
@@ -903,7 +920,8 @@ export function checkCampaign(campaign, readLevel, { strict = false, levelChecks
     for (const id of Object.keys(story.items)) if (!itemUses.has(id) && !startItems.has(id)) info(`story: item "${id}" is declared but no script or condition uses it`);
     for (const id of Object.keys(story.quests)) if (!usedQuests.has(id)) info(`story: quest "${id}" is declared but no script or condition uses it`);
     const talks = new Set(Object.values(story.actors).map((a) => a.talk));
-    const runs = new Set(story.events.map((e) => e.run));
+    // (a building's start / done scripts run when it is begun / stands)
+    const runs = new Set([...story.events.map((e) => e.run), ...Object.values(story.buildings).flatMap((b) => [b.start, b.done])]);
     for (const id of Object.keys(story.scripts)) if (!usedScripts.has(id) && !talks.has(id) && !runs.has(id)) info(`story: script "${id}" is never called, talked or run`);
     for (const [id, a] of Object.entries(story.actors)) {
       if (!usedActors.has(id) && !speakers.has(id.toLowerCase()) && !speakers.has(a.name.toLowerCase())) info(`story: actor "${id}" is declared but no villager is it and no script names it`);

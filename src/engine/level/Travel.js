@@ -31,6 +31,8 @@ export const LIVE_STORY_TYPES = new Set([
   'enemy', 'chest', 'waystone',
   'bed', 'table', 'chair', 'shelf', 'hearth', 'counter', 'rug', 'staircase', 'wardrobe', 'wallWindow', 'sacks',
   'tent', 'mapTable', 'banner', 'stake', 'resource', 'building',
+  // (expanded at load into a stake, buildings and a marker — all live: BuildSlots.js)
+  'buildSlot',
 ]);
 
 /**

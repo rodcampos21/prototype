@@ -84,7 +84,7 @@ const INSIDE_SPOTS = (() => {
 /** Today's marker kinds → the pixel markers' (art/minimap.js `markerSprite`). */
 const KIND = Object.freeze({
   fire: 'campfire', door: 'door', sign: 'sign', well: 'well', object: 'object', waystone: 'waystone', chest: 'chest', boss: 'boss',
-  return: 'return', res_tree: 'res_tree', res_stone: 'res_stone', res_herbs: 'res_herbs',
+  return: 'return', res_tree: 'res_tree', res_stone: 'res_stone', res_herbs: 'res_herbs', res_berries: 'res_berries',
 });
 /** @param {string} kind */
 const kindOf = (kind) => (typeof kind === 'string' && Object.prototype.hasOwnProperty.call(KIND, kind) ? KIND[kind] : 'object');
@@ -92,9 +92,9 @@ const kindOf = (kind) => (typeof kind === 'string' && Object.prototype.hasOwnPro
  * The drawing passes of the markers (G's MARKER_ORDER): resources and points of interest, then
  * waystones, chests and the return mast, then the boss with the foes.
  */
-const PASS = Object.freeze({ res_tree: 0, res_stone: 0, res_herbs: 0, campfire: 0, door: 0, sign: 0, well: 0, object: 0, waystone: 1, chest: 1, return: 1, boss: 3 });
+const PASS = Object.freeze({ res_tree: 0, res_stone: 0, res_herbs: 0, res_berries: 0, campfire: 0, door: 0, sign: 0, well: 0, object: 0, waystone: 1, chest: 1, return: 1, boss: 3 });
 /** Is a marker kind a resource to gather (the world map's "Resource" legend row)? @param {string} kind */
-const isResource = (kind) => kind === 'res_tree' || kind === 'res_stone' || kind === 'res_herbs';
+const isResource = (kind) => kind === 'res_tree' || kind === 'res_stone' || kind === 'res_herbs' || kind === 'res_berries';
 /** The passes over `markers` (the villagers after pass 1; the foes after pass 3, the party last). */
 const PASSES = Object.freeze([0, 1, 3]);
 

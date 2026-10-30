@@ -651,7 +651,7 @@ minimap's edge when out of view), and a Space exit within 3 units of it shows no
 
 A building of the camp on its plot (props/CampProps.js `buildCampBuilding`; `camp: true`). The
 front — the door, the open side — faces the rotation. Show one stage at a time with `when` /
-`unless` (the camp's works: `obra.<x> = 1` going up, `>= 2` built).
+`unless` — or let a [`buildSlot`](#buildslot) do it (the camp's works).
 
 | Field | Type | Default | Editor range / options | Notes |
 | --- | --- | --- | --- | --- |
@@ -664,6 +664,28 @@ front — the door, the open side — faces the rotation. Show one stage at a ti
 lodge by its footprint, a silo by its round, the altar by its slab. The forge's fire is a light
 (intensity 6, distance 6.5) counted in the level's light budget.
 
+### buildSlot
+
+A plot where the player raises one of the story's buildings (CAMPAIGN_FORMAT.md §4.3; `camp: true`,
+`story: true`; kind `marker`: it builds nothing itself). The game expands it at load
+([`BuildSlots.js`](../../src/engine/level/BuildSlots.js)) into a roped `stake` plot (the slot's id)
+while empty, each building's `frame` (`<id>.<building>.frame`) and `built` (`<id>.<building>`)
+`building` props, and a marker `<id>.front` in front (local +z); its `when` / `unless` apply to all
+of it.
+
+| Field | Type | Default | Editor range / options | Notes |
+| --- | --- | --- | --- | --- |
+| `rotation` | angle | `0` | step 15° | The buildings' front. |
+| `options` | text (or a list) | `"forja"` | | The building ids it may hold (the story's `buildings`), separated by spaces or commas; at most 16. |
+| `opts.width` | number | `4` | 1.5–10, step 0.5 | The plot. |
+| `opts.depth` | number | `3.5` | 1.5–10, step 0.5 | The plot. |
+| `opts.seed` | int | `1` | 0–9999 | The stakes and the buildings. |
+
+**In the game:** while empty, a floating sign over the plot (its building's name, text, cost and
+days; several: one line each) and Space within reach of the ropes (*Construir*): what the camp's
+chest holds, and the choice to begin one with its cost there (`BuildingSystem`). Scripts read
+`building:<id>` / `slot:<id>` and change it with `build`.
+
 ### resource
 
 Something to gather on an expedition (builders in
@@ -672,8 +694,8 @@ Something to gather on an expedition (builders in
 | Field | Type | Default | Editor range / options | Notes |
 | --- | --- | --- | --- | --- |
 | `rotation` | angle | `0` | step 15° | A stump's felled trunk lies toward local +X. |
-| `opts.kind` | select | `tree` | `RESOURCE_KINDS` | `tree`: a tree (Trees.js) to chop. `stone`: a grey boulder with pale veins to break. `herbs`: a low flowering bush to pick. |
-| `opts.stage` | select | `full` | `RESOURCE_STAGES` | `full`: gathered with Space. `spent`: what is left — a stump with chips and the felled trunk, rubble, bare twigs (no prompt). A spent tree with no condition is a plain stump (the Mata's old cutting). |
+| `opts.kind` | select | `tree` | `RESOURCE_KINDS` | `tree`: a tree (Trees.js) to chop. `stone`: a grey boulder with pale veins to break. `herbs`: a low flowering bush to pick. `berries`: a round bush hung with red berries (food; its default item `comida`). |
+| `opts.stage` | select | `full` | `RESOURCE_STAGES` | `full`: gathered with Space. `spent`: what is left — a stump with chips and the felled trunk, rubble, bare twigs, a berry bush picked bare (no prompt). A spent tree with no condition is a plain stump (the Mata's old cutting). |
 | `item` | text | `"madeira"` | | The story item it gives (a story file declares it: its name in the toast and the journal). |
 | `amount` | int | `2` | 1–20 | How many — unless its item has a `rarity` in the campaign's table (CAMPAIGN_FORMAT.md §4.2): then a roll on it (a common one 1 to 3). |
 | `hits` | int | `3` | 1–8 | Strikes until it is spent (one per Space). |
@@ -689,7 +711,7 @@ morning** (and when the player sleeps until morning), so the full one stands aga
 (StoryRunner `_regrow`).
 
 **In the game:** a full resource is an interactable — *Cortar* / *Quebrar* / *Colher* (radius 1.45; herbs
-1.1). Each press is one strike (`Game.harvest`): the knight's swing (on a combat level), chips, dust
+1.1, berries 1.25; on the maps a red dot for berries). Each press is one strike (`Game.harvest`): the knight's swing (on a combat level), chips, dust
 or leaves, a thud, a small shake. The `hits`-th strike sets its flag and gives `item` — `amount` of it, or a roll on its rarity
 (the story's give: a toast and a chime; into the backpack as far as it has room). Not with foes on the player (a toast). Strikes are counted
 while the player stays in the level. Colliders: the tree's trunk, the boulder (≈ 0.7), the bush

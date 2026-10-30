@@ -120,6 +120,7 @@ export const SCRIPT_COMMANDS = {
   give: { args: '<item> [count]', help: 'give the player an item (`gold` is money)' },
   take: { args: '<item> [count]', help: 'take an item from the player (at most as many as they have)' },
   quest: { args: '<id> start [title] | stage <stage> [text] | done | fail', help: 'start, advance, finish or fail a quest (the journal, B)' },
+  build: { args: '<slot> <building> [built] | <slot> none', help: 'begin a building on a build slot without its cost (it goes up over its days, mornings), or put it there built; `none` empties the slot' },
   // world (objects come and go with flags: `set bridge-built` and the bridge's `when: bridge-built`)
   home: { args: '<who> [x z]', help: 'where a villager stays from now on (default: where they stand; remembered for the level)' },
   time: { args: '<hour> | <hh:mm>', help: 'set the time of day' },
@@ -325,6 +326,10 @@ function commandArgs(op, rest) {
     case 'give': case 'take':
       if (w.length < 1 || w.length > 2) throw new Error(`${op} <item> [count]`);
       return { item: name(w[0], 'item id'), count: count(w[1], 'the count') };
+    case 'build': {
+      if (w.length < 2 || w.length > 3 || (w.length === 3 && !isWord(2, 'built')) || (w[1] === 'none' && w.length === 3)) throw new Error('build <slot> <building> [built] | build <slot> none');
+      return { slot: name(w[0], 'slot id'), building: w[1] === 'none' ? '' : name(w[1], 'building id'), built: w.length === 3 };
+    }
     case 'quest': {
       const id = name(w[0], 'quest id');
       const verb = w[1];
@@ -980,6 +985,7 @@ export function parseScript(source) {
  * @property {Set<string>} writes   flags / variables set, cleared or changed
  * @property {Set<string>} items    items given, taken or read
  * @property {Set<string>} gives    items given (to find items taken but never given)
+ * @property {Set<string>} buildings buildings a `build` names (the story's `buildings` table)
  * @property {Set<string>} quests   quests changed or read
  * @property {{ quest: string, stage: string }[]} stages   stages set or compared
  * @property {Set<string>} stageReads  quests whose stage a condition reads (`stage:<quest>`)
@@ -1008,7 +1014,7 @@ export function parseScript(source) {
 /** @returns {ScriptRefs} */
 export function emptyRefs() {
   return {
-    reads: new Set(), writes: new Set(), items: new Set(), gives: new Set(), quests: new Set(), stages: [], stageReads: new Set(),
+    reads: new Set(), writes: new Set(), items: new Set(), gives: new Set(), buildings: new Set(), quests: new Set(), stages: [], stageReads: new Set(),
     scripts: new Set(), builtins: new Set(), actors: new Set(), speakers: new Set(), targets: new Set(), levels: new Set(),
     visited: new Set(), travels: [], done: new Set(), onces: new Set(), onceKeys: new Set(), varyKeys: new Set(),
     sounds: new Set(), tracks: new Set(), joins: new Set(), members: new Set(),
@@ -1033,8 +1039,8 @@ export function addConditionRefs(c, out) {
     else if (r.kind === 'done') out.done.add(r.name);
     else if (r.kind === 'visits') out.actors.add(r.name);
     else if (r.kind === 'party') out.members?.add(r.name);
-    // a variable on the right of a numeric comparison (`gold >= inn.price`)
-    if (typeof value === 'string' && !isTextRef(r) && r.kind !== 'stage') out.reads.add(value);
+    // a variable on the right of a numeric comparison (`gold >= inn.price`; a slot's stage is a word)
+    if (typeof value === 'string' && !isTextRef(r) && r.kind !== 'stage' && r.kind !== 'slot') out.reads.add(value);
   }
 }
 
@@ -1083,6 +1089,7 @@ function cmdRefs(n, out) {
     case 'set': case 'clear': case 'var': out.writes.add(a.name); break;
     case 'give': if (a.item !== 'gold') { out.items.add(a.item); out.gives.add(a.item); } break;
     case 'take': if (a.item !== 'gold') out.items.add(a.item); break;
+    case 'build': if (a.building) out.buildings.add(a.building); break;
     case 'quest':
       out.quests.add(a.id);
       if (a.verb === 'stage') out.stages.push({ quest: a.id, stage: a.stage });
@@ -1241,7 +1248,7 @@ export function varyIndex(mode, n, count, key, day, seed = 0) {
  */
 export const BACKGROUND_OPS = new Set([
   'bark', 'emote', 'walk', 'face', 'teleport', 'home', 'wait',
-  'set', 'clear', 'var', 'give', 'take', 'quest', 'heal',
+  'set', 'clear', 'var', 'give', 'take', 'quest', 'heal', 'build',
   'sfx', 'toast', 'banner', 'music', 'weather', 'shake',
   'call', 'stop', 'break',
   // (`party join` / `leave` / `rule` / `set` — not `party menu`, which needs the player)

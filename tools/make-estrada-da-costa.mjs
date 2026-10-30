@@ -315,44 +315,38 @@ function canonicalObject(o) {
  * QP03 (the foundations) begins. No trail leaves the camp: travel is by Surubin's map (stage G1).
  */
 /**
- * The camp's first works (the Ato I notebook, *As obras* and C03): where each stands, its plot,
- * what it costs and what is said of it. The notebook's costs, without the food — the Riacho dos
- * Juncos, which gives it, is not on the map yet (balance them then): forge 12 wood and 10 stone,
- * silo 14 wood and 6 stone, lodging 16 wood and 6 herbs. `kind`: the building prop's.
+ * The camp's first works (the Ato I notebook, *As obras* and C03): where each stands (its build
+ * slot, `lote-<id>`), its plot, what it costs and what is said of it — the story's `buildings`
+ * table (CAMPAIGN_FORMAT.md §4.3). The notebook's costs with food (M4): until the Riacho dos Juncos
+ * gives it, the berry bushes of the Mata da Clareira do (balance them when the Riacho exists): forge
+ * 12 wood, 10 stone and 4 food; silo 14 wood, 6 stone and 4 food; lodging 16 wood, 6 herbs and 4
+ * food. `kind`: the building prop's.
  */
 const WORKS = [
   {
-    id: 'forja', kind: 'forge', x: 8.2, z: 10.8, w: 4, d: 3.5, seed: 1, of: 'da forja', the: 'a forja', cost: { madeira: 12, pedra: 10 },
+    id: 'forja', kind: 'forge', x: 8.2, z: 10.8, w: 4, d: 3.5, seed: 1, of: 'da forja', the: 'a forja', cost: { madeira: 12, pedra: 10, comida: 4 },
     title: 'Forja', about: 'Fogo e bigorna: aqui o aço toma forma.',
     later: 'A forja! Amanhã cedo ela fica de pé.',
     done: 'A forja está de pé. O fogo pegou na primeira tentativa.',
     react: 'Agora sim, cavaleiro: uma bigorna e um fogo de verdade. O resto é com a sua espada.',
   },
   {
-    id: 'silo', kind: 'silo', x: 8.2, z: 18.6, w: 3.5, d: 3.5, seed: 2, of: 'do silo', the: 'o silo', cost: { madeira: 14, pedra: 6 },
+    id: 'silo', kind: 'silo', x: 8.2, z: 18.6, w: 3.5, d: 3.5, seed: 2, of: 'do silo', the: 'o silo', cost: { madeira: 14, pedra: 6, comida: 4 },
     title: 'Silo', about: 'Guarda a colheita. A mochila passa a 12 espaços.',
     later: 'O silo! Amanhã cedo ele fica de pé.',
     done: 'O silo está de pé. Cheira a madeira nova e a palha.',
     react: 'Agora você pode trazer o dobro de cada viagem. O Rei provê, mas guardar ajuda.',
   },
   {
-    id: 'alojamento', kind: 'lodge', x: 21.4, z: 21.4, w: 5, d: 3.5, seed: 3, of: 'do alojamento', the: 'o alojamento', cost: { madeira: 16, ervas: 6 },
+    id: 'alojamento', kind: 'lodge', x: 21.4, z: 21.4, w: 5, d: 3.5, seed: 3, of: 'do alojamento', the: 'o alojamento', cost: { madeira: 16, ervas: 6, comida: 4 },
     title: 'Alojamento', about: 'Um teto para dormir até a manhã.',
     later: 'Um teto! Amanhã cedo ele fica de pé.',
     done: 'O alojamento está de pé. Tem cheiro de tronco e de palha seca.',
     react: 'Quando cansar, é só deitar ali dentro. Nada de dormir no chão.',
   },
 ];
-/** The item names as the texts say them. */
-const ITEM_WORD = { madeira: 'madeira', pedra: 'pedra', ervas: 'ervas' };
-/** @param {string} id a work's id */
-const workOf = (id) => /** @type {(typeof WORKS)[number]} */ (WORKS.find((w) => w.id === id));
-/** "12 madeira e 10 pedra" @param {string} id */
-const costText = (id) => Object.entries(workOf(id).cost).map(([i, n]) => `${n} ${ITEM_WORD[i]}`).join(' e ');
-/** "${stock:madeira} madeira e ${stock:pedra} pedra" (what the camp's chest holds) @param {string} id */
-const haveText = (id) => Object.keys(workOf(id).cost).map((i) => `\${stock:${i}} ${ITEM_WORD[i]}`).join(' e ');
-/** The condition: enough in the camp's chest for the work (what the backpack carries is not yet in it). @param {string} id */
-const affordable = (id) => Object.entries(workOf(id).cost).map(([i, n]) => `stock:${i} >= ${n}`).join(' and ');
+/** A work's build slot (the level object's id; `<slot>.front` its marker, `<slot>.<id>` the building, `<slot>.<id>.frame` it going up). @param {string} id */
+const slotOf = (id) => `lote-${id}`;
 function buildClearing() {
   const CW = 34;
   const CD = 28;
@@ -601,41 +595,12 @@ function buildClearing() {
       'camera reset 1',
     ],
   });
-  // ---- the works (QP03, C03): each plot, its building going up and built, the altar --------------
-  // `obra.<x>`: 0 the plot, 1 going up (the scaffold), 2 built — the morning after it was begun
-  // (the story's `morning` event, STORY_MAIN). The roped plot shows while nothing stands there.
+  // ---- the works (QP03, C03): each one's build slot, the altar -----------------------------------
+  // (BuildSlots.js: the roped plot with its floating sign while empty — Space there begins the work,
+  // paid from the chest —, its frame while it goes up, the building the morning after; the story's
+  // `buildings` table says what each costs and what runs then — STORY_MAIN)
   for (const w of WORKS) {
-    put('stake', w.x, w.z, { rotation: 0, when: `${CAMP} and obra.${w.id} = 0`, opts: { kind: 'plot', width: w.w, depth: w.d, seed: w.seed } }, `lote-${w.id}`);
-    put('marker', w.x, w.z + w.d / 2 + 1.3, { name: `frente-${w.id}`, facing: 'up' });
-    put('building', w.x, w.z, { rotation: 0, when: `obra.${w.id} = 1`, opts: { kind: w.kind, stage: 'frame', seed: w.seed } }, `obra-${w.id}`);
-    put('building', w.x, w.z, { rotation: 0, when: `obra.${w.id} >= 2`, opts: { kind: w.kind, stage: 'built', seed: w.seed } }, `${w.id}`);
-    // the floating sign over the plot: what stands there, what it costs (while the plot is empty)
-    put('signpost', w.x, w.z, {
-      rotation: 0, when: `${CAMP} and obra.${w.id} = 0`, speaker: w.title,
-      text: [w.about, `Custo: ${costText(w.id)}`, `Fica pront${w.id === 'forja' ? 'a' : 'o'} em 1 dia`],
-      opts: { float: true, height: 2.8 },
-    }, `placa-${w.id}`);
-    // Space at the plot: what the chest holds, and the choice to begin it — the player builds; Surubin
-    // reacts (the first time with the C03 lines of the Caderno, later with a word)
-    put('event', 0, 0, {
-      on: 'use', label: 'Ver o lote', if: `${CAMP} and obra.${w.id} = 0`,
-      minX: w.x - w.w / 2 - 0.4, maxX: w.x + w.w / 2 + 0.4, minZ: w.z - w.d / 2 - 0.4, maxZ: w.z + w.d / 2 + 0.4,
-      run: [
-        `: No baú: ${haveText(w.id)}. Para erguer ${w.the}: ${costText(w.id)}.`,
-        `if ${affordable(w.id)}`,
-        `  choice Começar ${w.the}?`,
-        '    > Começar agora',
-        `      call obra.comecar-${w.id}`,
-        '      if not c03',
-        `        var obra.primeira = ${WORKS.indexOf(w) + 1}`,
-        `        call obra.primeira-${w.id}`,
-        '      else',
-        `        bark surubin ${w.later}`,
-        '    > Ainda não',
-        'else',
-        '  : Ainda falta material no baú. A mata dá madeira, pedra e ervas; guarde no baú o que trouxer.',
-      ],
-    });
+    put('buildSlot', w.x, w.z, { rotation: 0, when: CAMP, options: w.id, opts: { width: w.w, depth: w.d, seed: w.seed } }, slotOf(w.id));
   }
   // the altar under the banner, raised the morning after C03 (Surubin's night of work)
   // (beside the banner, north of the lodge: its roof would hide it further south)
@@ -655,11 +620,11 @@ function buildClearing() {
   for (const w of WORKS) {
     for (const on of ['arrive', 'change']) {
       put('event', 0, 0, {
-        on, if: `obra.${w.id} >= 2 and altar.visto and not obra.${w.id}.vista`, minX: 0, maxX: CW, minZ: 0, maxZ: CD,
+        on, if: `slot:${slotOf(w.id)} >= built and altar.visto and not obra.${w.id}.vista`, minX: 0, maxX: CW, minZ: 0, maxZ: CD,
         run: [
           'cutscene',
           'wait 0.3',
-          `camera ${w.id} 1`,
+          `camera ${slotOf(w.id)}.${w.id} 1`,
           `: ${w.done}`,
           `Surubin: ${w.react}`,
           `set obra.${w.id}.vista`,
@@ -671,7 +636,7 @@ function buildClearing() {
   // sleeping: only in the lodge, once it stands (Caderno, *Dormir*), and only from evening on
   const lodge = WORKS.find((w) => w.id === 'alojamento');
   put('event', 0, 0, {
-    on: 'use', label: 'Dormir', if: 'obra.alojamento >= 2',
+    on: 'use', label: 'Dormir', if: `slot:${slotOf('alojamento')} >= built`,
     minX: lodge.x - 1.2, maxX: lodge.x + 1.2, minZ: lodge.z + lodge.d / 2, maxZ: lodge.z + lodge.d / 2 + 1.4,
     run: [
       'if hour >= 18 or hour < 5',
@@ -947,29 +912,31 @@ function buildMata() {
     taken.push([x, z, s + 0.6]);
   }
 
-  // ---- resources: trees to chop, stone to break, herbs to pick (each with its spent twin) ----------
+  // ---- resources: trees to chop, stone to break, herbs and berries to pick (each with its spent twin)
   let nRes = 0;
+  /** Each kind: its id's word, the item it gives, its room. @type {Record<string, [string, string, number]>} */
+  const RES = { tree: ['arvore', 'madeira', 1.6], stone: ['pedra', 'pedra', 1.2], herbs: ['erva', 'ervas', 0.8], berries: ['frutas', 'comida', 1.0] };
   /**
    * A resource and its spent twin, `id` 'arvore-03' … ; the flag gathering sets: res.mata.<id>.
-   * @param {'tree'|'stone'|'herbs'} kind @param {number} x @param {number} z
+   * @param {'tree'|'stone'|'herbs'|'berries'} kind @param {number} x @param {number} z
    */
   const resource = (kind, x, z) => {
-    const r = kind === 'tree' ? 1.6 : kind === 'stone' ? 1.2 : 0.8;
+    const [word, item, r] = RES[kind];
     if (!tileOk(x, z) || !free(x, z, r)) return false;
     nRes++;
-    const id = `${kind === 'tree' ? 'arvore' : kind === 'stone' ? 'pedra' : 'erva'}-${String(nRes).padStart(2, '0')}`;
+    const id = `${word}-${String(nRes).padStart(2, '0')}`;
     const flag = `res.mata.${id}`;
-    const item = kind === 'tree' ? 'madeira' : kind === 'stone' ? 'pedra' : 'ervas';
     const seed = 400 + nRes;
     const rotation = Math.round(rng.range(0, 6.28) * 100) / 100;
     const opts = kind === 'tree'
       ? { kind, tree: rng.pick(['birch', 'oak', 'birch', 'pine']), height: Math.round(rng.range(3.4, 4.3) * 10) / 10, seed }
       : { kind, seed };
-    put('resource', x, z, { rotation, item, amount: kind === 'herbs' ? 1 : 2, hits: kind === 'tree' ? 3 : kind === 'stone' ? 4 : 1, flag, unless: flag, opts: { ...opts, stage: 'full' } }, id);
+    const bush = kind === 'herbs' || kind === 'berries';
+    put('resource', x, z, { rotation, item, amount: bush ? 1 : 2, hits: kind === 'tree' ? 3 : kind === 'stone' ? 4 : 1, flag, unless: flag, opts: { ...opts, stage: 'full' } }, id);
     put('resource', x, z, { rotation, item, flag, when: flag, opts: { ...opts, stage: 'spent' } }, `${id}-gasto`);
     // (trodden earth round a tree or a stone worth working: it reads from afar, and its stump or
     // rubble does not drown in the tall grass)
-    if (kind !== 'herbs') for (const [di, dj] of [[0, 0], [1, 0], [0, 1], [-1, 0], [0, -1]]) if (tileOk(x + di, z + dj)) setTile(lv, Math.floor(x) + di, Math.floor(z) + dj, 'd');
+    if (!bush) for (const [di, dj] of [[0, 0], [1, 0], [0, 1], [-1, 0], [0, -1]]) if (tileOk(x + di, z + dj)) setTile(lv, Math.floor(x) + di, Math.floor(z) + dj, 'd');
     taken.push([x, z, r]);
     return true;
   };
@@ -1007,6 +974,12 @@ function buildMata() {
   scatter('herbs', 6, MEADOW[0], MEADOW[1], 9, 6);
   scatter('herbs', 3, OLD_CAMP[0], OLD_CAMP[1] + 3, 5, 3);
   scatter('herbs', 3, CUTTING[0], CUTTING[1] - 3, 7, 4);
+  // berries (food): at the edges of the groves and the meadow, the old camp's cleared ground
+  scatter('berries', 4, MEADOW[0] + 4, MEADOW[1] - 3, 10, 6);
+  scatter('berries', 3, 50, 40, 9, 9);
+  scatter('berries', 3, 26, 64, 7, 6);
+  scatter('berries', 3, 80, 52, 8, 6);
+  scatter('berries', 2, OLD_CAMP[0], OLD_CAMP[1] + 3, 6, 4);
 
   // ---- chests: hidden in corners, there at random on each expedition, a little gold ------------------
   const CHESTS = [[90, 66], [86, 34], [66, 12], [34, 6], [8, 32], [8, 58], [30, 78], [50, 78], [46, 30], [28, 36], [92, 50], [70, 76]];
@@ -1235,7 +1208,7 @@ const campaignRaw = {
     // 6 slots of up to 5 of one resource; the silo doubles them
     pack: 6,
     stack: 5,
-    grow: [{ when: 'obra.silo >= 2', pack: 12 }],
+    grow: [{ when: `slot:${slotOf('silo')} >= built`, pack: 12 }],
     // how much one gathering gives, by the item's rarity: the chance of at least 1, 2, 3 … (the
     // basic resources always one, sometimes two or three; the rarer ones for later)
     rarity: { comum: [1, 0.4, 0.15], incomum: [0.85, 0.3, 0.08], raro: [0.5, 0.12], lendario: [0.2] },
@@ -1246,16 +1219,23 @@ const campaignRaw = {
 
 // ---- story/main.json: the items (what the resources give, in the backpack; the knight's gear) ----
 const STORY_MAIN = {
-  // the works (`obra.<x>`: 0 the plot, 1 going up, 2 built; the silo doubles the backpack) and which
-  // was the first (C03: 1 forge, 2 silo, 3 lodging)
-  vars: { 'obra.forja': 0, 'obra.silo': 0, 'obra.alojamento': 0, 'obra.primeira': 0 },
+  // which work was the first (C03: 1 forge, 2 silo, 3 lodging); the works themselves are build slots
+  // (`slot:lote-<x>`, `building:lote-<x>`)
+  vars: { 'obra.primeira': 0 },
+  // the camp's buildings (CAMPAIGN_FORMAT.md §4.3): their floating signs, costs paid from the chest,
+  // a day to stand; begun — the start script —, standing — a toast
+  buildings: Object.fromEntries(WORKS.map((w) => [w.id, {
+    name: w.title, text: w.about, cost: w.cost, days: 1, prop: w.kind,
+    start: `obra.comecar-${w.id}`,
+    done: [`toast ${w.the[0].toUpperCase()}${w.the.slice(1)} do acampamento ficou ${w.id === 'forja' ? 'pronta' : 'pronto'}.`],
+  }])),
   scripts: {
     // C03 (the Ato I notebook): the player begins the first work at its plot, and Surubin comes over
     // with his words on it — the useful one chosen, the essential still to come (the banner)
     ...Object.fromEntries(WORKS.map((w) => [`obra.primeira-${w.id}`, [
       'cutscene',
       'face player surubin',
-      'walk surubin frente-' + w.id + ' nowait',
+      `walk surubin ${slotOf(w.id)}.front nowait`,
       'camera surubin 0.8',
       'emote surubin ! 1',
       ...{
@@ -1277,18 +1257,24 @@ const STORY_MAIN = {
       'set c03',
       'quest alicerces stage obra A primeira obra está subindo. Amanhã cedo ela fica pronta.',
       'camera reset 1',
-    ]])),    // a work begun: what it costs leaves the stock, the footing and the scaffold go up
+    ]])),
+    // a work begun at its slot (the building's `start`: its cost already paid from the chest, the
+    // frame up): the hours of work, then Surubin's word — the first time C03 (the Caderno's lines),
+    // later a bark
     ...Object.fromEntries(WORKS.map((w) => [`obra.comecar-${w.id}`, [
-      ...Object.entries(w.cost).map(([i, n]) => `take ${i} ${n}`),
       'fade out 1',
-      `var obra.${w.id} = 1`,
       // (out of the scaffold that rises round where the knight stood)
-      `teleport player frente-${w.id} up`,
+      `teleport player ${slotOf(w.id)}.front up`,
       'wait 0.4',
-      `camera obra-${w.id} 0`,
+      `camera ${slotOf(w.id)}.${w.id}.frame 0`,
       'fade in 1',
       `: O cavaleiro e o Surubin passam horas marcando o alicerce ${w.of} e erguendo os primeiros esteios.`,
       'camera reset 1',
+      'if not c03',
+      `  var obra.primeira = ${WORKS.indexOf(w) + 1}`,
+      `  call obra.primeira-${w.id}`,
+      'else',
+      `  bark surubin ${w.later}`,
     ]])),
     // the morning after C03: the altar under the banner, the first work standing (Caderno, C03)
     altar: [
@@ -1324,21 +1310,19 @@ const STORY_MAIN = {
       'weather auto',
     ],
   },
-  // every morning the works go on (each takes a day: begun today, standing tomorrow), and the
-  // morning after C03 the altar rises — wherever the knight is
+  // the morning after C03 the altar rises — wherever the knight is (the works stand by themselves:
+  // the buildings' days)
   events: [{
-    id: 'obras-de-manha', on: 'morning', background: true,
-    if: `${WORKS.map((w) => `obra.${w.id} = 1`).join(' or ')} or (c03 and not altar)`,
-    run: [
-      ...WORKS.flatMap((w) => [`if obra.${w.id} = 1`, `  var obra.${w.id} = 2`, `  toast ${w.the[0].toUpperCase()}${w.the.slice(1)} do acampamento ficou ${w.id === 'forja' ? 'pronta' : 'pronto'}.`]),
-      'if c03 and not altar',
-      '  set altar',
-    ],
+    id: 'altar-de-manha', on: 'morning', background: true,
+    if: 'c03 and not altar',
+    run: ['set altar'],
   }],
   items: {
     madeira: { name: 'Madeira', text: 'Toras cortadas na mata. A base de qualquer obra do acampamento.', pack: true, icon: 'wood', rarity: 'comum' },
     pedra: { name: 'Pedra', text: 'Pedra boa, quebrada dos veios claros das rochas. Para alicerces e paredes.', pack: true, icon: 'stone', rarity: 'comum' },
     ervas: { name: 'Ervas', text: 'Folhas e flores miúdas que crescem perto da água. O Surubin diz que curam, se o Rei quiser.', pack: true, icon: 'herbs', rarity: 'comum' },
+    // (food: berries of the Mata for now — the Riacho dos Juncos gives it later)
+    comida: { name: 'Comida', text: 'Frutas silvestres colhidas na mata. Quem ergue uma obra precisa comer.', pack: true, icon: 'food', rarity: 'comum' },
     // (shown in the inventory's slots; equipping and the bonuses come later)
     'espada-de-viagem': { name: 'Espada de viagem', text: 'Uma espada simples, de lâmina reta. Já viu mais estrada do que batalha.', icon: 'sword', slot: 'weapon', bonus: { atk: 2 } },
     'cota-de-viagem': { name: 'Cota de viagem', text: 'Couro e anéis de ferro, remendados mais de uma vez.', icon: 'armor', slot: 'body', bonus: { def: 2 } },

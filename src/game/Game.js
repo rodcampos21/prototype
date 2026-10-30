@@ -4,9 +4,11 @@ import {
   AudioSystem, UI, DEG2RAD, DEFAULT_KEYFRAMES, clamp, lerp, smoothstep,
 } from '../engine/index.js';
 import { computeCameraBounds } from '../engine/level/ObjectBuilder.js';
-import { CHARACTER_PRESET_NAMES, levelHasCombat, levelHasStory } from '../engine/level/ObjectCatalog.js';
+import { CHARACTER_PRESET_NAMES, levelHasCombat, levelHasStory, resourceKind } from '../engine/level/ObjectCatalog.js';
 import { renderLevelMap } from '../engine/level/LevelMap.js';
 import { hasStoryCondition } from '../engine/level/Travel.js';
+import { expandBuildSlots } from '../engine/level/BuildSlots.js';
+import { ownValue } from '../engine/utils/own.js';
 import { makeShadowOnly, primeShadowPrograms } from '../engine/world/ShadowCasters.js';
 import { BlobBatch } from '../engine/sprite/BlobBatch.js';
 import { LightPool } from '../engine/lighting/LightPool.js';
@@ -174,6 +176,7 @@ const GLINT = Object.freeze({
   tree: { color: '#e9f7a8', y: 1.7, spread: [1.1, 0.9, 1.1] },
   stone: { color: '#fff4d8', y: 0.55, spread: [0.6, 0.35, 0.6] },
   herbs: { color: '#ffd0ec', y: 0.35, spread: [0.5, 0.2, 0.5] },
+  berries: { color: '#ffb0a0', y: 0.5, spread: [0.6, 0.3, 0.6] },
 });
 /** Real frames drawn behind the loading screen with every effect on (see start()). */
 const WARM_FRAMES = 5;
@@ -361,7 +364,11 @@ export class Game {
    * @param {Level} level
    */
   _applyLevel(level) {
-    this.level = level;
+    // (its build slots expanded into their plot, frames and buildings: BuildSlots.js — what the
+    // world builds, the maps paint and the story shows and hides)
+    const buildings = this.campaign?.story?.buildings ?? {};
+    const objects = expandBuildSlots(level.objects, (b) => ownValue(buildings, b)?.prop ?? 'forge');
+    this.level = objects === level.objects ? level : { ...level, objects };
     /** @type {Partial<LevelEnvironment>} ({} without one) */
     this.env = level.environment ?? {};
     const cam = this.env.camera ?? {};
@@ -1219,12 +1226,16 @@ export class Game {
     const list = this.world?.floatSigns ?? [];
     if (!list.length && !this.ui.floatSigns) return;
     this.ui.floatSigns ??= new FloatSigns(this.ui.hud.element);
-    this.ui.floatSigns.set(list.map((s) => ({
-      position: s.position,
-      title: s.speaker ? term(s.speaker) : '',
-      lines: s.pages.lines.map((l, k) => (typeof l === 'string' ? loc(typeof s.pages.keys?.[k] === 'string' ? s.pages.keys[k] : '', l) : '')).filter(Boolean),
-      present: () => !s.group || s.group.present,
-    })));
+    this.ui.floatSigns.set(list.map((s) => {
+      // (a build slot's plot: what it may hold and what it costs, from the story's buildings)
+      const sign = s.slot && this.story ? this.story.buildings.sign(s.slot.slot?.options ?? []) : null;
+      return {
+        position: s.position,
+        title: sign ? sign.title : s.speaker ? term(s.speaker) : '',
+        lines: sign ? sign.lines : s.pages.lines.map((l, k) => (typeof l === 'string' ? loc(typeof s.pages.keys?.[k] === 'string' ? s.pages.keys[k] : '', l) : '')).filter(Boolean),
+        present: () => !s.group || s.group.present,
+      };
+    }));
   }
 
   /**
@@ -1781,8 +1792,10 @@ export class Game {
       return;
     }
     const ro = o.opts ?? {};
-    const kind = ro.kind === 'stone' || ro.kind === 'herbs' ? ro.kind : 'tree';
-    const item = (typeof o.item === 'string' && o.item.trim()) || (kind === 'tree' ? 'madeira' : kind === 'stone' ? 'pedra' : 'ervas');
+    const kind = resourceKind(ro.kind);
+    // (a bush is picked by hand: herbs, berries)
+    const bush = kind === 'herbs' || kind === 'berries';
+    const item = (typeof o.item === 'string' && o.item.trim()) || ({ tree: 'madeira', stone: 'pedra', herbs: 'ervas', berries: 'comida' })[kind];
     // (a full backpack: no strike — the resource stays for the next expedition)
     if (this.story.packRoom(item) <= 0) {
       this.ui.hud.toast(t('story.pack.full'), 2.2, { kind: 'item' });
@@ -1801,7 +1814,7 @@ export class Game {
       if (pc) pc.showPose('wind');
       await wait(0.14);
       if (pc) pc.showPose('slash');
-      this.audio.playSfx(kind === 'herbs' ? 'step' : 'swing', { volume: 0.5, pitch: kind === 'herbs' ? 1.3 : 1 });
+      this.audio.playSfx(bush ? 'step' : 'swing', { volume: 0.5, pitch: bush ? 1.3 : 1 });
       await wait(0.06);
       const at = this._tmp.set(o.x, this.tileMap.getHeight(o.x, o.z) + (kind === 'tree' ? 0.9 : 0.45), o.z);
       if (kind === 'tree') {
@@ -1812,9 +1825,9 @@ export class Game {
         this.particles.burst('footstep', at, 6);
         this.audio.playSfx('slam', { volume: 0.35, pitch: 1.6 });
       } else {
-        this.particles.burst('splash', at, 8, { color: '#7fb04a', size: [0.06, 0.09] });
+        this.particles.burst('splash', at, 8, { color: kind === 'berries' ? '#c8443c' : '#7fb04a', size: [0.06, 0.09] });
       }
-      if (kind !== 'herbs') this.rig.shake(0.05, 0.12);
+      if (!bush) this.rig.shake(0.05, 0.12);
       if (pc) pc.showPose('follow');
       await wait(0.14);
     } finally {
@@ -1835,7 +1848,7 @@ export class Game {
     const n = this.story.dropOf(item, int(o.amount, 2, 1, 20));
     if (n > 0) this.story.gather(item, n);
     else this.ui.hud.toast(t('story.pack.none'), 2, { kind: 'item' });
-    this.particles.burst(kind === 'herbs' ? 'sparkle' : 'footstep', this._tmp.set(o.x, this.tileMap.getHeight(o.x, o.z) + 0.3, o.z), kind === 'herbs' ? 4 : 10);
+    this.particles.burst(bush ? 'sparkle' : 'footstep', this._tmp.set(o.x, this.tileMap.getHeight(o.x, o.z) + 0.3, o.z), bush ? 4 : 10);
   }
 
   /**
@@ -1859,8 +1872,8 @@ export class Game {
       left -= dt;
       if (left <= 0) {
         const kind = /** @type {any} */ (it.object)?.opts?.kind;
-        const g = GLINT[kind === 'stone' || kind === 'herbs' ? kind : 'tree'];
-        const tall = kind === 'stone' || kind === 'herbs' ? 1 : Math.max(0.6, Math.min(1.6, (Number(/** @type {any} */ (it.object)?.opts?.height) || 4) / 4));
+        const g = GLINT[resourceKind(kind)];
+        const tall = resourceKind(kind) !== 'tree' ? 1 : Math.max(0.6, Math.min(1.6, (Number(/** @type {any} */ (it.object)?.opts?.height) || 4) / 4));
         this.particles.burst('sparkle', this._tmp.set(it.position.x, it.position.y + g.y * tall, it.position.z), 2 + (Math.random() < 0.4 ? 1 : 0), {
           color: g.color, size: [0.24, 0.4], hdr: 4.5, life: [0.8, 1.3], spawnSize: g.spread, burstSpeed: [0.05, 0.2], burstUp: [0.05, 0.25],
         });
@@ -2447,6 +2460,9 @@ export class Game {
         } else if (it.kind === 'resource') {
           // a tree to chop, a stone to break, herbs to pick: one strike per press
           await this.harvest(it);
+        } else if (it.kind === 'buildSlot') {
+          // a build slot's plot: what the chest holds, and the choice to begin a building there
+          await this.story?.buildings.use(it.object.id, it.object.slot?.options ?? []);
         } else if (it.kind === 'stash') {
           // the camp's chest: the backpack's resources go into the stock, saved at once
           const moved = this.story?.storePack() ?? {};
