@@ -455,6 +455,16 @@ Villagers have *Story: sets flag after talking* (`flag`). *Check for problems* l
 duplicate entrance names and entrances off walkable ground; the demo campaign *The Ferryman's
 Lantern* shows all of it (`editor.html?open=ferrymans-lantern/mill-road`).
 
+**Build slots** (*Camp* group, `⌗`): a plot where the player raises one of the campaign's buildings
+(the story files' `buildings`; [CAMPAIGN_FORMAT.md §4.3](../specs/CAMPAIGN_FORMAT.md#43-buildings-and-build-slots)).
+Click where the plot goes and turn it so the buildings face the way you want. The 2D map draws the
+roped plot (its front edge solid); the 3D view shows the plot, or — *Editor preview* `frame` /
+`built` — its first building going up or standing, in its look from the story files (the game
+ignores that field). Under *Buildings* the inspector lists the campaign's buildings: click one to
+add or remove it (or type the ids). An id the story does not have is warned there and is an error in
+*Check for problems*; a plot with no building is a warning. Give the plot *Story: only when* so it
+appears when the camp does (`acampamento`). Try it on `editor.html?open=culto-ao-baiacu-rei/clareira-do-riacho`.
+
 ### 5.5 Story: events, markers, scripts and the story preview
 
 Two more *Markers* objects carry a level's story; both are invisible in the game:

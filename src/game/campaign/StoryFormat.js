@@ -68,11 +68,12 @@ const ICON_NAME = /^[a-z0-9][a-z0-9-]{0,31}$/;
  *   (where it is worn, what it adds — shown, not applied yet); rarity: a name of the campaign's
  *   `inventory.rarity` table — how much gathering it gives (CampaignFormat.rollDrop)
  * @typedef {{ name: string, text: string, textKey?: string, cost: Record<string, number>, days: number,
- *   prop: string, start: string, done: string }} StoryBuilding
+ *   prop: string, icon: string, start: string, done: string }} StoryBuilding
  *   a building a build slot may hold (`buildings`, CAMPAIGN_FORMAT.md §4.3): name (a term) and text
  *   (its content key `textKey`) on the slot's floating sign; cost: item id → count, paid from the
  *   camp's stock when the player begins it; days: the mornings it takes to stand; prop: the
- *   `building` prop's kind it shows (ObjectCatalog BUILDING_KINDS); start / done: script ids ('' none)
+ *   `building` prop's kind it shows (ObjectCatalog BUILDING_KINDS); icon: its icon in the build
+ *   window and on the sign (the UI's building icons; default: its prop); start / done: script ids ('' none)
  *   run when the player begins it at its slot (a foreground run) and the morning it stands (a
  *   background run)
  * @typedef {{ id: string, text: string, textKey?: string }} QuestStage
@@ -211,9 +212,13 @@ export function addStoryJSON(story, raw, file, warnings) {
       warnings.push(where(`building "${id}": "${field}" names no script — ignored`));
       return '';
     };
+    // (its icon in the build window and on the plot's sign: its own, else its prop's)
+    const icon = text(o.icon).trim();
+    if (o.icon != null && !ICON_NAME.test(icon)) warnings.push(where(`building "${id}": "icon" must be an icon name (a–z, 0–9, -) — its prop's used`));
+    const propOk = BUILDING_KINDS.includes(prop) ? prop : BUILDING_KINDS[0];
     story.buildings[id] = {
       name: text(o.name).trim() || titleCase(id), text: text(o.text), cost, days,
-      prop: BUILDING_KINDS.includes(prop) ? prop : BUILDING_KINDS[0], start: script('start'), done: script('done'),
+      prop: propOk, icon: icon && ICON_NAME.test(icon) ? icon : propOk, start: script('start'), done: script('done'),
       ...(bk.keys?.text ? { textKey: bk.keys.text } : {}),
     };
   }

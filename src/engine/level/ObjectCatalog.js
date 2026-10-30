@@ -367,6 +367,7 @@ export const OBJECT_TYPES = {
       { key: 'opts.width', label: 'Plot width', type: 'number', min: 1.5, max: 10, step: 0.5 },
       { key: 'opts.depth', label: 'Plot depth', type: 'number', min: 1.5, max: 10, step: 0.5 },
       SEED,
+      { key: 'opts.preview', label: 'Editor preview', type: 'select', options: ['empty', 'frame', 'built'], help: 'Editor only (the game ignores it): show the empty plot, its first building going up, or built.' },
     ],
   },
   resource: {

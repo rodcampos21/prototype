@@ -7,6 +7,7 @@
  */
 import { ICON_RAMPS, CORE_ICONS, iconCanvas } from './core.js';
 import { COMBAT_ICONS } from './combat.js';
+import { BUILDING_ICONS } from './buildings.js';
 
 /** @import { IconDef, IconOptions } from './core.js' */
 
@@ -270,5 +271,5 @@ export const SLOT_ICONS = Object.freeze({ weapon: 'sword', body: 'armor', head: 
  */
 export function itemIcon(name, o) {
   const own = (/** @type {Record<string, IconDef>} */ t) => (name && Object.prototype.hasOwnProperty.call(t, name) ? t[name] : null);
-  return iconCanvas(own(ITEM_ICONS) ?? own(CORE_ICONS) ?? own(COMBAT_ICONS) ?? CORE_ICONS.gem, o);
+  return iconCanvas(own(ITEM_ICONS) ?? own(BUILDING_ICONS) ?? own(CORE_ICONS) ?? own(COMBAT_ICONS) ?? CORE_ICONS.gem, o);
 }

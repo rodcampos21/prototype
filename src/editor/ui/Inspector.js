@@ -35,7 +35,8 @@ import { isWalkableAt } from '../tools/SpawnTool.js';
 import { friendlyProblem } from './dialogs.js';
 import { gateEdgeGap, GATE_EDGE_TOLERANCE, isBossGroup, clampBossCount, bossExtraCount } from '../enemyGroups.js';
 import { ownValue } from '../../engine/utils/own.js';
-import { conditionRuleOf, conditionIssues, onStoryContext } from '../story.js';
+import { conditionRuleOf, conditionIssues, onStoryContext, cachedStoryContext } from '../story.js';
+import { slotOptions } from '../../engine/level/BuildSlots.js';
 import { isRoom } from '../rooms.js';
 import { stripScriptTags } from '../../engine/i18n/TextKeys.js';
 import { textRows, textFieldsOf } from '../textKeys.js';
@@ -270,6 +271,8 @@ export class Inspector {
     const props = rest.map((f) => (boss && f.key === 'count'
       // the boss spawns alone (enemyStartPoints takes one): the field stops at 1
       ? [this._fieldEditor({ ...f, max: 1, slider: false }, [id]), this._bossCountHint(id)]
+      // a build slot's buildings: the campaign's, to toggle, under the text
+      : o.type === 'buildSlot' && f.key === 'options' ? [this._fieldEditor(f, [id]), this._slotOptionsPicker(id, edit)]
       : Object.hasOwn(keyed, f.key) ? [this._fieldEditor(f, [id]), this._keyView(id, f.key, keyed[f.key] !== 'text')]
         : this._fieldEditor(f, [id])));
     if (rest.length) this.body.appendChild(this._section('Properties', props));
@@ -282,6 +285,46 @@ export class Inspector {
       { label: 'Duplicate', icon: ICONS.duplicate, title: 'Ctrl+D', onClick: () => this.actions.duplicate() },
       { label: 'Delete', icon: ICONS.trash, danger: true, title: 'Del', onClick: () => this.actions.remove() },
     ]));
+  }
+
+  /**
+   * Under a build slot's Buildings: the campaign's buildings (its story files' `buildings`) as
+   * buttons that add or remove one, a warning for an id the story does not have (or none at all),
+   * and a note while the campaign's story is not known (a level opened outside its campaign).
+   * @param {string} id
+   * @param {(fn: (ob: any) => void, label: string) => void} edit
+   */
+  _slotOptionsPicker(id, edit) {
+    const wrap = h('div', { class: 'le-slot-options' });
+    const chips = h('div', { class: 'le-chips' });
+    const hint = h('p', { class: 'le-hint' });
+    wrap.append(chips, hint);
+    const upd = () => {
+      const ob = this.state.getObject(id);
+      const ref = this.state.fileRef;
+      const ctx = ref.kind === 'project' && ref.campaign ? cachedStoryContext(ref.campaign) : null;
+      const known = ctx?.buildings ? [...ctx.buildings.keys()] : null;
+      const opts = ob ? slotOptions(ob) : [];
+      chips.textContent = '';
+      for (const b of known ?? []) {
+        const on = opts.includes(b);
+        const btn = h('button', { class: `le-chip-btn${on ? ' is-on' : ''}`, type: 'button', title: on ? `Remove ${b}` : `Add ${b}` }, on ? `✓ ${b}` : b);
+        btn.addEventListener('click', () => edit((o2) => {
+          const cur = slotOptions(o2);
+          o2.options = (cur.includes(b) ? cur.filter((x) => x !== b) : [...cur, b]).join(' ');
+        }, on ? 'Remove building' : 'Add building'));
+        chips.append(btn);
+      }
+      const unknown = known ? opts.filter((b) => !known.includes(b)) : [];
+      hint.textContent = !known
+        ? 'The campaign’s buildings are not known here (open the level from its campaign to pick them).'
+        : !opts.length ? 'No building: the plot offers nothing (Check for problems warns).'
+          : unknown.length ? `Not in the story’s buildings: ${unknown.join(', ')} (an error in Check for problems).` : '';
+      hint.style.color = known && (unknown.length || !opts.length) ? 'var(--le-warn)' : '';
+    };
+    upd();
+    this._bind(upd);
+    return wrap;
   }
 
   /** Under a boss group's Count: it spawns alone (a warning while the stored count is above 1). */

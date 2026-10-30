@@ -675,8 +675,9 @@ place of the campaign side by side; places you have not been to yet are dimmed.
   only what you have walked — the rest is dark until you go there, and what you saw stays seen on
   the next expeditions. The way back always shows.
 - **The camp's works**: a sign floats over each building plot with what will stand there, what it
-  costs and how long it takes. Space at the plot (*Build*) shows what the chest holds and begins it
-  — or says what is still missing; once you begin it, it goes up overnight and stands the next
+  costs and how long it takes. Space at the plot (*Build*) opens the build window: what can stand
+  there, what each costs against what the chest holds (red: still missing) and the *Build* button
+  (arrows choose, Space builds, Esc closes); once you begin it, it goes up overnight and stands the next
   morning, wherever you are. Every work costs wood, stone or herbs **and food**: pick the berry
   bushes of the woods (red dots on the map) and store the food in the chest. When the lodging
   stands, Space at its door sleeps until morning (only from the evening on).

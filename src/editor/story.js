@@ -273,7 +273,8 @@ export function storyHiddenIds(state) {
  * the story files' (`storyEvents`: event id → `once`; `storyOnceKeys`). `storyCheckContext` builds
  * the checks' `events` / `onceKeys` / `villagers` from them.
  * `texts`: every file's keyed texts that could be read (`CampaignTexts`; copy-on-write).
- * @typedef {StoryContext & { variants?: Map<string, string>,
+ * `buildings`: the story files' buildings (id → the `building` prop it shows).
+ * @typedef {StoryContext & { variants?: Map<string, string>, buildings?: Map<string, string>,
  *   files?: Map<string, LevelStoryKeys & { base: string, villagers?: Set<string> }>, storyEvents?: Map<string, boolean>,
  *   storyOnceKeys?: Set<string>, texts?: CampaignTexts }} CampaignStoryContext
  */
@@ -398,6 +399,8 @@ async function readStoryContext(campaign) {
       ctx.quests = new Map(Object.entries(story.quests).map(([id, q]) => [id, q.stages.map((s) => s.id)]));
       ctx.scripts = new Set(Object.keys(story.scripts));
       ctx.actors = new Map(Object.entries(story.actors).map(([id, a]) => [id, a.name]));
+      // (the build slots' buildings: their prop — the 3D preview's look — and the checks' names)
+      ctx.buildings = new Map(Object.entries(story.buildings).map(([id, b]) => [id, b.prop]));
       for (const e of story.events) storyEvents.set(e.id, e.once);
       for (const s of Object.values(story.scripts)) for (const k of scriptRefs(parseScript(s.lines).nodes).onceKeys) storyOnceKeys.add(k);
     } else console.info(`[editor] campaign "${slug}": a story file could not be read — its items, quests, scripts, actors and events are not checked`);

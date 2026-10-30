@@ -605,6 +605,8 @@ p.le-hint.le-pad:first-child { padding-top: 12px; }
 .le-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 7px; }
 .le-chip-btn { height: 23px; padding: 0 9px; border-radius: 20px; border: 1px solid var(--le-line2); background: var(--le-bg3); color: var(--le-text2); font-size: 11.5px; cursor: pointer; }
 .le-chip-btn:hover { border-color: var(--le-gold-b); color: var(--le-gold2); }
+/* a chip that is on (a build slot's building it holds) */
+.le-chip-btn.is-on { border-color: var(--le-gold-b); color: var(--le-gold2); background: var(--le-bg4); }
 
 /* ---------------------------------------------------------------------------------- viewports */
 .le-viewports {

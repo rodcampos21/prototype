@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { LevelObjectBuilder, bridgeDeckHeight } from '../../engine/level/ObjectBuilder.js';
-import { OBJECT_TYPES, objectBounds, objectCenter } from '../../engine/level/ObjectCatalog.js';
+import { OBJECT_TYPES, BUILDING_KINDS, objectBounds, objectCenter } from '../../engine/level/ObjectCatalog.js';
+import { slotPreview } from '../../engine/level/BuildSlots.js';
 import { buildShadowCasters, isProxyCaster } from '../../engine/world/ShadowCasters.js';
 import { LightPool, sanitizeLightDescriptors } from '../../engine/lighting/LightPool.js';
 import { addGroundSnowCover } from '../../game/SnowCover.js';
@@ -32,6 +33,8 @@ export const BATCH_CHUNK = 16;
  */
 export const BATCH_CHUNK_BIG = 32;
 /** The batching chunk size for a level (by its TileMap). */
+/** Does the preview build this object (a prop type, or a build slot: its preview part)? @param {any} obj */
+const buildable = (obj) => LevelObjectBuilder.isBuildable(obj.type) || obj.type === 'buildSlot';
 const batchChunkFor = (tileMap) => (tileMap && (tileMap.width > 64 || tileMap.depth > 64) ? BATCH_CHUNK_BIG : BATCH_CHUNK);
 /**
  * Render layer of the original meshes of batched props: they leave layer 0 (the merged chunk
@@ -165,6 +168,12 @@ export class ObjectPreview {
    */
   constructor({ textures, parent, lighting }) {
     this.builder = new LevelObjectBuilder({ textures, seed: 42 });
+    /**
+     * A build slot's building → the `building` prop it shows (the campaign's story: `setSlotProp`);
+     * until it is known, a building named like a prop kind is that kind, else a forge.
+     * @type {(id: string) => string}
+     */
+    this.slotProp = (id) => (BUILDING_KINDS.includes(id) ? id : 'forge');
     this.lighting = lighting;
     this.object = new THREE.Group();
     this.object.name = 'Editor:props';
@@ -304,7 +313,7 @@ export class ObjectPreview {
     if (ids == null) {
       const seen = new Set();
       for (const obj of objects) {
-        if (!LevelObjectBuilder.isBuildable(obj.type)) continue;
+        if (!buildable(obj)) continue;
         seen.add(obj.id);
         check(obj.id, obj);
       }
@@ -316,7 +325,7 @@ export class ObjectPreview {
         seenIds.add(id);
         if (!byId) byId = new Map(objects.map((o) => [o.id, o]));
         const obj = byId.get(id);
-        check(id, obj && LevelObjectBuilder.isBuildable(obj.type) ? obj : null);
+        check(id, obj && buildable(obj) ? obj : null);
       }
     }
     // terrain edits: props whose ground samples moved follow the ground
@@ -373,6 +382,15 @@ export class ObjectPreview {
     while (this._queue.size) this.step(tileMap, { budgetMs: Infinity });
   }
 
+  /**
+   * The campaign's buildings' props are known (or changed): the build slots are built again.
+   * @param {(id: string) => string} fn
+   */
+  setSlotProp(fn) {
+    this.slotProp = fn;
+    for (const [id, o] of this._objs) if (o?.type === 'buildSlot') this._queue.add(id);
+  }
+
   /** Throw every build away and rebuild all props from `objects` at once (tests). */
   rebuildAll(objects, tileMap) {
     for (const id of [...this.entries.keys()]) this._remove(id);
@@ -398,7 +416,8 @@ export class ObjectPreview {
     const copy = JSON.parse(sig);
     let built = null;
     try {
-      built = this.builder.build(copy, tileMap);
+      // (a build slot: the one part its preview shows — BuildSlots.js)
+      built = this.builder.build(copy.type === 'buildSlot' ? slotPreview(copy, this.slotProp) : copy, tileMap);
     } catch (err) {
       console.error(`[Viewport3D] building "${obj.id}" (${obj.type}) failed:`, err);
     }

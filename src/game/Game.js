@@ -27,6 +27,7 @@ import { SHIPPED_LEVELS } from './levels.js';
 import { CharacterCreation } from '../engine/ui/CharacterCreation.js';
 import { AtlasScreen } from '../engine/ui/AtlasScreen.js';
 import { FloatSigns } from '../engine/ui/FloatSigns.js';
+import { itemIcon } from '../engine/ui/art/icons/items.js';
 import { GroundItems } from './GroundItems.js';
 import { weatherPhase, weatherPoolOf, rollWeather } from './WeatherRoll.js';
 // (the CombatSystem is imported dynamically in init, on combat levels only: peaceful levels never
@@ -1232,6 +1233,7 @@ export class Game {
       return {
         position: s.position,
         title: sign ? sign.title : s.speaker ? term(s.speaker) : '',
+        icon: sign ? itemIcon(sign.icon) : null,
         lines: sign ? sign.lines : s.pages.lines.map((l, k) => (typeof l === 'string' ? loc(typeof s.pages.keys?.[k] === 'string' ? s.pages.keys[k] : '', l) : '')).filter(Boolean),
         present: () => !s.group || s.group.present,
       };
@@ -1509,7 +1511,7 @@ export class Game {
     this.story = new StoryRunner({ game: this, story: c?.story ?? null, state, levelId: c?.levelId ?? this._storyLevelId() });
     c?.attachStory(this.story);
     this.engine.input.addBindings({ journal: ['KeyB'] }, {});
-    const { storyUIClasses, ResourceBar } = await import('./story/storyUI.js');
+    const { storyUIClasses, ResourceBar, BuildPanel } = await import('./story/storyUI.js');
     this.ui.useStoryUI(storyUIClasses());
     if (this.ui.journal) {
       this.ui.journal.onSound = (name) => this.audio.playSfx(name, { volume: 0.5 });
@@ -1531,6 +1533,10 @@ export class Game {
     if (this.story.inventory) {
       this.ui.useResourceBar(ResourceBar);
       this._resKey = '';
+    }
+    // a story with buildings: the build window (its build slots' Space)
+    if (Object.keys(this.story.story?.buildings ?? {}).length) {
+      this.ui.useBuildPanel(BuildPanel).onSound = (name) => this.audio.playSfx(name, { volume: 0.5 });
     }
   }
 
