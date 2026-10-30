@@ -12,6 +12,7 @@ import { boxUnion } from '../engine/world/Props.js';
 import { SMOKE, DUST_BOX, SMALL_LEVEL, BIG_FOLIAGE_INSTANCES, waterfallMist, southGap, godRayLayout, groundDetailArgs, forestBorderOn, outerSceneryOn } from './LevelLook.js';
 import { LIVE_STORY_TYPES, hasStoryCondition } from '../engine/level/Travel.js';
 import { LEVEL_MAP_TYPES } from '../engine/level/LevelMap.js';
+import { resourceKind } from '../engine/level/ObjectCatalog.js';
 // (the loading screen's step names: namespace 'game', docs/specs/I18N.md §2)
 import { t } from '../engine/i18n/I18n.js';
 import { textPages, pageKeyOf } from '../engine/i18n/ContentKeys.js';
@@ -288,9 +289,10 @@ export class World {
      */
     this._returnList = [];
     /**
-     * Every floating sign (a `signpost` with `opts.float`): where its plate hangs, its title (the
-     * sign's `speaker`, untranslated), its pages with their keys, its live story group (or null).
-     * @type {{ position: THREE.Vector3, speaker: string, pages: { lines: any[], keys: any[] }, group: StoryGroup|null }[]}
+     * Every floating sign (a `signpost` with `opts.float`; a build slot's plot, `slot`: its
+     * object — Game writes its text from the story's buildings): where its plate hangs, its title
+     * (the sign's `speaker`, untranslated), its pages with their keys, its live story group (or null).
+     * @type {{ position: THREE.Vector3, speaker: string, pages: { lines: any[], keys?: any[] }, group: StoryGroup|null, slot?: any }[]}
      */
     this.floatSigns = [];
     /**
@@ -906,7 +908,7 @@ export class World {
     const atMast = (it) => it.kind === 'exit' && this._returnList.some((r) => Math.hypot(r.position.x - it.position.x, r.position.z - it.position.z) < 3);
     for (const it of this.interactables) {
       if (atMast(it)) continue;
-      const kind = it.kind === 'resource' ? `res_${/** @type {any} */ (it.object)?.opts?.kind ?? 'tree'}` : it.kind;
+      const kind = it.kind === 'resource' ? `res_${resourceKind(/** @type {any} */ (it.object)?.opts?.kind)}` : it.kind;
       mark(it.position.x, it.position.z, kind, groupOf.get(it));
     }
     for (const f of this._fireList) mark(f.position.x, f.position.z, 'fire', f.group);
@@ -1027,10 +1029,24 @@ export class World {
             this._interact(obj.id, pos, { radius: 1.2, label: 'Examine', kind: 'mapTable', prompt: new THREE.Vector3(obj.x, b.anchor.y + 1.9, obj.z), text: { speaker: '', ...pages } });
           }
           break;
-        case 'stake':
+        case 'stake': {
           // (a return mast: on the maps, so the way home is found on a big map)
           if (/** @type {any} */ (obj).opts?.kind === 'mast') this._returnList.push({ position: b.anchor.clone(), group: g });
+          // a build slot's plot (BuildSlots.js): Space to begin a building (Game → BuildingSystem)
+          // and its floating sign — what it may hold, what it costs (Game translates it)
+          const slot = /** @type {any} */ (obj).slot;
+          if (slot) {
+            const y = b.anchor.y;
+            const so = /** @type {any} */ (obj).opts ?? {};
+            // (reached from its ropes: half the plot's larger side, and a step)
+            const reach = Math.max(Number(so.width) || 4, Number(so.depth) || 3) / 2 + 0.9;
+            this._interact(obj.id, new THREE.Vector3(obj.x, y, obj.z), {
+              kind: 'buildSlot', label: 'Build', radius: reach, prompt: new THREE.Vector3(obj.x, y + 1.3, obj.z), text: { speaker: '', lines: [] }, object: obj,
+            });
+            this.floatSigns.push({ position: new THREE.Vector3(obj.x, y + 2.8, obj.z), speaker: '', pages: { lines: [] }, group: g, slot: obj });
+          }
           break;
+        }
         case 'building': {
           const bo = /** @type {any} */ (obj).opts ?? {};
           if (bo.kind === 'chest') {
@@ -1052,11 +1068,11 @@ export class World {
           // a full resource is gathered with Space (Game.harvest); a spent one is scenery
           const ro = /** @type {any} */ (obj).opts ?? {};
           if (ro.stage === 'spent') break;
-          const kind = ro.kind === 'stone' || ro.kind === 'herbs' ? ro.kind : 'tree';
+          const kind = resourceKind(ro.kind);
           const y = b.anchor.y;
           this._interact(obj.id, new THREE.Vector3(obj.x, y, obj.z), {
             kind: 'resource', label: kind === 'tree' ? 'Chop' : kind === 'stone' ? 'Break' : 'Gather',
-            radius: kind === 'herbs' ? 1.1 : 1.45, prompt: new THREE.Vector3(obj.x, y + (kind === 'tree' ? 2.0 : 1.3), obj.z),
+            radius: kind === 'herbs' ? 1.1 : kind === 'berries' ? 1.25 : 1.45, prompt: new THREE.Vector3(obj.x, y + (kind === 'tree' ? 2.0 : kind === 'berries' ? 1.5 : 1.3), obj.z),
             text: { speaker: '', lines: [] }, object: obj,
           });
           break;

@@ -293,7 +293,7 @@ Equipment tabs take the Items tab's place), and at the camp the HUD's chest pane
 "inventory": {
   "pack": 6,
   "stack": 5,
-  "grow": [{ "when": "obra.silo >= 2", "pack": 12 }],
+  "grow": [{ "when": "slot:lote-silo >= built", "pack": 12 }],
   "rarity": { "comum": [1, 0.4, 0.15], "incomum": [0.85, 0.3, 0.08], "raro": [0.5, 0.12], "lendario": [0.2] },
   "equipment": { "weapon": "espada-de-viagem", "body": "cota-de-viagem", "head": "elmo-amassado" }
 }
@@ -310,7 +310,7 @@ Equipment tabs take the Items tab's place), and at the camp the HUD's chest pane
 The story files' items say what goes where ([STORY_SCRIPT.md §8](STORY_SCRIPT.md#8-story-files)):
 `pack: true` marks a **backpack item** (a gathered resource: `madeira`, `pedra` …), `rarity` names a
 row of the table above, `icon` names its icon (`src/engine/ui/art/icons/items.js`: `wood`, `stone`,
-`herbs`, `sword`, `armor`, `helm`, `gloves`, `boots`, `ring`, `pack` and the core icons; an unknown
+`herbs`, `food`, `sword`, `armor`, `helm`, `gloves`, `boots`, `ring`, `pack` and the core icons; an unknown
 name shows a gem), `slot` and `bonus` (`{ hp, mp, atk, def }`, whole numbers) make an **equipment**
 item.
 
@@ -346,6 +346,57 @@ item.
 **Checks.** `level:check --campaign` reads the `grow` conditions, warns when a starting item is
 not declared or is not for its slot, counts the starting equipment as used, counts a resource's item
 as given, and warns about an item whose `rarity` the table lacks.
+
+### 4.3 Buildings and build slots
+
+*(Optional; additive, October 2026 — M4.)* A camp grows on **build slots**: the player chooses
+**what** to raise, never **where**. A level holds each plot as a `buildSlot` object
+([OBJECT_CATALOG.md](OBJECT_CATALOG.md#buildslot)) listing the buildings it may hold; the story files
+hold the **buildings** table ([STORY_SCRIPT.md §8](STORY_SCRIPT.md#8-story-files)):
+
+```json
+"buildings": {
+  "forja": {
+    "name": "Forja", "text": "Fogo e bigorna: aqui o aço toma forma.",
+    "cost": { "madeira": 12, "pedra": 10, "comida": 4 }, "days": 1, "prop": "forge",
+    "start": "obra.comecar-forja",
+    "done": ["toast A forja do acampamento ficou pronta."]
+  }
+}
+```
+
+| Field | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `name` | text (a term) | its id in title case | The floating sign's title (translated as a term). |
+| `text` | text | `""` | The sign's line under the title (a content unit, keyed like an item's text). |
+| `cost` | item → whole number ≥ 1 | `{}` | Paid **from the camp's chest** (the stock) when the player begins it. |
+| `days` | 1–365 | 1 | The mornings it takes to stand. |
+| `prop` | `forge` · `silo` · `lodge` · `altar` · `chest` | `forge` | The `building` prop it shows, going up (`frame`) and built. |
+| `start` | script id or lines | none | Run (a normal run: it may hold the player) when the player begins it at its slot. |
+| `done` | script id or lines | none | Run in the **background** the morning it stands. Inline lines are kept as the scripts `building.<id>.start` / `.done` (keyed like any script). |
+
+- **The slot in the game.** The game expands each slot at load (`src/engine/level/BuildSlots.js`)
+  into what the world builds and shows with the story: the roped plot (the slot's own id) while it is
+  empty, each building's frame (`<slot>.<building>.frame`) and the building (`<slot>.<building>`),
+  and a marker in front (`<slot>.front`) for scripts. All of it is built at load; the slot's
+  `when` / `unless` apply to all of it.
+- **The sign and Space.** While empty, a floating sign hangs over the plot: one building's name,
+  text, cost and days, or — several — a line each. Space on the plot (*Construir*) says what the
+  chest holds; with the cost there it offers to begin it (several: a choice), else it says what is
+  still missing. Beginning pays from the chest, puts the frame up and queues `start`
+  (`BuildingSystem`, `src/game/building/`).
+- **Mornings.** Every morning (5:00 passing, a rest past it, a journey) a building going up is a
+  morning nearer; the morning its days are done it stands and `done` runs — before the story files'
+  `morning` events, which see it standing.
+- **Scripts.** `building:<slot>` is the building there (`none` while empty), `slot:<slot>` how far it
+  stands (`empty`, `frame`, `built`; `slot:lote-silo >= built`), and `build <slot> <building>
+  [built]` / `build <slot> none` change a slot without its cost
+  ([STORY_SCRIPT.md §3, §5](STORY_SCRIPT.md#3-conditions)).
+- **The save.** The story part keeps `slots` (slot id → `{ b, stage, left }`; absent while none).
+
+**Checks.** `level:check --campaign` reports a slot whose building the table lacks (an error), a
+slot with none, a `build` naming an unknown building, a building's script that is missing, and an
+undeclared cost item; a building's `done` script is checked as a background run.
 ## 5. Story: flags, conditions, chapters
 
 The story itself — conditions, scripts, events, talk scripts, actors, items, quests, cutscenes,

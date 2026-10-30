@@ -526,16 +526,16 @@ export function vignetteSprite(w, h = w) {
 export const POI_COLORS = Object.freeze({ door: '#e9d49a', sign: '#f2d27a', well: '#9cc8f0', object: '#f2d27a' });
 
 /**
- * The resources to gather (a tree, a stone, herbs): a small dot each, in the colour of what it
- * gives — wood amber (green would sink into the map's grass and forest), stone pale grey, the
- * herbs' flowers pink.
+ * The resources to gather (a tree, a stone, herbs, berries): a small dot each, in the colour of
+ * what it gives — wood amber (green would sink into the map's grass and forest), stone pale grey,
+ * the herbs' flowers pink, the berries red.
  */
-export const RESOURCE_COLORS = Object.freeze({ res_tree: '#e0a352', res_stone: '#dcd8ce', res_herbs: '#e58fc0' });
+export const RESOURCE_COLORS = Object.freeze({ res_tree: '#e0a352', res_stone: '#dcd8ce', res_herbs: '#e58fc0', res_berries: '#e8473f' });
 
 /** A marker's reach (with its outline) by kind: one closer than a clear pixel to the arrow moves aside. */
-export const MARKER_REACH = Object.freeze({ enemy: 2, boss: 4, campfire: 2, waystone: 3, npc: 2, party: 3, chest: 3, door: 2, sign: 2, well: 2, object: 2, return: 5, res_tree: 2, res_stone: 2, res_herbs: 2 });
+export const MARKER_REACH = Object.freeze({ enemy: 2, boss: 4, campfire: 2, waystone: 3, npc: 2, party: 3, chest: 3, door: 2, sign: 2, well: 2, object: 2, return: 5, res_tree: 2, res_stone: 2, res_herbs: 2, res_berries: 2 });
 /** The order markers are drawn in (later on top). */
-export const MARKER_ORDER = Object.freeze({ res_tree: 0, res_stone: 0, res_herbs: 0, door: 0, sign: 0, well: 0, object: 0, campfire: 0, chest: 1, waystone: 1, return: 1, npc: 2, enemy: 3, boss: 3, party: 4 });
+export const MARKER_ORDER = Object.freeze({ res_tree: 0, res_stone: 0, res_herbs: 0, res_berries: 0, door: 0, sign: 0, well: 0, object: 0, campfire: 0, chest: 1, waystone: 1, return: 1, npc: 2, enemy: 3, boss: 3, party: 4 });
 /** The marker kinds drawn in a look of their own (any other is the gold gem of a point of interest). */
 const OWN_LOOK = new Set(['enemy', 'boss', 'campfire', 'waystone', 'npc', 'party', 'chest', 'return', ...Object.keys(RESOURCE_COLORS)]);
 

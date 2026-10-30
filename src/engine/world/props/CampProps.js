@@ -513,12 +513,12 @@ function buildingForge(f, b, w, d, rng) {
   // the chimney through the awning, and the hearth before it in the open, its bed of embers
   b.box('chimney_stone', [0.8, F.chimneyTop, 0.7], { at: [F.x, F.chimneyTop / 2, F.chimneyZ], faces: { ny: false } });
   b.box('stone_brick', [1.5, 0.8, 1.5], { at: [F.x, 0.4, (F.chimneyZ + 0.2 + F.z + 0.55) / 2 - 0.05], faces: { ny: false } });
-  b.lathe('ash', [{ y: 0.8, r: 0.45 }, { y: 0.85, r: 0.32 }, { y: 0.87, r: 0.02 }], { segments: 8, at: [F.x, 0, F.z], smooth: true });
+  b.lathe(f.extra.material('ash'), [{ y: 0.8, r: 0.45 }, { y: 0.85, r: 0.32 }, { y: 0.87, r: 0.02 }], { segments: 8, at: [F.x, 0, F.z], smooth: true });
   // the bellows beside the hearth: two boards and the leather between
   b.push([F.x - 1.05, 0.55, F.z - 0.15], [0, 0, -0.25]);
   b.box('wood_planks_dark', [0.5, 0.06, 0.32], { at: [0, 0.12, 0] });
   b.box('wood_planks_dark', [0.5, 0.06, 0.32], { at: [0, -0.12, 0] });
-  b.box('canvas', [0.42, 0.2, 0.28], { at: [-0.04, 0, 0], color: [0.45, 0.32, 0.22] });
+  b.box(f.extra.material('canvas'), [0.42, 0.2, 0.28], { at: [-0.04, 0, 0], color: [0.45, 0.32, 0.22] });
   b.box(TRIM, [0.3, 0.05, 0.05], { at: [-0.4, 0.12, 0] });
   b.pop();
   b.box(TRIM, [0.1, 0.55, 0.1], { at: [F.x - 1.05, 0.27, F.z - 0.15] });
@@ -531,7 +531,7 @@ function buildingForge(f, b, w, d, rng) {
   b.box('metal', [0.06, 0.06, 0.3], { at: [ax - 0.05, 0.71, az + 0.02], rot: [0, 0.6, 0], color: [0.35, 0.35, 0.38] });
   // the quench barrel and a heap of charcoal
   b.lathe('wood_planks_dark', [{ y: 0, r: 0.26 }, { y: 0.35, r: 0.3 }, { y: 0.7, r: 0.26 }], { segments: 8, at: [hw - 0.45, 0, -0.35], capTop: true, smooth: true });
-  b.lathe('ash', [{ y: 0, r: 0.42 }, { y: 0.18, r: 0.3 }, { y: 0.28, r: 0.05 }], { segments: 7, at: [-hw + 0.5, 0.1, hd - 0.55], smooth: true, color: [0.35, 0.33, 0.34] });
+  b.lathe(f.extra.material('ash'), [{ y: 0, r: 0.42 }, { y: 0.18, r: 0.3 }, { y: 0.28, r: 0.05 }], { segments: 7, at: [-hw + 0.5, 0.1, hd - 0.55], smooth: true, color: [0.35, 0.33, 0.34] });
   const flame = f.flame({ width: 0.6, height: 0.6, seed: rng.range(0, 100), glowSize: 1.6, glowIntensity: 0.5 });
   flame.object.position.set(F.x, F.y, F.z);
   return flame;
@@ -575,12 +575,12 @@ function buildingAltar(f, b, rng) {
   b.box('stone_brick', [1.5, 0.14, 0.75], { at: [0, 0.68, 0], off: [0.3, 0.1] });
   b.box('wood_planks', [1.2, 0.06, 0.4], { at: [0, 0.2, 0.18] });
   // the salt stone in the middle (pale, catching the light), the candles, shells and spines
-  b.lathe('canvas', [{ y: 0, r: 0.12 }, { y: 0.16, r: 0.13 }, { y: 0.28, r: 0.04 }], { segments: 6, at: [0, 0.75, -0.05], smooth: true, capBottom: true, color: [1.35, 1.35, 1.4] });
-  for (const s of [-1, 1]) b.lathe('canvas', [{ y: 0, r: 0.04 }, { y: 0.14, r: 0.035 }], { segments: 6, at: [s * 0.45, 0.75, 0.05], capTop: true, color: [1.15, 1.1, 1.0] });
+  b.lathe(f.extra.material('canvas'), [{ y: 0, r: 0.12 }, { y: 0.16, r: 0.13 }, { y: 0.28, r: 0.04 }], { segments: 6, at: [0, 0.75, -0.05], smooth: true, capBottom: true, color: [1.35, 1.35, 1.4] });
+  for (const s of [-1, 1]) b.lathe(f.extra.material('canvas'), [{ y: 0, r: 0.04 }, { y: 0.14, r: 0.035 }], { segments: 6, at: [s * 0.45, 0.75, 0.05], capTop: true, color: [1.15, 1.1, 1.0] });
   for (let k = 0; k < 7; k++) {
     const x = -0.68 + k * 0.226;
-    if (k % 2) b.lathe('canvas', [{ y: 0, r: 0.07 }, { y: 0.04, r: 0.05 }, { y: 0.05, r: 0.01 }], { segments: 5, at: [x, 0.75, 0.3], color: [1.25, 1.05, 0.95] });
-    else b.tri('canvas', [x - 0.03, 0.75, 0.32], [x + 0.03, 0.75, 0.32], [x, 0.98, 0.36], [0, 0], [0.05, 0], [0.025, 0.2], { color: [1.2, 1.18, 1.1] });
+    if (k % 2) b.lathe(f.extra.material('canvas'), [{ y: 0, r: 0.07 }, { y: 0.04, r: 0.05 }, { y: 0.05, r: 0.01 }], { segments: 5, at: [x, 0.75, 0.3], color: [1.25, 1.05, 0.95] });
+    else b.tri(f.extra.material('canvas'), [x - 0.03, 0.75, 0.32], [x + 0.03, 0.75, 0.32], [x, 0.98, 0.36], [0, 0], [0.05, 0], [0.025, 0.2], { color: [1.2, 1.18, 1.1] });
   }
 }
 
@@ -602,7 +602,7 @@ function buildingChest(f, b, rng) {
   }
   b.box('metal', [0.18, 0.2, 0.04], { at: [0, 0.12 + H - 0.06, D / 2 + 0.02], color: [1.4, 1.1, 0.55] });
   // a sack and a coil of rope beside
-  b.lathe('canvas', [{ y: 0, r: 0.2 }, { y: 0.2, r: 0.26 }, { y: 0.42, r: 0.18 }, { y: 0.5, r: 0.06 }], { segments: 8, at: [W / 2 + 0.28, 0, 0.12], smooth: true, capBottom: true, color: [0.85, 0.75, 0.6] });
+  b.lathe(f.extra.material('canvas'), [{ y: 0, r: 0.2 }, { y: 0.2, r: 0.26 }, { y: 0.42, r: 0.18 }, { y: 0.5, r: 0.06 }], { segments: 8, at: [W / 2 + 0.28, 0, 0.12], smooth: true, capBottom: true, color: [0.85, 0.75, 0.6] });
   b.lathe('rope', [{ y: 0, r: 0.2 }, { y: 0.1, r: 0.2 }], { segments: 10, at: [-W / 2 - 0.25, 0, 0.18], capTop: true, color: [0.95, 0.9, 0.8] });
 }
 /**

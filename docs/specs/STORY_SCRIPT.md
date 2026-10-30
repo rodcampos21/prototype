@@ -113,13 +113,15 @@ visits                                 (in a talk script) conversations with thi
 party >= 2                             how many members the player's party has (0–3)
 party:sela                             that villager (its id, actor or name, in any case) is in the party
 player = Rodrigo                       the name of the player's character (text; mostly `${player}`)
+building:lote-forja = forja            what a build slot holds (text; `none` while empty — campaigns)
+slot:lote-silo >= built                how far a build slot stands: empty | frame | built (0 | 1 | 2)
 ```
 
 ```
 expr  := or ; or := and ('or' | '||') and … ; and := not ('and' | '&&') not … ; not := ('not' | '!') not | atom
 atom  := '(' expr ')' | 'true' | 'false' | ref [ ('=' | '==' | '!=' | '<' | '<=' | '>' | '>=') value ]
 ref   := name | kind ':' name | hour | day | gold | chapter | level | weather | visits | party | player
-kind  := item | stock | quest | stage | visits | visited | done | party
+kind  := item | stock | quest | stage | visits | visited | done | party | building | slot
 value := number | 'true' | 'false' | name
 number := plain decimals: 3, -2, 0.5, .5  (no exponent: 1e3 is neither a number nor a name)
 name  := letters, digits, _ . -  (not a number)
@@ -127,9 +129,10 @@ name  := letters, digits, _ . -  (not a number)
 
 - A reference standing alone is true when it is not 0 / '' / `none` (`quest:x` alone: started);
   `true` / `false` alone are constants. Words (`and`, `true`, `gold` …) are read in any case.
-- **The right of a comparison.** Text references (`quest:`, `chapter`, `level`, `weather`, `player`) compare
+- **The right of a comparison.** Text references (`quest:`, `building:`, `chapter`, `level`, `weather`, `player`) compare
   only with `=` / `!=` to a word; a quest compares only with its four states. A stage reference
-  compares with a **stage name** (or a number). Every other reference compares with a number,
+  compares with a **stage name** (or a number); a `slot:` with `empty`, `frame` or `built` (or 0–2;
+  any other word is an error). Every other reference compares with a number,
   `true` / `false` (1 / 0: `met = true`) or a **variable name** (`gold >= inn.price`); a reserved
   word or a game value there is an error (`gold >= day` — two game values cannot be compared).
 - **Stages.** `stage:<quest>` is the number of the quest's current stage — its place among the
@@ -309,6 +312,7 @@ name has spaces.
 | state | `set <flag>` · `clear <flag>` · `var <name> = / + / - <n>` | flags and variables |
 | | `give <item> [n]` · `take <item> [n]` | items (`gold` is money); a toast says what changed hands |
 | | `quest <id> start [title]` · `quest <id> stage <stage> [text]` · `quest <id> done` · `quest <id> fail` | quests (the journal; toasts "New quest", "Quest updated" …); the title may use `${…}`, but it is a name, translated as a term: a title or a stage text with values is saved filled in and stays English (write them without values, I18N.md §4.5); a stage given to a finished or failed quest opens it again |
+| | `build <slot> <building> [built]` · `build <slot> none` | campaigns: a build slot holds that building of the story's `buildings` — going up over its days, or `built` at once — **without its cost** (Space at the slot pays from the chest) and without its `start` script; `none` empties it (CAMPAIGN_FORMAT.md §4.3). It may run in the background |
 | world | `home <who> [x z]` | where a villager lives from now on (saved per level) |
 | | `time <h>` / `time <hh:mm>` · `weather clear / rain / snow / auto` | the campaign's clock moves **forward** to that hour (0–24; minutes 00–59; inside a level with its own hour: the hour outside) — the day turns when it passes midnight and the `time` events between run, also for a jump of 12 hours or more · the weather (in a room — `environment.interior` — it changes outside: none shows in the room), **held** until `weather auto`: while held, no map's `environment.weatherPool` rolls it (LEVEL_FORMAT.md §9); `weather auto` lets the pool roll again at once (a campaign keeps the hold in its save) |
 | | `travel <level> [entrance]` | campaigns: go to another level of the campaign — the script goes on there (a level the campaign does not list ends the run) |
@@ -458,6 +462,10 @@ with a warning). They are merged in that order; a name declared twice keeps the 
   [CAMPAIGN_FORMAT.md §4.2](CAMPAIGN_FORMAT.md#42-the-inventory-backpack-stock-and-equipment);
   an item's count (`item:<id>`) is then what is carried and what the camp's stock holds, and
   `stock:<id>` the stock alone.
+- `buildings` (campaigns): what build slots may hold — `name`, `text` (keyed like an item's),
+  `cost` (paid from the camp's chest), `days`, `prop`, and `start` / `done` (a script id, or the
+  lines inline: the scripts `building.<id>.start` / `.done`; `done` runs in the background) —
+  [CAMPAIGN_FORMAT.md §4.3](CAMPAIGN_FORMAT.md#43-buildings-and-build-slots). `none` is no building id.
 - `quests`: title, text, named `stages` (their order is what `stage:x >= y` compares), `goals`
   (ticked in the journal while `done` holds — a condition as scripts write it: `done: gold >= 10`
   reads the purse).
@@ -648,7 +656,9 @@ moves the campaign's clock to the morning outside.
 **The morning.** When the clock passes 5:00 going forward (or a rest takes the player to the
 morning) every flag whose name starts with `res.` is cleared: the flags a gathered `resource` set
 (OBJECT_CATALOG.md *resource*), so what was chopped, broken or picked grows back. Do not give a flag
-of your own that prefix. An atlas journey moves the clock on by its hours as time passing
+of your own that prefix. Then every building going up on a build slot is a morning nearer — one
+whose days are done stands and runs its `done` script (CAMPAIGN_FORMAT.md §4.3) — and then the
+story files' `morning` events run. An atlas journey moves the clock on by its hours as time passing
 (CAMPAIGN_FORMAT.md §4.1); the variable `expeditions.<level>` counts the expeditions the map made
 to a level.
 

@@ -299,7 +299,7 @@
     },
     "grow": [
       {
-        "when": "obra.silo >= 2",
+        "when": "slot:lote-silo >= built",
         "pack": 12
       }
     ],

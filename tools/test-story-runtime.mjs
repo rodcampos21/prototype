@@ -1597,6 +1597,77 @@ begin('the backpack, the camp\'s stock and the equipment (CAMPAIGN_FORMAT.md §4
   eq('no campaign inventory: no limit, no equipment', [plain.packLimit(), plain.packRoom('wood'), plain.inventoryData().pack, plain.inventoryData().equipment], [0, Infinity, null, null]);
 }
 
+begin('build slots and buildings (BuildSlots.js, BuildingSystem.js, CAMPAIGN_FORMAT.md §4.3)');
+{
+  const { expandBuildSlots, slotOptions } = await import('../src/engine/level/BuildSlots.js');
+  const { buildStory: build } = await import('../src/game/campaign/StoryFormat.js');
+  const { parseScript: parse, scriptRefs } = await import('../src/engine/level/StoryScript.js');
+  // the table
+  const raw = {
+    format: 'luminati-story', version: 1,
+    items: { wood: { pack: true }, food: { pack: true } },
+    buildings: {
+      forge: { name: 'Forge', text: 'Fire and anvil.', cost: { wood: 3, food: 1 }, days: 2, prop: 'forge', start: ['set begun'], done: ['set stands'] },
+      shed: { cost: { wood: 0, gold: 2 }, prop: 'castle', days: 0 },
+      none: {},
+    },
+    scripts: {},
+  };
+  const { story, warnings } = build([{ name: 'main.json', text: JSON.stringify(raw) }]);
+  const f = story.buildings.forge;
+  eq('buildings: cost, days, prop, inline start / done kept as scripts', [f.cost.wood, f.cost.food, f.days, f.prop, f.start, f.done, story.scripts[f.done]?.lines], [3, 1, 2, 'forge', 'building.forge.start', 'building.forge.done', ['set stands']]);
+  eq('… a bad cost, prop and days warned (dropped / defaults); "none" is no building id', [Object.keys(story.buildings.shed.cost).length, story.buildings.shed.prop, story.buildings.shed.days, 'none' in story.buildings, warnings.length >= 4], [0, 'forge', 1, false, true]);
+  // the expansion
+  eq('slotOptions: a list or a text, each once', [slotOptions({ options: 'forge, silo forge' }), slotOptions({ options: ['silo', 3, 'x y'] }), slotOptions({})], [['forge', 'silo'], ['silo'], []]);
+  const objs = expandBuildSlots([{ type: 'tree', id: 't' }, { type: 'buildSlot', id: 'lot', x: 10, z: 5, rotation: 0, when: 'camp', options: 'forge', opts: { width: 4, depth: 3 } }], () => 'forge');
+  eq('expand: the plot (the slot\'s id), the frame and the building of each option, the front marker',
+    objs.map((o) => [o.type, o.id, o.when ?? '']),
+    [['tree', 't', ''], ['stake', 'lot', '(camp) and slot:lot = empty'], ['building', 'lot.forge.frame', '(camp) and building:lot = forge and slot:lot = frame'], ['building', 'lot.forge', '(camp) and building:lot = forge and slot:lot = built'], ['marker', 'lot.front', '']]);
+  eq('… the marker in front (local +z), the plot\'s options', [objs[4].x, objs[4].z, objs[1].slot.options], [10, 7.8, ['forge']]);
+  const same = [{ type: 'tree', id: 't' }];
+  ok('… a level without slots: the same array', expandBuildSlots(same, () => '') === same);
+  // conditions
+  const s = new StoryState(story);
+  const read = storyReader(() => s, { level: () => 'camp' });
+  const holds = (/** @type {string} */ c) => evalCondition(cachedCondition(c), read);
+  eq('empty: building none, slot empty', [holds('building:lot = none'), holds('slot:lot = empty'), holds('slot:lot >= frame')], [true, true, false]);
+  s.setSlot('lot', 'forge', 1, 2);
+  eq('going up: building forge, slot frame (1)', [holds('building:lot = forge'), holds('slot:lot = frame'), holds('slot:lot >= frame and slot:lot < built'), holds('slot:lot = 1')], [true, true, true, true]);
+  ok('a slot compared with a word that is no stage is an error', parse(['if slot:lot >= done', '  stop']).errors.length === 1);
+  const refs = scriptRefs(parse(['if slot:lot >= built', '  build lot forge built']).nodes);
+  ok('… its word is no variable read; build names the building', !refs.reads.has('built') && refs.buildings.has('forge'), [...refs.reads]);
+  const argsOf = (/** @type {string} */ line) => /** @type {any} */ (parse([line]).nodes[0]).args;
+  eq('build: its forms; a bad one is an error', [argsOf('build lot forge'), argsOf('build lot none'), parse(['build lot forge done']).errors.length], [{ slot: 'lot', building: 'forge', built: false }, { slot: 'lot', building: '', built: false }, 1]);
+  // saved
+  const back = StoryState.fromJSON(JSON.parse(JSON.stringify(s.toJSON())), story);
+  eq('the slots are saved and read back (untrusted: a bad entry dropped)', [back.slot('lot'), StoryState.fromJSON({ slots: { a: { b: 'x', stage: 3 }, '': { b: 'x', stage: 2 } } }).slots], [{ b: 'forge', stage: 1, left: 2 }, Object.create(null)]);
+  // the system
+  const g = stubGame();
+  const r = new StoryRunner({ game: g, story, state: new StoryState(story), levelId: 'camp' });
+  const B = r.buildings;
+  r.state.stock.wood = 2;
+  eq('missing / affordable: what the chest lacks', [B.missing('forge'), B.affordable('forge'), B.affordable('nothing')], [{ wood: 1, food: 1 }, false, false]);
+  ok('begin: refused without the cost', B.begin('lot', 'forge') === false && !r.state.slot('lot'));
+  r.state.stock.wood = 5;
+  r.state.stock.food = 1;
+  ok('begin: paid from the chest, the slot going up, the start script queued', B.begin('lot', 'forge') && r.state.stocked('wood') === 2 && r.state.stocked('food') === 0 && r.state.slot('lot')?.stage === 1 && r.queue.some((q) => q.key === 'build:lot'));
+  ok('… a taken slot is refused', B.begin('lot', 'forge') === false);
+  B.morning();
+  eq('a morning: one nearer (2 days)', [r.state.slot('lot')?.stage, r.state.slot('lot')?.left, r.bgQueue.length], [1, 1, 0]);
+  B.morning();
+  eq('the next: it stands, its done script queued (background)', [r.state.slot('lot')?.stage, r.bgQueue.some((q) => q.key === 'built:lot')], [2, true]);
+  B.place('lot2', 'forge', true);
+  B.place('lot', '');
+  eq('place (build): built at once, or the slot emptied', [r.state.slot('lot2')?.stage, r.state.slot('lot')], [2, null]);
+  const sign = B.sign(['forge']);
+  eq('sign: one building — its name, text, cost and days', [sign.title, sign.lines.length, sign.lines[1].includes('3') && sign.lines[2].includes('2')], ['Forge', 3, true]);
+  eq('… several: a plot, one line each (an unknown one left out)', [B.sign(['forge', 'shed', 'nothing']).lines.length, B.sign(['forge', 'nothing']).lines.length], [2, 3]);
+  B.place('lot3', 'forge');
+  r.state.version = 0;
+  r._morning();
+  eq('the runner\'s morning advances the slots', r.state.slot('lot3')?.left, 1);
+}
+
 begin('items dropped on the ground (GroundItems.js)');
 {
   const { GroundItems, LIFETIME } = await import('../src/game/GroundItems.js');

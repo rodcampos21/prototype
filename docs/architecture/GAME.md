@@ -24,6 +24,8 @@
 > [`src/game/combat/`](../../src/game/combat/) ([§15](#15-combat-combat-levels-only)) and the
 > campaign modules in [`src/game/campaign/`](../../src/game/campaign/) ([§3.9](#39-campaigns-the-level-half-and-swaplevel)),
 > the story runtime in [`src/game/story/`](../../src/game/story/StoryRunner.js) ([§3.10](#310-the-story-runtime)),
+> the build slots' rules in [`src/game/building/`](../../src/game/building/BuildingSystem.js)
+> (CAMPAIGN_FORMAT.md §4.3; the level side in [`BuildSlots.js`](../../src/engine/level/BuildSlots.js)),
 > the party in [`src/game/party/`](../../src/game/party/Party.js) ([§3.11](#311-the-party)).
 > Where this page and the code disagree, the code wins.
 >

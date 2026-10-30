@@ -991,6 +991,7 @@ function storyHeld(raw) {
   const out = [];
   const add = (kind, holder, text, key) => { if (typeof text === 'string' && text.trim()) out.push({ kind, holder, en: text.trim(), key: toGuid(key) }); };
   for (const [id, item] of storySection(raw, 'items')) if (isPlain(item)) add('item', `item\u0000${id}`, item.text, ownOf(ownOf(item, 'textKeys'), 'text'));
+  for (const [id, b] of storySection(raw, 'buildings')) if (isPlain(b)) add('building', `building\u0000${id}`, b.text, ownOf(ownOf(b, 'textKeys'), 'text'));
   for (const [id, q] of storySection(raw, 'quests')) {
     if (!isPlain(q)) continue;
     const qk = isPlain(ownOf(q, 'textKeys')) ? q.textKeys : {};
@@ -1011,7 +1012,7 @@ function storyHeld(raw) {
     for (const [n, texts] of lineKinds(all).text) add('line', holder, texts.join('\n'), splitLineTag(all[n - 1]).tag);
   };
   for (const [id, v] of storySection(raw, 'scripts')) lines(`script\u0000${id}`, v);
-  for (const [sec, field] of /** @type {const} */ ([['actors', 'talk'], ['events', 'run']])) {
+  for (const [sec, field] of /** @type {const} */ ([['actors', 'talk'], ['events', 'run'], ['buildings', 'start'], ['buildings', 'done']])) {
     for (const [id, e] of storySection(raw, sec)) if (isPlain(e) && Array.isArray(e[field])) lines(`${sec}\u0000${id}`, e[field]);
   }
   return out;
@@ -1040,16 +1041,20 @@ export function carryStoryFile(prev, raw, mint, used = new Set()) {
   const heldBy = new Map();
   /** @param {string} kind @param {string} holder @param {Slot[]} ss */
   const hold = (kind, holder, ...ss) => { for (const x of ss) heldBy.set(x, { kind, holder }); };
-  const prevItems = new Map(storySection(prev, 'items'));
-  for (const [id, item] of storySection(raw, 'items')) {
-    if (!isPlain(item)) continue;
-    const s = typeof item.text === 'string' ? item.text : '';
-    if (!s.trim()) { writers.push(() => { if (hasOwn(item, 'textKeys')) delete item.textKeys; }); continue; }
-    const old = prevItems.get(id);
-    const t = slot({ cands: isPlain(old) && typeof old.text === 'string' && old.text.trim() ? [ownOf(ownOf(old, 'textKeys'), 'text')] : [], seed: `item.${id}|${s}`, info: { text: s }, en: s.trim() });
-    slots.push(t);
-    hold('item', `item\u0000${id}`, t);
-    writers.push(() => { item.textKeys = { text: t.key }; });
+  // (an item's and a building's text: one key each, by id)
+  for (const sec of /** @type {const} */ (['items', 'buildings'])) {
+    const what = sec === 'items' ? 'item' : 'building';
+    const prevOf = new Map(storySection(prev, sec));
+    for (const [id, item] of storySection(raw, sec)) {
+      if (!isPlain(item)) continue;
+      const s = typeof item.text === 'string' ? item.text : '';
+      if (!s.trim()) { writers.push(() => { if (hasOwn(item, 'textKeys')) delete item.textKeys; }); continue; }
+      const old = prevOf.get(id);
+      const t = slot({ cands: isPlain(old) && typeof old.text === 'string' && old.text.trim() ? [ownOf(ownOf(old, 'textKeys'), 'text')] : [], seed: `${what}.${id}|${s}`, info: { text: s }, en: s.trim() });
+      slots.push(t);
+      hold(what, `${what}\u0000${id}`, t);
+      writers.push(() => { item.textKeys = { text: t.key }; });
+    }
   }
   const prevQuests = new Map(storySection(prev, 'quests'));
   for (const [id, q] of storySection(raw, 'quests')) {
@@ -1117,7 +1122,7 @@ export function carryStoryFile(prev, raw, mint, used = new Set()) {
     hold('line', `script\u0000${id}`, ...ss);
     writers.push(() => { scripts[id] = writeScript(plan); });
   }
-  for (const [sec, field] of /** @type {const} */ ([['actors', 'talk'], ['events', 'run']])) {
+  for (const [sec, field] of /** @type {const} */ ([['actors', 'talk'], ['events', 'run'], ['buildings', 'start'], ['buildings', 'done']])) {
     const entries = storySection(raw, sec);
     const prevBy = byOccurrence(storySection(prev, sec));
     const occ = occurrenceKeys(entries.map(([id]) => id));
@@ -1715,6 +1720,12 @@ export function storyFileTexts(raw) {
     const k = ownOf(ownOf(item, 'textKeys'), 'text');
     out.push({ key: isGuid(k) ? k : '', text: s, where: `item ${id} › text`, field: `item ${id} › text`, set: (key) => { keysHolder(item).text = key; } });
   }
+  for (const [id, b] of storySection(raw, 'buildings')) {
+    const s = isPlain(b) && typeof b.text === 'string' ? b.text.trim() : '';
+    if (!s) continue;
+    const k = ownOf(ownOf(b, 'textKeys'), 'text');
+    out.push({ key: isGuid(k) ? k : '', text: s, where: `building ${id} › text`, field: `building ${id} › text`, set: (key) => { keysHolder(b).text = key; } });
+  }
   for (const [id, q] of storySection(raw, 'quests')) {
     if (!isPlain(q)) continue;
     const qk = () => (isPlain(ownOf(q, 'textKeys')) ? q.textKeys : {});
@@ -1745,9 +1756,9 @@ export function storyFileTexts(raw) {
   }
   const scripts = ownOf(raw, 'scripts');
   for (const [id] of storySection(raw, 'scripts')) scriptTexts(scripts, id, `script ${id}`, out);
-  for (const [sec, field] of /** @type {const} */ ([['actors', 'talk'], ['events', 'run']])) {
+  for (const [sec, field] of /** @type {const} */ ([['actors', 'talk'], ['events', 'run'], ['buildings', 'start'], ['buildings', 'done']])) {
     for (const [id, e] of storySection(raw, sec)) {
-      if (isPlain(e) && Array.isArray(e[field])) scriptTexts(e, field, `${sec === 'actors' ? 'actor' : 'event'} ${id} › ${field}`, out);
+      if (isPlain(e) && Array.isArray(e[field])) scriptTexts(e, field, `${sec === 'actors' ? 'actor' : sec === 'buildings' ? 'building' : 'event'} ${id} › ${field}`, out);
     }
   }
   return out;
@@ -1764,7 +1775,7 @@ function fileKeys(texts, raw, kind) {
   const out = texts.map((t) => t.key).filter(Boolean);
   if (kind === 'story') {
     for (const [, v] of storySection(raw, 'scripts')) out.push(...scriptTags(v));
-    for (const [sec, field] of /** @type {const} */ ([['actors', 'talk'], ['events', 'run']])) for (const [, e] of storySection(raw, sec)) if (isPlain(e)) out.push(...scriptTags(e[field]));
+    for (const [sec, field] of /** @type {const} */ ([['actors', 'talk'], ['events', 'run'], ['buildings', 'start'], ['buildings', 'done']])) for (const [, e] of storySection(raw, sec)) if (isPlain(e)) out.push(...scriptTags(e[field]));
   }
   return out;
 }
@@ -1852,6 +1863,9 @@ export function fileKeyIssues(kind, file) {
     for (const [id, item] of storySection(file, 'items')) {
       if (isPlain(item) && ownOf(item, 'textKeys') !== undefined && !(typeof item.text === 'string' && item.text.trim())) strayAt(`item ${id} › text`);
     }
+    for (const [id, b] of storySection(file, 'buildings')) {
+      if (isPlain(b) && ownOf(b, 'textKeys') !== undefined && !(typeof b.text === 'string' && b.text.trim())) strayAt(`building ${id} › text`);
+    }
     for (const [id, q] of storySection(file, 'quests')) {
       const qk = ownOf(q, 'textKeys');
       if (!isPlain(qk)) continue;
@@ -1867,8 +1881,8 @@ export function fileKeyIssues(kind, file) {
       (Array.isArray(qg) ? qg : []).forEach((g, k) => { if (g !== null && !(isPlain(goals[k]) && typeof goals[k].text === 'string' && goals[k].text.trim())) strayAt(`quest ${id} › goal[${k}]`); });
     }
     for (const [id, v] of storySection(file, 'scripts')) scriptStray(v, `script ${id}`);
-    for (const [sec, field] of /** @type {const} */ ([['actors', 'talk'], ['events', 'run']])) {
-      for (const [id, e] of storySection(file, sec)) if (isPlain(e) && Array.isArray(e[field])) scriptStray(e[field], `${sec === 'actors' ? 'actor' : 'event'} ${id} › ${field}`);
+    for (const [sec, field] of /** @type {const} */ ([['actors', 'talk'], ['events', 'run'], ['buildings', 'start'], ['buildings', 'done']])) {
+      for (const [id, e] of storySection(file, sec)) if (isPlain(e) && Array.isArray(e[field])) scriptStray(e[field], `${sec === 'actors' ? 'actor' : sec === 'buildings' ? 'building' : 'event'} ${id} › ${field}`);
     }
   } else {
     const secs = storySections(lines);
