@@ -10,6 +10,7 @@
     "A subida pela encosta é íngreme. Lá em cima, o vento muda.": "The climb up the slope is steep. Up there, the wind changes.",
     "A trilha deixa o riacho e entra na sombra das árvores.": "The trail leaves the stream and goes into the shade of the trees.",
     "Acampamento Abandonado": "Abandoned Camp",
+    "Alojamento": "Lodging",
     "As botas afundam na lama da margem.": "Boots sink into the mud of the bank.",
     "Bosque dos Carvalhos": "Oak Grove",
     "Botas de estrada": "Road boots",
@@ -29,6 +30,7 @@
     "Ervas": "Herbs",
     "Espada de viagem": "Travelling sword",
     "Estrada da Costa": "The Coast Road",
+    "Forja": "Forge",
     "Já conhecemos cada trilha dela. À noite, porém, ninguém volta igual.": "We know every trail in it now. At night, though, no one comes back the same.",
     "Lascas de pedra estalam sob as botas.": "Stone chips crack under the boots.",
     "Luvas de couro": "Leather gloves",
@@ -52,6 +54,7 @@
     "Riacho dos Juncos": "Reed Stream",
     "Rio acima, o barulho da água cresce entre os juncos.": "Upstream, the sound of water grows among the reeds.",
     "Rumo a Marina": "To Marina",
+    "Silo": "Silo",
     "Subindo o riacho, dizem, os juncos crescem mais alto que um homem. Peixe e ervas.": "Up the stream, they say, the reeds grow taller than a man. Fish and herbs.",
     "Surubin": "Surubin",
     "Terra Selvagem": "The Wild Land",
@@ -73,6 +76,10 @@
       "source": "Há madeira para cortar, pedra para quebrar e ervas para colher. Eles brilham entre as árvores, e o mapa marca cada um. O que for tirado hoje volta a crescer amanhã.",
       "target": "There is wood to chop, stone to break and herbs to pick. They glint among the trees, and the map marks each one. Whatever is taken today grows back tomorrow."
     },
+    "1A59F2BD7667280946BB31CF22ECF024": {
+      "source": "Um elmo simples, com um amassado do lado esquerdo que ninguém lembra de onde veio.",
+      "target": "A plain helm with a dent on the left side that nobody remembers getting."
+    },
     "1B9E581671AFBC8396B75F69947A14A4": {
       "source": "Passei a noite desenhando. Por enquanto é pouco: a costa, o riacho, a nossa clareira.",
       "target": "I spent the night drawing. It's little for now: the coast, the stream, our clearing."
@@ -81,9 +88,21 @@
       "source": "Salve o forasteiro cercado na clareira.",
       "target": "Save the stranger surrounded in the clearing."
     },
+    "1DB1633D2A58A330EFE03C5832893E2E": {
+      "source": "Fica pronto em 1 dia",
+      "target": "Ready in 1 day"
+    },
     "1E24F3CAE4A315DD38E74154C3D8A1A2": {
       "source": "Árvores velhas fecham o céu. O ar é úmido e cheira a musgo e a bicho.",
       "target": "Old trees close over the sky. The air is damp and smells of moss and animals."
+    },
+    "1E0878C150E3C30571847EB5541DC912": {
+      "source": "Uma espada simples, de lâmina reta. Já viu mais estrada do que batalha.",
+      "target": "A plain sword with a straight blade. It has seen more road than battle."
+    },
+    "2A7669512D855F5066781028F363F919": {
+      "source": "E a forja? Ficou pronta também.",
+      "target": "And the forge? It's finished too."
     },
     "2AE9DE18F7CF05A23E15B608DCD8B06A": {
       "source": "Faz tempo que eu não tenho para onde voltar.",
@@ -113,6 +132,10 @@
       "source": "Ah. O Rei também manda lições, ${player}.",
       "target": "Ah. The King sends lessons too, ${player}."
     },
+    "3C6C8823F42405B1EA2141F318C06B75": {
+      "source": "No baú: ${stock:madeira} madeira e ${stock:pedra} pedra. Para erguer a forja: 12 madeira e 10 pedra.",
+      "target": "In the chest: ${stock:madeira} wood and ${stock:pedra} stone. To raise the forge: 12 wood and 10 stone."
+    },
     "3C874CD442539F0B1258BC60D3DDEF67": {
       "source": "Algo para mostrar ao Surubin: um caixote com a marca do Rei.",
       "target": "Something to show Surubin: a crate bearing the King's mark."
@@ -121,6 +144,18 @@
       "source": "Nenhuma colônia do culto chegou tão longe. Pelo menos, não que a Capital saiba.",
       "target": "No colony of the cult ever came this far. At least, not that the Capital knows of."
     },
+    "4B5667541BF96566B99FEF2E8E648AB5": {
+      "source": "Guarda a colheita. A mochila passa a 12 espaços.",
+      "target": "Keeps the harvest. The backpack grows to 12 slots."
+    },
+    "4BFBBD99D3347DA345C236B5C9DABDB5": {
+      "source": "A primeira obra está subindo. Amanhã cedo ela fica pronta.",
+      "target": "The first building is going up. It'll be finished by tomorrow morning."
+    },
+    "4C501E32D56D44459DD1DB70492A13AE": {
+      "source": "Ver o lote",
+      "target": "Look at the plot"
+    },
     "4F5F4977629D6FA7E41A004158FC0EE6": {
       "source": "Na Capital dizem que esta terra engole homens. Eu prefiro acreditar que ela só tem fome de fé.",
       "target": "In the Capital they say this land swallows men. I'd rather believe it's only hungry for faith."
@@ -128,6 +163,14 @@
     "4FC54BDD8CEADE5DBBFB126E14E64C7B": {
       "source": "Os marinheiros dizem que os povos daqui riscam golpes de espada nas pedras. Se existir um segredo aqui, ele vai estar no meu mapa. E você vê primeiro.",
       "target": "The sailors say the peoples here carve sword strokes into the stones. If there is a secret here, it will be on my map. And you see it first."
+    },
+    "5B73F5DB16325926C5CFD9D1FA3D79CA": {
+      "source": "Começar agora",
+      "target": "Begin now"
+    },
+    "5D10F3637CC5D83964C825E9B0829F18": {
+      "source": "Dormir",
+      "target": "Sleep"
     },
     "5DF3D9EB55749CFFD1FA48BC5FC83B17": {
       "source": "A Capital espera uma colônia. Um abrigo para os fiéis que virão. Sozinho, eu não consigo.",
@@ -145,6 +188,10 @@
       "source": "Alguém tirou madeira daqui muito antes do Surubin chegar a esta terra.",
       "target": "Someone took wood from here long before Surubin came to this land."
     },
+    "6B3FD59F7874A7DC2E45AB81BA8F2E03": {
+      "source": "Os marinheiros vão contar disto na Capital: um altar ao Baiacu Rei na Terra Selvagem.",
+      "target": "The sailors will tell of this in the Capital: an altar to the Pufferfish King in the Wild Land."
+    },
     "6C1DDDD6F12D079054D756F2005CCFA7": {
       "source": "Toca das Bestas. Soa melhor do que deve ser.",
       "target": "The Beasts' Den. It sounds nicer than it probably is."
@@ -156,6 +203,10 @@
     "06F4690F91E3CCB7D54A435E1991F55C": {
       "source": "Ao norte da mata, um carvalho com marcas de garra. Fundas. A trilha some depois dele.",
       "target": "North of the woods, an oak with claw marks. Deep ones. The trail fades out past it."
+    },
+    "7B4FD68A0AA05E3ADC1C1A74FAA24A26": {
+      "source": "Gastas nos dedos de tanto segurar rédea e espada.",
+      "target": "Worn at the fingers from holding reins and sword."
     },
     "7E18399571CCDB6DD7F5C16B9F8996A2": {
       "source": "Por Ele eu atravessaria dois.",
@@ -169,9 +220,21 @@
       "source": "Ato I: a Terra Selvagem",
       "target": "Act I: The Wild Land"
     },
+    "8EC52E820719AA75D03CBA79DE9A1E09": {
+      "source": "E o alojamento? Ficou pronto também.",
+      "target": "And the lodging? It's finished too."
+    },
+    "9E7D4D400C1F259A30C5BF1F0A521BCE": {
+      "source": "${player}! Venha, venha ver! Passei a noite inteira nele.",
+      "target": "${player}! Come, come and see! I spent the whole night on it."
+    },
     "9E54FAAFCBAA19E1ED81F84B54052396": {
       "source": "O mar daqui tem outro cheiro. Mais verde. Mais... selvagem.",
       "target": "The sea smells different here. Greener. More... wild."
+    },
+    "9EBE75BBD294022A0A178F212BF82111": {
+      "source": "Ver o lote",
+      "target": "Look at the plot"
     },
     "9ED5C1C6FACE6AAAC18B0F5A25B9B0E6": {
       "source": "À noite eu ouço a mata. Não sei se é bicho ou vento. Prefiro achar que é vento.",
@@ -189,13 +252,25 @@
       "source": "Terra Selvagem",
       "target": "The Wild Land"
     },
+    "20FA87BF9E095AF83C09D8E72B0E0F23": {
+      "source": "O silo! Amanhã cedo ele fica de pé.",
+      "target": "The silo! It'll be standing by tomorrow morning."
+    },
     "32E172BE1D750176DA798EDA42131C0C": {
       "source": "Eu busco os segredos da espada. Não tenho tempo para os desejos de um deus que nem conheço.",
       "target": "I seek the secrets of the sword. I have no time for the wishes of a god I don't even know."
     },
+    "34EE6AE66718D8F3F45CFDE4E7509B03": {
+      "source": "A primeira obra está subindo. Amanhã cedo ela fica pronta.",
+      "target": "The first building is going up. It'll be finished by tomorrow morning."
+    },
     "39BAF5BC09B48B77C85A574FA8D10990": {
       "source": "Uma estação. Depois, sigo meu caminho.",
       "target": "One season. Then I go my own way."
+    },
+    "42C9C8924B2B6CA72592A33840304E0B": {
+      "source": "No baú: ${stock:madeira} madeira e ${stock:pedra} pedra. Para erguer o silo: 14 madeira e 6 pedra.",
+      "target": "In the chest: ${stock:madeira} wood and ${stock:pedra} stone. To raise the silo: 14 wood and 6 stone."
     },
     "044EB878765353017E47173D1473A2DA": {
       "source": "Ó Rei das Profundezas, me guarda! Socorro!",
@@ -204,6 +279,10 @@
     "50FEC008CAED6CEBAE86C28031B9C9A1": {
       "source": "Marcas fundas de garra descem o tronco de um carvalho velho. Há pelos escuros presos na casca.",
       "target": "Deep claw marks run down the trunk of an old oak. Dark hairs are caught in the bark."
+    },
+    "53C5B7E0A034C23EEB1704268B91D7A9": {
+      "source": "A forja está de pé. O fogo pegou na primeira tentativa.",
+      "target": "The forge stands. The fire caught on the first try."
     },
     "55BB8E24E5168CC3633C7AC190DF81D3": {
       "source": "Surubin se debruça sobre a mesa e risca árvores velhas, o riacho com as duas pontes, as pedras musgosas e a clareira das flores.",
@@ -216,6 +295,10 @@
     "66E44818AD5ED4F28AFC20E4774B5531": {
       "source": "Mata da Clareira",
       "target": "Clearing Woods"
+    },
+    "078D3E0529258AB125850FFAACE10786": {
+      "source": "Começar o alojamento?",
+      "target": "Begin the lodging?"
     },
     "79CFF22F8243E1705D9904E98C108A20": {
       "source": "Alguém grita por socorro na estrada da costa.",
@@ -233,9 +316,17 @@
       "source": "Terra Selvagem",
       "target": "The Wild Land"
     },
+    "85E638E2B4B7A0C9893D9CB27C37868E": {
+      "source": "E o silo? Ficou pronto também.",
+      "target": "And the silo? It's finished too."
+    },
     "88A0F7BD19DE43313ACB50D7C665CE1F": {
       "source": "Surubin anota alguma coisa num canto do mapa e cobre com a mão.",
       "target": "Surubin jots something in a corner of the map and covers it with his hand."
+    },
+    "90B8FB72AC278960693A811208B916A3": {
+      "source": "Ainda é dia. O sono pode esperar.",
+      "target": "It's still day. Sleep can wait."
     },
     "93A5AD262F607F2EF0E1FD69A1857D6D": {
       "source": "Mata da Clareira",
@@ -245,13 +336,37 @@
       "source": "A Mata da Clareira foi explorada. O Surubin vai querer ouvir tudo.",
       "target": "The Clearing Woods have been explored. Surubin will want to hear everything."
     },
+    "96E9328317082B28DC9304C3E273A92A": {
+      "source": "A primeira obra está subindo. Amanhã cedo ela fica pronta.",
+      "target": "The first building is going up. It'll be finished by tomorrow morning."
+    },
+    "99AAFBA5691D08B0215D0EE841CD9EE1": {
+      "source": "O silo do acampamento ficou pronto.",
+      "target": "The camp's silo is finished."
+    },
+    "118E7FFA72AF13010C3FA040C211DB3E": {
+      "source": "Olhe para isto. A primeira casa do Rei nesta terra. Antes de qualquer muro, antes de qualquer teto, o Rei.",
+      "target": "Look at this. The King's first house in this land. Before any wall, before any roof, the King."
+    },
+    "159CB8817C019C7DAE519219EC2EF24E": {
+      "source": "Agora você pode trazer o dobro de cada viagem. O Rei provê, mas guardar ajuda.",
+      "target": "Now you can bring back twice as much from every trip. The King provides, but storing helps."
+    },
     "196E454FAE990BAB634279532ACD0D01": {
       "source": "A clareira fica subindo o riacho. Lá a gente acende um fogo e espera a tempestade passar.",
       "target": "The clearing is up the stream. We can light a fire there and wait out the storm."
     },
     "211DBDC22986AF26C23EAB074D33516E": {
-      "source": "Junte madeira, pedra e comida para a primeira obra do acampamento.",
-      "target": "Gather wood, stone and food for the camp's first building."
+      "source": "Junte madeira, pedra e ervas para a primeira obra do acampamento.",
+      "target": "Gather wood, stone and herbs for the camp's first building."
+    },
+    "294BA619A023696BC01CACE66B6D0CA0": {
+      "source": "Ainda não",
+      "target": "Not yet"
+    },
+    "396D51C3BB2DB7C3B95581DBDDF9E0FE": {
+      "source": "Quando cansar, é só deitar ali dentro. Nada de dormir no chão.",
+      "target": "When you're tired, just lie down in there. No more sleeping on the ground."
     },
     "433F68BDA66984E5F80BDDC242AC98AD": {
       "source": "Que as marés nos guiem.",
@@ -261,6 +376,14 @@
       "source": "${player}. Um deus peixe? Você atravessou o mar por isso?",
       "target": "${player}. A fish god? You crossed the sea for that?"
     },
+    "582D19C1B7939F2236A1BA73137FEC7B": {
+      "source": "O cavaleiro deita na palha do alojamento. Lá fora, a fogueira estala baixinho.",
+      "target": "The knight lies down on the lodging's straw. Outside, the fire crackles softly."
+    },
+    "657B8983F237C29680B0F45F2036E207": {
+      "source": "A primeira obra está subindo. Amanhã cedo ela fica pronta.",
+      "target": "The first building is going up. It'll be finished by tomorrow morning."
+    },
     "755A52A701B9A3606219374ECC0002E4": {
       "source": "Atrás de você, na clareira, alguém ainda grita por socorro.",
       "target": "Behind you, in the clearing, someone is still crying for help."
@@ -268,6 +391,10 @@
     "758CFB904D8CCCD00E92F4D1543D7F77": {
       "source": "Terra Selvagem",
       "target": "The Wild Land"
+    },
+    "775D88FDCBDD39CDA0B845ECC7521F35": {
+      "source": "Ainda não",
+      "target": "Not yet"
     },
     "901A06F220152547E4E0383B5D18195F": {
       "source": "Marcas de garra desse tamanho? Vou pôr um ponto ali, com um ponto de interrogação bem grande.",
@@ -285,9 +412,29 @@
       "source": "Ajudou! Ele mandou você, não mandou?",
       "target": "He did! He sent you, didn't He?"
     },
+    "1326EF8C703FBDA7D8D23E578C49C670": {
+      "source": "O silo está de pé. Cheira a madeira nova e a palha.",
+      "target": "The silo stands. It smells of new wood and straw."
+    },
     "1567EA1DFEB896B6C1A84C552CB4278C": {
       "source": "Ó Rei das Profundezas, obrigado! Obrigado!",
       "target": "O King of the Deep, thank you! Thank you!"
+    },
+    "1716F7607DDA6FE4DD402E99320B2741": {
+      "source": "Um silo? Prudente. Quem guarda hoje come no inverno.",
+      "target": "A silo? Prudent. Whoever stores today eats in winter."
+    },
+    "2211CCB6BFD6B3D1F5A443AC5A7FD67B": {
+      "source": "Custo: 14 madeira e 6 pedra",
+      "target": "Cost: 14 wood and 6 stone"
+    },
+    "3698F08B2D6D31CA5D2A9048C4D19311": {
+      "source": "O alojamento está de pé. Tem cheiro de tronco e de palha seca.",
+      "target": "The lodging stands. It smells of logs and dry straw."
+    },
+    "3989E0DC3AF7ABF67F21C3D930BE54E3": {
+      "source": "Agora sim, cavaleiro: uma bigorna e um fogo de verdade. O resto é com a sua espada.",
+      "target": "Now that's something, knight: a real anvil and a real fire. The rest is up to your sword."
     },
     "4094CBF2858B6A544BFAA1B1CB3FE2A0": {
       "source": "Eu sei usar o cajado. Quer dizer... eu sei segurar o cajado.",
@@ -296,6 +443,10 @@
     "4467FFE03AE6BBBF6E05B8E1CC413D9B": {
       "source": "Já dormi sob muitos tetos. Nenhum me ensinou nada.",
       "target": "I've slept under many roofs. None of them taught me anything."
+    },
+    "4539F9E1B2A21B3BEFCD7D2402E57CC6": {
+      "source": "O sol nasce sobre o acampamento. A obra nova amanheceu de pé.",
+      "target": "The sun rises over the camp. The new building greets the morning standing."
     },
     "06682D745286B09ECA16604F02B6B0B8": {
       "source": "Uma tenda velha, rasgada de cima a baixo. O fogo ao lado está frio há muitas estações.",
@@ -317,13 +468,25 @@
       "source": "A mata à noite é outra. Muitos olhos entre as árvores.",
       "target": "The woods are another place at night. Many eyes among the trees."
     },
+    "9820F766BEA0CF8CC193D0077655C5AC": {
+      "source": "Uma forja? Sábio. Precisamos de força.",
+      "target": "A forge? Wise. We need strength."
+    },
     "31039B4CB3C235B2A7D322878D92C83A": {
       "source": "Você não precisa acreditar no Rei. Só precisa acreditar que um teto é melhor que a estrada.",
       "target": "You don't need to believe in the King. You only need to believe a roof is better than the road."
     },
+    "40639C0F8E3831F08AB40B7168294E84": {
+      "source": "Custo: 12 madeira e 10 pedra",
+      "target": "Cost: 12 wood and 10 stone"
+    },
     "086117AAB314E7D0179E0A5B2116483F": {
       "source": "Um mastro com o peixe do Rei numa flâmula vermelha marca a trilha de volta ao acampamento. Dá para vê-lo de longe.",
       "target": "A mast with the King's fish on a red banner marks the trail back to camp. It can be seen from afar."
+    },
+    "87283F43C011136A15670BF7DC96C020": {
+      "source": "Ah, ficou? Que bom. Muito bem.",
+      "target": "Oh, is it? Good. Very good."
     },
     "163089DC247CC04A57D0EAF1B06749F1": {
       "source": "Estrada da Costa",
@@ -337,9 +500,17 @@
       "source": "Na mata há um acampamento abandonado. Num caixote, um peixe de espinhos com uma coroa.",
       "target": "There is an abandoned camp in the woods. On a crate, a spiny fish wearing a crown."
     },
+    "526944ADDA4230ED454607FDC301C45D": {
+      "source": "Mas um teto abriga o corpo, cavaleiro. Uma comunidade começa pela fé.",
+      "target": "But a roof shelters the body, knight. A community begins with faith."
+    },
     "913526F742CD68146F4BAD4B9143B2E7": {
       "source": "Mata da Clareira",
       "target": "Clearing Woods"
+    },
+    "40578871B55A0D11DA80EB0A44FEC9A3": {
+      "source": "Quando cansar, é só deitar ali dentro. Nada de dormir no chão.",
+      "target": "When you're tired, just lie down in there. No more sleeping on the ground."
     },
     "600504110D260F8982DBEE520689133C": {
       "source": "Mata da Clareira",
@@ -348,6 +519,14 @@
     "933937049E187531F5CCA8F13CAC48C1": {
       "source": "Faz tempo que eu não tenho para onde voltar.",
       "target": "It's been a long time since I had anywhere to go back to."
+    },
+    "A0A4F00A97DE2C8094920E43A9353C92": {
+      "source": "Ainda falta material no baú. A mata dá madeira, pedra e ervas; guarde no baú o que trouxer.",
+      "target": "Not enough material in the chest yet. The woods give wood, stone and herbs; store what you bring in the chest."
+    },
+    "A4F9B65DB6F05305357D605A92BDE2B0": {
+      "source": "Começar agora",
+      "target": "Begin now"
     },
     "A6B2F0169F0E2DBEF6A6D12CDB221F28": {
       "source": "Cuidado com a língua, cavaleiro. O Rei provê, e proverá muito mais àqueles que o seguem.",
@@ -385,13 +564,37 @@
       "source": "Pedra boa, quebrada dos veios claros das rochas. Para alicerces e paredes.",
       "target": "Good stone, broken from the pale veins of the rocks. For foundations and walls."
     },
+    "AA23AF9B86F96AE767A5045DF1628E96": {
+      "source": "Fica pronta em 1 dia",
+      "target": "Ready in 1 day"
+    },
     "AAC2D839EFF7BFDE720D2924E19DC227": {
       "source": "A estrada de terra segue a costa sob a tempestade. O vento traz sal, chuva e algo mais.",
       "target": "The dirt road follows the coast under the storm. The wind carries salt, rain and something else."
     },
+    "AAC40768413E86AEC3A38BA42AFE127C": {
+      "source": "A forja está de pé. O fogo pegou na primeira tentativa.",
+      "target": "The forge stands. The fire caught on the first try."
+    },
     "AB0030FF5F3FB7CAA5A54F3065B61469": {
       "source": "Terra Selvagem",
       "target": "The Wild Land"
+    },
+    "AC99E4228954873D186B8EA5FD4360C3": {
+      "source": "Mas veja como o sal brilha na pedra quando o sol bate. Ele está olhando para nós, cavaleiro. Eu sinto.",
+      "target": "But see how the salt shines on the stone when the sun hits it. He is watching us, knight. I can feel it."
+    },
+    "AC3405D05442CC33800F63650D6ACAEC": {
+      "source": "Fica pronto em 1 dia",
+      "target": "Ready in 1 day"
+    },
+    "AEF384EEDC3C7CD00C1386CB9FA3FD3E": {
+      "source": "O silo está de pé. Cheira a madeira nova e a palha.",
+      "target": "The silo stands. It smells of new wood and straw."
+    },
+    "AF50F87912EA01154E85C2474BAD0C65": {
+      "source": "Couro e anéis de ferro, remendados mais de uma vez.",
+      "target": "Leather and iron rings, patched more than once."
     },
     "B0B324088035FB6075C266BE1743AA24": {
       "source": "Aqui! Por favor!",
@@ -401,9 +604,17 @@
       "source": "Que bom que o seu deus te ajudou.",
       "target": "Good thing your god helped you."
     },
+    "B34FBF45F1894858691765FD96A2888C": {
+      "source": "A forja! Amanhã cedo ela fica de pé.",
+      "target": "The forge! It'll be standing by tomorrow morning."
+    },
     "B78A8ACAE8559E9DA24730368D3851D7": {
       "source": "O acampamento precisa da sua primeira obra.",
       "target": "The camp needs its first building."
+    },
+    "B84BF390221834DBBFA9C7E130C44221": {
+      "source": "O Surubin se ajoelha diante do altar e fica ali, murmurando. A obra nova, atrás dele, não ganha nem um olhar.",
+      "target": "Surubin kneels before the altar and stays there, murmuring. The new building behind him doesn't get so much as a glance."
     },
     "B728E2F963AB1669CCF78F41AB45917E": {
       "source": "Algo para contar ao Surubin: marcas de garra ao norte da mata.",
@@ -413,9 +624,33 @@
       "source": "O sol nasce sobre a clareira. Onde ontem havia só a fogueira, agora tremula um estandarte azul.",
       "target": "The sun rises over the clearing. Where last night there was only the fire, a blue banner now flutters."
     },
+    "B996277486F104167B9AB36225CE6D7B": {
+      "source": "Ainda não",
+      "target": "Not yet"
+    },
+    "BA974A538DC492322D00AC0A6B421085": {
+      "source": "Ver o lote",
+      "target": "Look at the plot"
+    },
     "BABDC6A9027F9C6630B2AFBE578A5CBC": {
       "source": "Toras cortadas na mata. A base de qualquer obra do acampamento.",
       "target": "Logs cut in the woods. The base of any building in the camp."
+    },
+    "BC4DA36972381ECD5A910F5CD9A6F5B9": {
+      "source": "Você disse que não tinha para onde voltar. Agora vai ter onde dormir.",
+      "target": "You said you had nowhere to go back to. Now you'll have somewhere to sleep."
+    },
+    "BD3AB54C6B4712D87D108E77873AC112": {
+      "source": "O cavaleiro e o Surubin passam horas marcando o alicerce do alojamento e erguendo os primeiros esteios.",
+      "target": "The knight and Surubin spend hours marking out the lodging's footing and raising the first posts."
+    },
+    "BE49D86F54C2E526DE3D12DEB2509BD0": {
+      "source": "Um teto! Amanhã cedo ele fica de pé.",
+      "target": "A roof! It'll be standing by tomorrow morning."
+    },
+    "BF8D117E718F79F7D230F05A8266FF99": {
+      "source": "Começar agora",
+      "target": "Begin now"
     },
     "C1D0B8E2C984E944ADEAE94CC2BC5581": {
       "source": "Você voltou inteiro! Me conta da mata, que eu desenho enquanto você fala.",
@@ -425,9 +660,17 @@
       "source": "Cuidado! Elas estão por toda parte!",
       "target": "Look out! They're everywhere!"
     },
+    "C27A50349701C4458FD8348CB8FC7DAC": {
+      "source": "A forja do acampamento ficou pronta.",
+      "target": "The camp's forge is finished."
+    },
     "C50AC3505CF43D6D90B4AE0B0990F561": {
       "source": "No meio, raízes trançadas no chão formam um desenho. Parece feito de propósito.",
       "target": "In the middle, roots woven into the ground form a pattern. It looks deliberate."
+    },
+    "C75B4766DA4CA294C86B534E1BDE66B7": {
+      "source": "Ainda falta material no baú. A mata dá madeira, pedra e ervas; guarde no baú o que trouxer.",
+      "target": "Not enough material in the chest yet. The woods give wood, stone and herbs; store what you bring in the chest."
     },
     "C1381373B17EF5139DC1F5619163CDA9": {
       "source": "Prazer, Surubin. Sou ${player}. Que bom que o seu deus te ajudou.",
@@ -453,9 +696,25 @@
       "source": "Terra Selvagem",
       "target": "The Wild Land"
     },
+    "D8AC5677BEA0D075A4D54ACEF9A38BE1": {
+      "source": "Sob o estandarte, um altar de pedra e madeira, feito com as sobras da obra. Conchas e espinhos de peixe enfeitam a borda.",
+      "target": "Under the banner, an altar of stone and wood, made from what was left of the building. Shells and fish spines line its edge."
+    },
+    "D83CBB45A3B0D9F5E64F080214F98E12": {
+      "source": "Agora sim, cavaleiro: uma bigorna e um fogo de verdade. O resto é com a sua espada.",
+      "target": "Now that's something, knight: a real anvil and a real fire. The rest is up to your sword."
+    },
     "D224C3328416DFA18C9E9573E1769720": {
       "source": "O Rei das Profundezas mandou você, ${player}. Tenho certeza.",
       "target": "The King of the Deep sent you, ${player}. I'm sure of it."
+    },
+    "D540F4769C9AEB2700B94C5C907C1018": {
+      "source": "Fogo e bigorna: aqui o aço toma forma.",
+      "target": "Fire and anvil: here steel takes shape."
+    },
+    "D932C43343A1BC7C11AFC8E6322857EE": {
+      "source": "Custo: 16 madeira e 6 ervas",
+      "target": "Cost: 16 wood and 6 herbs"
     },
     "D1072F955428AD5AA994C6497229EDE9": {
       "source": "No caixote, uma marca queimada na madeira: um peixe de espinhos, igual ao do estandarte, mas com uma coroa que o Surubin não desenha.",
@@ -464,6 +723,18 @@
     "D1970C2BC3C03F8586EF9C371BC79489": {
       "source": "Agora tem. O Rei acolhe aqueles que o seguem.",
       "target": "Now you do. The King shelters those who follow Him."
+    },
+    "D26767A452E40F2F47212F2D3BC89278": {
+      "source": "Shh. De manhã cedo é a hora do Rei. Depois a gente conversa.",
+      "target": "Shh. Early morning is the King's hour. We'll talk later."
+    },
+    "D175517A8890109E0121885977A5DBBC": {
+      "source": "Ainda falta material no baú. A mata dá madeira, pedra e ervas; guarde no baú o que trouxer.",
+      "target": "Not enough material in the chest yet. The woods give wood, stone and herbs; store what you bring in the chest."
+    },
+    "D641615831C1C664F7E8280AB813BF72": {
+      "source": "Solas grossas, feitas para andar. E andaram.",
+      "target": "Thick soles, made for walking. And they walked."
     },
     "DAE8253E918CDE9959D25FACB4219DA7": {
       "source": "E os golpes riscados nas pedras?",
@@ -489,6 +760,10 @@
       "source": "Sou Surubin, adepto do Culto ao Baiacu Rei. Vim de Marina para trazer a fé a esta terra.",
       "target": "I am Surubin, adept of the Cult of the Pufferfish King. I came from Marina to bring the faith to this land."
     },
+    "DD1464716BE2130CA615F8B4F32E1F71": {
+      "source": "Mas o pão alimenta o corpo, cavaleiro. Uma comunidade começa pela fé.",
+      "target": "But bread feeds the body, knight. A community begins with faith."
+    },
     "E2D73AA4F36F3DD39E0A726DED947CD4": {
       "source": "Mata da Clareira",
       "target": "Clearing Woods"
@@ -496,6 +771,14 @@
     "E3CDFB9AB9C67A9A2034E64231BFA30B": {
       "source": "Um rapaz de vestes encharcadas, cercado por criaturas da mata, segura um cajado como quem nunca usou um.",
       "target": "A young man in soaked robes, surrounded by forest creatures, holds a staff like someone who has never used one."
+    },
+    "E7FFD847FC663D3EE8DA9AD6244E8E4D": {
+      "source": "O alojamento está de pé. Tem cheiro de tronco e de palha seca.",
+      "target": "The lodging stands. It smells of logs and dry straw."
+    },
+    "E10CDCF9322E7DFF9E71EDCD3843E3B3": {
+      "source": "Mas um dia, cavaleiro, precisaremos de um lugar para reunir os fiéis. Uma comunidade começa pela fé.",
+      "target": "But one day, knight, we'll need a place to gather the faithful. A community begins with faith."
     },
     "E42BAE9BF4785DA548DCFF4F850D183F": {
       "source": "Salve o forasteiro cercado na clareira.",
@@ -514,20 +797,44 @@
       "target": "The banner turned out nice, didn't it? Blue as the sea of Marina."
     },
     "E896AED9F1E4867ED508290D53CE6AD5": {
-      "source": "Junte madeira, pedra e comida para a primeira obra do acampamento.",
-      "target": "Gather wood, stone and food for the camp's first building."
+      "source": "Junte madeira, pedra e ervas para a primeira obra do acampamento.",
+      "target": "Gather wood, stone and herbs for the camp's first building."
     },
     "E3116E49177C3871BB7B076E210B1E45": {
       "source": "Quando eu ouvir falar deles, você vai ser o primeiro a saber. Prometido.",
       "target": "When I hear of them, you'll be the first to know. I promise."
     },
+    "EA7C1B05856FEF21C4D23BEE884BD0FB": {
+      "source": "No baú: ${stock:madeira} madeira e ${stock:ervas} ervas. Para erguer o alojamento: 16 madeira e 6 ervas.",
+      "target": "In the chest: ${stock:madeira} wood and ${stock:ervas} herbs. To raise the lodging: 16 wood and 6 herbs."
+    },
+    "EA7E69133A6D3E38AC0DC04E91E1BBB1": {
+      "source": "Um teto! Então você me ouviu na fogueira.",
+      "target": "A roof! So you did listen to me by the fire."
+    },
     "EAAD5A479706217A7AA6F0630F6EF1E6": {
       "source": "Terra Selvagem",
       "target": "The Wild Land"
     },
+    "EAB02A142330AF9B0150B64104C16DD6": {
+      "source": "Começar o silo?",
+      "target": "Begin the silo?"
+    },
+    "EB05D60EE36C98E157B2BE7515AC8530": {
+      "source": "Um teto para dormir até a manhã.",
+      "target": "A roof to sleep under until morning."
+    },
     "ECC343D52B99A514F4965AF8948C1D9A": {
       "source": "Uma coroa? O Rei não usa coroa nos nossos estandartes. Nunca usou.",
       "target": "A crown? The King wears no crown on our banners. He never has."
+    },
+    "EE8CFAC99022879A6174F760C8417B99": {
+      "source": "O alojamento do acampamento ficou pronto.",
+      "target": "The camp's lodging is finished."
+    },
+    "EE77480BB719E0693C56E4C2F4C68DEF": {
+      "source": "Agora você pode trazer o dobro de cada viagem. O Rei provê, mas guardar ajuda.",
+      "target": "Now you can bring back twice as much from every trip. The King provides, but storing helps."
     },
     "EF4AB603323B2D394B521845BF093BD1": {
       "source": "Até a chuva passar.",
@@ -545,6 +852,26 @@
       "source": "Siga com Surubin pela estrada ao norte.",
       "target": "Follow the road north with Surubin."
     },
+    "F643D6622F1C74A0FA9503B24FB4851F": {
+      "source": "Guarde o que trouxe no baú, ao lado da minha tenda!",
+      "target": "Store what you brought in the chest, next to my tent!"
+    },
+    "F948A7AB250B5D9ECC52727F524A668D": {
+      "source": "O cavaleiro e o Surubin passam horas marcando o alicerce do silo e erguendo os primeiros esteios.",
+      "target": "The knight and Surubin spend hours marking out the silo's footing and raising the first posts."
+    },
+    "F3899C3560BA0C3309AC7B20847285C9": {
+      "source": "Ele acorda descansado. Pela primeira vez em muito tempo, debaixo de um teto que é seu.",
+      "target": "He wakes rested. For the first time in a long while, under a roof of his own."
+    },
+    "FA55CFFD0C1AD0DC7480DAA5D62A27AC": {
+      "source": "O cavaleiro e o Surubin passam horas marcando o alicerce da forja e erguendo os primeiros esteios.",
+      "target": "The knight and Surubin spend hours marking out the forge's footing and raising the first posts."
+    },
+    "FAF5018AAB1EDE1AF2F6D61A767BB4EB": {
+      "source": "Começar a forja?",
+      "target": "Begin the forge?"
+    },
     "FB3D827387F627D17AAB3181578A1C6C": {
       "source": "Pronto. A Mata da Clareira está no mapa. Viu? Já parece um lugar de verdade.",
       "target": "There. The Clearing Woods are on the map. See? It already looks like a real place."
@@ -552,26 +879,6 @@
     "FDECB95A7038F3908BA0C9307AE492A5": {
       "source": "Mas os marinheiros falavam de uma mata a oeste, de juncos subindo o riacho e de uma pedreira na encosta. Madeira, comida e pedra. Tudo o que um começo precisa.",
       "target": "But the sailors spoke of a forest to the west, of reeds up the stream and of a quarry on the slope. Wood, food and stone. Everything a beginning needs."
-    },
-    "1E0878C150E3C30571847EB5541DC912": {
-      "source": "Uma espada simples, de lâmina reta. Já viu mais estrada do que batalha.",
-      "target": "A plain sword with a straight blade. It has seen more road than battle."
-    },
-    "AF50F87912EA01154E85C2474BAD0C65": {
-      "source": "Couro e anéis de ferro, remendados mais de uma vez.",
-      "target": "Leather and iron rings, patched more than once."
-    },
-    "1A59F2BD7667280946BB31CF22ECF024": {
-      "source": "Um elmo simples, com um amassado do lado esquerdo que ninguém lembra de onde veio.",
-      "target": "A plain helm with a dent on the left side that nobody remembers getting."
-    },
-    "7B4FD68A0AA05E3ADC1C1A74FAA24A26": {
-      "source": "Gastas nos dedos de tanto segurar rédea e espada.",
-      "target": "Worn at the fingers from holding reins and sword."
-    },
-    "D641615831C1C664F7E8280AB813BF72": {
-      "source": "Solas grossas, feitas para andar. E andaram.",
-      "target": "Thick soles, made for walking. And they walked."
     }
   }
 }

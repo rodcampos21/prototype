@@ -2,7 +2,10 @@
   "format": "luminati-story",
   "version": 1,
   "vars": {
-    "obra.silo": 0
+    "obra.forja": 0,
+    "obra.silo": 0,
+    "obra.alojamento": 0,
+    "obra.primeira": 0
   },
   "items": {
     "madeira": {
@@ -10,6 +13,7 @@
       "text": "Toras cortadas na mata. A base de qualquer obra do acampamento.",
       "pack": true,
       "icon": "wood",
+      "rarity": "comum",
       "textKeys": {
         "text": "BABDC6A9027F9C6630B2AFBE578A5CBC"
       }
@@ -19,6 +23,7 @@
       "text": "Pedra boa, quebrada dos veios claros das rochas. Para alicerces e paredes.",
       "pack": true,
       "icon": "stone",
+      "rarity": "comum",
       "textKeys": {
         "text": "A8735159FBFDA8950DCECB46A63C9D44"
       }
@@ -28,6 +33,7 @@
       "text": "Folhas e flores miúdas que crescem perto da água. O Surubin diz que curam, se o Rei quiser.",
       "pack": true,
       "icon": "herbs",
+      "rarity": "comum",
       "textKeys": {
         "text": "A74D58FF698ACB80271C0F2F16FD2AD4"
       }
@@ -121,15 +127,158 @@
       "stages": [
         {
           "id": "coletar",
-          "text": "Junte madeira, pedra e comida para a primeira obra do acampamento."
+          "text": "Junte madeira, pedra e ervas para a primeira obra do acampamento."
+        },
+        {
+          "id": "obra",
+          "text": "A primeira obra está subindo. Amanhã cedo ela fica pronta."
         }
       ],
       "textKeys": {
         "text": "B78A8ACAE8559E9DA24730368D3851D7",
         "stages": {
-          "coletar": "211DBDC22986AF26C23EAB074D33516E"
+          "coletar": "211DBDC22986AF26C23EAB074D33516E",
+          "obra": "4BFBBD99D3347DA345C236B5C9DABDB5"
         }
       }
     }
-  }
+  },
+  "scripts": {
+    "obra.primeira-forja": [
+      "cutscene",
+      "face player surubin",
+      "walk surubin frente-forja nowait",
+      "camera surubin 0.8",
+      "emote surubin ! 1",
+      "Surubin: Uma forja? Sábio. Precisamos de força. #line:9820F766BEA0CF8CC193D0077655C5AC",
+      "camera estandarte 1.2",
+      "emote surubin ... 1",
+      "Surubin: Mas um dia, cavaleiro, precisaremos de um lugar para reunir os fiéis. Uma comunidade começa pela fé. #line:E10CDCF9322E7DFF9E71EDCD3843E3B3",
+      "set c03",
+      "quest alicerces stage obra A primeira obra está subindo. Amanhã cedo ela fica pronta. #line:34EE6AE66718D8F3F45CFDE4E7509B03",
+      "camera reset 1"
+    ],
+    "obra.primeira-silo": [
+      "cutscene",
+      "face player surubin",
+      "walk surubin frente-silo nowait",
+      "camera surubin 0.8",
+      "emote surubin ! 1",
+      "Surubin: Um silo? Prudente. Quem guarda hoje come no inverno. #line:1716F7607DDA6FE4DD402E99320B2741",
+      "camera estandarte 1.2",
+      "emote surubin ... 1",
+      "Surubin: Mas o pão alimenta o corpo, cavaleiro. Uma comunidade começa pela fé. #line:DD1464716BE2130CA615F8B4F32E1F71",
+      "set c03",
+      "quest alicerces stage obra A primeira obra está subindo. Amanhã cedo ela fica pronta. #line:657B8983F237C29680B0F45F2036E207",
+      "camera reset 1"
+    ],
+    "obra.primeira-alojamento": [
+      "cutscene",
+      "face player surubin",
+      "walk surubin frente-alojamento nowait",
+      "camera surubin 0.8",
+      "emote surubin ! 1",
+      "Surubin: Um teto! Então você me ouviu na fogueira. #line:EA7E69133A6D3E38AC0DC04E91E1BBB1",
+      "if c02.lar",
+      "  Surubin: Você disse que não tinha para onde voltar. Agora vai ter onde dormir. #line:BC4DA36972381ECD5A910F5CD9A6F5B9",
+      "camera estandarte 1.2",
+      "emote surubin ... 1",
+      "Surubin: Mas um teto abriga o corpo, cavaleiro. Uma comunidade começa pela fé. #line:526944ADDA4230ED454607FDC301C45D",
+      "set c03",
+      "quest alicerces stage obra A primeira obra está subindo. Amanhã cedo ela fica pronta. #line:96E9328317082B28DC9304C3E273A92A",
+      "camera reset 1"
+    ],
+    "obra.comecar-forja": [
+      "take madeira 12",
+      "take pedra 10",
+      "fade out 1",
+      "var obra.forja = 1",
+      "teleport player frente-forja up",
+      "wait 0.4",
+      "camera obra-forja 0",
+      "fade in 1",
+      ": O cavaleiro e o Surubin passam horas marcando o alicerce da forja e erguendo os primeiros esteios. #line:FA55CFFD0C1AD0DC7480DAA5D62A27AC",
+      "camera reset 1"
+    ],
+    "obra.comecar-silo": [
+      "take madeira 14",
+      "take pedra 6",
+      "fade out 1",
+      "var obra.silo = 1",
+      "teleport player frente-silo up",
+      "wait 0.4",
+      "camera obra-silo 0",
+      "fade in 1",
+      ": O cavaleiro e o Surubin passam horas marcando o alicerce do silo e erguendo os primeiros esteios. #line:F948A7AB250B5D9ECC52727F524A668D",
+      "camera reset 1"
+    ],
+    "obra.comecar-alojamento": [
+      "take madeira 16",
+      "take ervas 6",
+      "fade out 1",
+      "var obra.alojamento = 1",
+      "teleport player frente-alojamento up",
+      "wait 0.4",
+      "camera obra-alojamento 0",
+      "fade in 1",
+      ": O cavaleiro e o Surubin passam horas marcando o alicerce do alojamento e erguendo os primeiros esteios. #line:BD3AB54C6B4712D87D108E77873AC112",
+      "camera reset 1"
+    ],
+    "altar": [
+      "cutscene",
+      "fade out 0.6",
+      "if hour < 6.5",
+      "  time 6:30",
+      "weather clear",
+      "teleport player manha-cavaleiro right",
+      "teleport surubin manha-surubin left",
+      "camera estandarte 0",
+      "fade in 1",
+      ": O sol nasce sobre o acampamento. A obra nova amanheceu de pé. #line:4539F9E1B2A21B3BEFCD7D2402E57CC6",
+      "camera altar-do-rei 1.2",
+      ": Sob o estandarte, um altar de pedra e madeira, feito com as sobras da obra. Conchas e espinhos de peixe enfeitam a borda. #line:D8AC5677BEA0D075A4D54ACEF9A38BE1",
+      "emote surubin ! 1.2",
+      "Surubin: ${player}! Venha, venha ver! Passei a noite inteira nele. #line:9E7D4D400C1F259A30C5BF1F0A521BCE",
+      "Surubin: Olhe para isto. A primeira casa do Rei nesta terra. Antes de qualquer muro, antes de qualquer teto, o Rei. #line:118E7FFA72AF13010C3FA040C211DB3E",
+      "if obra.primeira = 1",
+      "  player: E a forja? Ficou pronta também. #line:2A7669512D855F5066781028F363F919",
+      "  set obra.forja.vista",
+      "elif obra.primeira = 2",
+      "  player: E o silo? Ficou pronto também. #line:85E638E2B4B7A0C9893D9CB27C37868E",
+      "  set obra.silo.vista",
+      "else",
+      "  player: E o alojamento? Ficou pronto também. #line:8EC52E820719AA75D03CBA79DE9A1E09",
+      "  set obra.alojamento.vista",
+      "Surubin: Ah, ficou? Que bom. Muito bem. #line:87283F43C011136A15670BF7DC96C020",
+      "Surubin: Mas veja como o sal brilha na pedra quando o sol bate. Ele está olhando para nós, cavaleiro. Eu sinto. #line:AC99E4228954873D186B8EA5FD4360C3",
+      "Surubin: Os marinheiros vão contar disto na Capital: um altar ao Baiacu Rei na Terra Selvagem. #line:6B3FD59F7874A7DC2E45AB81BA8F2E03",
+      "emote surubin note 1.4",
+      ": O Surubin se ajoelha diante do altar e fica ali, murmurando. A obra nova, atrás dele, não ganha nem um olhar. #line:B84BF390221834DBBFA9C7E130C44221",
+      "set altar.visto",
+      "quest alicerces done",
+      "camera reset 1",
+      "weather auto"
+    ]
+  },
+  "events": [
+    {
+      "id": "obras-de-manha",
+      "on": "morning",
+      "background": true,
+      "if": "obra.forja = 1 or obra.silo = 1 or obra.alojamento = 1 or (c03 and not altar)",
+      "run": [
+        "if obra.forja = 1",
+        "  var obra.forja = 2",
+        "  toast A forja do acampamento ficou pronta. #line:C27A50349701C4458FD8348CB8FC7DAC",
+        "if obra.silo = 1",
+        "  var obra.silo = 2",
+        "  toast O silo do acampamento ficou pronto. #line:99AAFBA5691D08B0215D0EE841CD9EE1",
+        "if obra.alojamento = 1",
+        "  var obra.alojamento = 2",
+        "  toast O alojamento do acampamento ficou pronto. #line:EE8CFAC99022879A6174F760C8417B99",
+        "if c03 and not altar",
+        "  set altar"
+      ]
+    }
+  ]
 }

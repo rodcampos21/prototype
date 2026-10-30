@@ -498,7 +498,7 @@ export function dialogueUnits(v) {
  * the catalog writes `Enter` into exits. An exit's or event's `label` that is one of them is UI
  * vocabulary, shown with `t()` — not a unit (I18N.md §4.8); any other label is a unit.
  */
-export const BUILTIN_LABELS = Object.freeze({ Talk: 'talk', Examine: 'examine', Knock: 'knock', Read: 'read', Look: 'look', Enter: 'enter', Rest: 'rest', Open: 'open', Chop: 'chop', Break: 'break', Gather: 'gather' });
+export const BUILTIN_LABELS = Object.freeze({ Talk: 'talk', Examine: 'examine', Knock: 'knock', Read: 'read', Look: 'look', Enter: 'enter', Rest: 'rest', Open: 'open', Chop: 'chop', Break: 'break', Gather: 'gather', Store: 'store', 'Pick up': 'pickup' });
 
 /**
  * The built-in verb a label is (`BUILTIN_LABELS`; the label trimmed, exact case), or ''.

@@ -71,6 +71,7 @@ export { PropFactory } from './world/Props.js';
 
 // UI --------------------------------------------------------------------------------------------
 export { UI, DialogBox, Banner, TitleScreen, HUD, InteractPrompt, Fader, DebugPanel, Minimap, WorldMap } from './ui/UI.js';
+export { MapFog } from './ui/MapFog.js';
 export { DebugStats } from './ui/DebugPanel.js';
 export { DEFAULT_CONTROLS, TIME_PHASES, timePhase, createKeycaps } from './ui/HUD.js';
 // combat levels only (COMBAT.md §13; created by `ui.enableCombat()`)

@@ -4,7 +4,8 @@ import { cachedCondition, evalCondition } from '../../engine/level/StoryConditio
 import { levelHasCombat, OBJECT_TYPES } from '../../engine/level/ObjectCatalog.js';
 import { isOwnKey } from '../../engine/utils/own.js';
 import { chapterLevelId, activeChapter, acrossSeam, campaignLevel } from './CampaignFormat.js';
-import { placeState, journeyOf, isNightHour } from './AtlasFormat.js';
+import { placeState, journeyOf, isNightHour, fogLevel } from './AtlasFormat.js';
+import { MapFog } from '../../engine/ui/MapFog.js';
 import { JourneyCard } from '../../engine/ui/JourneyCard.js';
 import { RNG } from '../../engine/utils/math.js';
 import { CampaignState, formatPlayTime, SAVE_VERSION, cleanPlayerName, PLAYER_NAME_MAX } from './CampaignState.js';
@@ -205,6 +206,12 @@ export class CampaignRuntime {
     this._names = new Map();
     /** @type {Promise<void>|null} */
     this._mapsLoading = null;
+    /**
+     * The fog of exploration of each level under it this session (`mapFog`), read from the save
+     * the first time and written back into it on every save.
+     * @type {Map<string, MapFog>}
+     */
+    this._fogs = new Map();
     /**
      * The campaign's hour while the player is in a level with its own fixed hour
      * (`environment.clock: false`: the campaign clock pauses there and goes on from this hour
@@ -837,8 +844,8 @@ export class CampaignRuntime {
       await g.ui.fader.fadeIn(FADE_IN);
       // (the name a term, the subtitle by the key the level holds — I18N.md §4.2, §4.8)
       if (banner) g.ui.banner.show(term(level.name), loc(textKeyOf(level, 'subtitle'), level.subtitle), { duration: 3.2 });
-      // home again: the backpack goes into the camp's stock (CAMPAIGN_FORMAT.md §4.2), saved at once
-      if (g.story?.atHome && Object.keys(g.story.storePack()).length) this.save();
+      // (home again, the backpack stays packed: the player stores it in the camp's chest —
+      // CAMPAIGN_FORMAT.md §4.2)
       // the story: the new level's `arrive` events
       g.story?.onArrive();
       return true;
@@ -1204,6 +1211,7 @@ export class CampaignRuntime {
       s.weather = this._outsideWeather ?? g.weather.weather;
       if (g.combat) this._leaveLevel();
     }
+    for (const [id, fog] of this._fogs) s.fog[id] = fog.encode();
     // (event runs queued or going on run again on Continue)
     s.story.pending = this.runner?.pendingKeys() ?? [];
     return s.toJSON();
@@ -1245,6 +1253,7 @@ export class CampaignRuntime {
     const g = this.game;
     CampaignState.clear(this.name, { test: this.state.test });
     this.state = new CampaignState(this.campaign, this.name, { story: this.story, test: this.state.test });
+    this._fogs.clear();
     this.state.story.seed = journeySeed();
     this._applyStartPreset();
     this.runner?.setState(this.state.story);
@@ -1456,6 +1465,26 @@ export class CampaignRuntime {
       ...level.objects.filter((o) => o.type === 'region').map((r) => ({ name: term(r.name), minX: r.minX + ox, maxX: r.maxX + ox, minZ: r.minZ + oz, maxZ: r.maxZ + oz })),
     ];
     return { map: { canvas, pixelsPerTile: ppt, width: W, depth: D }, origin: [ox, oz], title: term(this.campaign.name), subtitle: term(level.name), regions };
+  }
+
+  /**
+   * The fog of exploration over the level the player is in (Game._setupMaps), or null when the
+   * level has none (the atlas's `fog`: its places' levels, not the hub). One per level, kept for
+   * the session and in the save (`CampaignState.fog`).
+   * @param {Level} level
+   * @returns {MapFog|null}
+   */
+  mapFog(level) {
+    const id = this.levelId;
+    if (!fogLevel(this.campaign.atlas, id) || !level?.width || !level?.depth) return null;
+    let fog = this._fogs.get(id);
+    if (!fog || fog.width !== Math.floor(level.width) || fog.depth !== Math.floor(level.depth)) {
+      fog = new MapFog(level.width, level.depth);
+      // (a saved fog of another size — the level changed — is dropped: the level starts unseen)
+      fog.decode(this.state.fog[id]);
+      this._fogs.set(id, fog);
+    }
+    return fog;
   }
 
   /** Paint the maps of the placed levels not painted yet (background; then the game re-sets its map). */

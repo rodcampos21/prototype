@@ -4,8 +4,6 @@
 
 .lu-root .lu-resbar.is-empty { display: none; }
 .lu-root .lu-resbar canvas.frame { pointer-events: none; }
-/* the combat skill bar's purse: the resource bar shows the gold instead */
-.lu-root--resources .lu-skills__gold { display: none; }
 
 /* the cells: buttons laid over their sockets */
 .lu-root .lu-inv__cell {
@@ -20,3 +18,18 @@
 /* the chosen cell's socket lit */
 .lu-root .lu-inv__cell.is-sel canvas.frame { filter: brightness(1.7) saturate(1.2); }
 .lu-journal:not(.is-open) .lu-inv__cursor { animation-play-state: paused; }
+
+/* the item's action menu: over the panel's text; its rows bare buttons (no browser grey), the
+   chosen one on a dim gold band */
+.lu-root .lu-inv__menu { z-index: 5; }
+.lu-root .lu-inv__menu-row {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+.lu-root .lu-inv__menu-row:focus-visible { outline: none; }
+.lu-root .lu-inv__menu-row.is-on { background: var(--g-card-sel0); box-shadow: inset 1px 0 0 var(--g-g3); }
+.lu-root .lu-inv__menu-text { pointer-events: none; }

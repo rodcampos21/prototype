@@ -571,8 +571,10 @@ Builder extra: `wall` (wall-mounted, no legs and no collider). **In the game:** 
 | `opts.boards` | int | `2` | 1–3 | Arrow boards. |
 | `speaker` | text | `"Signpost"` | | Name plate of the text window, a name translated as a term; `""` = no plate. |
 | `text` | lines | `["↑ Somewhere nice"]` | | Sign text, one page per entry. Empty = not interactive. |
+| `opts.float` | bool | `false` | | *(October 2026.)* A **floating sign**: no post, no collider — the `speaker` (its title) and the text float as a plate over the spot while the player is within 12 units (ui/FloatSigns.js, PIXEL_UI.md §5): the first line in the text's colour, the others (a cost, a time) in the gold. Not read with Space. A building plot's sign. |
+| `opts.height` | number | `1.6` | 0.5–6 | Floating signs: how high the plate hangs over the ground. |
 
-**In the game:** circle collider (0.22); with text: interactable "Read" (radius 1.35).
+**In the game:** circle collider (0.22); with text: interactable "Read" (radius 1.35). A floating sign: neither.
 
 ## Camp
 
@@ -645,6 +647,23 @@ The pufferfish on sea blue, hanging from a crossbar and swaying in the wind.
 (it is walkable). A mast is on the minimap and the world map as the way back (a red flag; on the
 minimap's edge when out of view), and a Space exit within 3 units of it shows no marker of its own.
 
+### building
+
+A building of the camp on its plot (props/CampProps.js `buildCampBuilding`; `camp: true`). The
+front — the door, the open side — faces the rotation. Show one stage at a time with `when` /
+`unless` (the camp's works: `obra.<x> = 1` going up, `>= 2` built).
+
+| Field | Type | Default | Editor range / options | Notes |
+| --- | --- | --- | --- | --- |
+| `rotation` | angle | `0` | step 15° | |
+| `opts.kind` | select | `forge` | `BUILDING_KINDS` | Footprint (width × depth): `forge` 4 × 3.5 — an open-air smithy seen from above: a low stone wall at the back under a narrow plank awning (the tools hang from it) with the chimney through it; in the open before it the stone hearth with its fire (a flame, a warm light day and night, embers, smoke from the chimney) and bellows, an anvil on a stump, a quench barrel, a heap of charcoal. `silo` 3.5 × 3.5 — a round tower of upright planks on a stone ring, hooped with rope, under a pointed thatch roof, a door and a ladder to its hatch. `lodge` 5 × 3.5 — a log cabin under a thatch roof with a chimney, a lantern by the door and a woodpile (the house builder). `altar` 1.6 × 1.2 — Surubin's altar: a stone slab on stacked stones, a plank shelf, shells and fish spines on its edge, a pale salt stone, two candle stubs. `chest` 1.6 × 1.0 — the camp's chest: an iron-banded wooden chest with a rounded lid and a brass lock on two beams, a sack and a coil of rope beside; **Space stores the backpack** in the camp's stock (CAMPAIGN_FORMAT.md §4.2). |
+| `opts.stage` | select | `frame` | `BUILDING_STAGES` | `frame`: going up — a footing of cut stone round the plot (a gap for the door), four corner posts with two rings of beams, braces, a plank walk with a ladder, logs and stones waiting beside. `built`: the building. The altar and the chest have one stage. |
+| `opts.seed` | int | `1` | 0–9999 | Small variations. |
+
+**In the game:** a `frame` collides only at its posts (it is walked round and into); a built forge or
+lodge by its footprint, a silo by its round, the altar by its slab. The forge's fire is a light
+(intensity 6, distance 6.5) counted in the level's light budget.
+
 ### resource
 
 Something to gather on an expedition (builders in
@@ -656,7 +675,7 @@ Something to gather on an expedition (builders in
 | `opts.kind` | select | `tree` | `RESOURCE_KINDS` | `tree`: a tree (Trees.js) to chop. `stone`: a grey boulder with pale veins to break. `herbs`: a low flowering bush to pick. |
 | `opts.stage` | select | `full` | `RESOURCE_STAGES` | `full`: gathered with Space. `spent`: what is left — a stump with chips and the felled trunk, rubble, bare twigs (no prompt). A spent tree with no condition is a plain stump (the Mata's old cutting). |
 | `item` | text | `"madeira"` | | The story item it gives (a story file declares it: its name in the toast and the journal). |
-| `amount` | int | `2` | 1–20 | How many. |
+| `amount` | int | `2` | 1–20 | How many — unless its item has a `rarity` in the campaign's table (CAMPAIGN_FORMAT.md §4.2): then a roll on it (a common one 1 to 3). |
 | `hits` | int | `3` | 1–8 | Strikes until it is spent (one per Space). |
 | `flag` | text | `""` | | The flag set when it is spent; blank: `res.<level>.<id>`. |
 | `opts.tree` | select | `oak` | `TREE_KINDS` | Trees only. |
@@ -671,8 +690,8 @@ morning** (and when the player sleeps until morning), so the full one stands aga
 
 **In the game:** a full resource is an interactable — *Cortar* / *Quebrar* / *Colher* (radius 1.45; herbs
 1.1). Each press is one strike (`Game.harvest`): the knight's swing (on a combat level), chips, dust
-or leaves, a thud, a small shake. The `hits`-th strike sets its flag and gives `amount` × `item`
-(the story's give: a toast and a chime). Not with foes on the player (a toast). Strikes are counted
+or leaves, a thud, a small shake. The `hits`-th strike sets its flag and gives `item` — `amount` of it, or a roll on its rarity
+(the story's give: a toast and a chime; into the backpack as far as it has room). Not with foes on the player (a toast). Strikes are counted
 while the player stays in the level. Colliders: the tree's trunk, the boulder (≈ 0.7), the bush
 (0.28); a stump and its trunk, rubble (0.3); twigs none. `level:check --campaign` counts a full
 resource's flag as set.

@@ -663,9 +663,21 @@ place of the campaign side by side; places you have not been to yet are dimmed.
   switch tabs, ↑/↓ choose an entry.
 - **The inventory**, in a campaign with a backpack, is in the journal: *Backpack* — what you carry
   and, at the camp, the stock — and *Equipment* — what you wear and your attributes — take the
-  *Items* tab's place. There Q/E switch tabs and the arrows choose. A bar under the minimap shows
-  your gold and resources; the backpack has a limit (go back to the camp to store what you
-  gathered).
+  *Items* tab's place. There Q/E switch tabs and the arrows choose. The backpack has slots (6 at
+  first, 12 with the silo), each holding up to 5 of one resource; a tree, a stone or a bush gives 1
+  to 3. Back at the camp, Space at the chest beside Surubin's tent stores what you carry; at the camp
+  a panel under the minimap shows the gold and what the chest holds. The camp's works are paid from
+  the chest. Space on an item in the backpack opens its menu: drop one, drop the stack, or cancel.
+  What you drop lies on the ground beside you for 20 seconds (it blinks near the end); press
+  Space by it (*Pick up*) to take it back.
+  Your Healing Draughts show there too.
+- **The fog of exploration**: on the places of a campaign's map, the minimap and the world map show
+  only what you have walked — the rest is dark until you go there, and what you saw stays seen on
+  the next expeditions. The way back always shows.
+- **The camp's works**: a sign floats over each building plot with what will stand there, what it
+  costs and how long it takes. Space at the plot shows what the chest holds and begins it; once you
+  begin it, it goes up overnight and stands the next morning, wherever you are. When the lodging
+  stands, Space at its door sleeps until morning (only from the evening on).
 - **Cutscenes** take the camera for a moment (black bars at the top and bottom): people walk, the
   camera looks at what matters, the screen may fade. **Hold Esc** to skip one (a choice in it is
   still asked).

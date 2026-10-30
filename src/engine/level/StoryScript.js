@@ -1023,7 +1023,7 @@ export function emptyRefs() {
 export function addConditionRefs(c, out) {
   for (const { ref: r, value } of conditionRefs(c)) {
     if (r.kind === '') out.reads.add(r.name);
-    else if (r.kind === 'item') out.items.add(r.name);
+    else if (r.kind === 'item' || r.kind === 'stock') out.items.add(r.name);
     else if (r.kind === 'quest') out.quests.add(r.name);
     else if (r.kind === 'stage') {
       out.quests.add(r.name);

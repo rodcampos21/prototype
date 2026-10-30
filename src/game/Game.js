@@ -24,6 +24,8 @@ import { cameraFraming, isInterior } from './LevelLook.js';
 import { SHIPPED_LEVELS } from './levels.js';
 import { CharacterCreation } from '../engine/ui/CharacterCreation.js';
 import { AtlasScreen } from '../engine/ui/AtlasScreen.js';
+import { FloatSigns } from '../engine/ui/FloatSigns.js';
+import { GroundItems } from './GroundItems.js';
 import { weatherPhase, weatherPoolOf, rollWeather } from './WeatherRoll.js';
 // (the CombatSystem is imported dynamically in init, on combat levels only: peaceful levels never
 // download or parse the combat code; bindings.js is a tiny import-free table)
@@ -304,6 +306,8 @@ export class Game {
     this._talkCooldown = 0;
     /** @type {Map<string, number>} the strikes a resource still needs (`harvest`; this level only) */
     this._harvestHits = new Map();
+    /** @type {GroundItems|null} the items dropped on the ground (`_groundItems`; this level only) */
+    this.groundItems = null;
     /** @type {WeakMap<object, number>|null} each resource's countdown to its next glint (`_glintResources`) */
     this._glints = null;
     this._tmp = new THREE.Vector3();
@@ -1162,6 +1166,15 @@ export class Game {
     ui.minimap.setMap(map, { view: 34, level: this._mapLevel() });
     ui.minimap.enabled = this.env.minimap !== false;
     this._setWorldMap(map);
+    // the floating signs (a building plot's: what will stand there, what it costs), translated here
+    this._setupFloatSigns();
+    // (what was dropped in the last level stays there: gone)
+    this.groundItems?.clear();
+    // the fog of exploration (a campaign's expedition levels): the maps show what was walked
+    /** @type {import('../engine/ui/MapFog.js').MapFog|null} */
+    this.mapFog = this.campaign?.mapFog(this.level) ?? null;
+    ui.minimap.setFog(this.mapFog);
+    ui.worldMap.setFog(this.mapFog);
     const W = this.world;
     /** @type {GameMapState} */
     this._map = {
@@ -1175,6 +1188,43 @@ export class Game {
     // combat: enemy dots, chest markers once discovered, the boss marker
     if (this.combat) this.combat.attachMaps(this._map);
     this.loadStats.map = Math.round(performance.now() - t0);
+  }
+
+  /**
+   * The items dropped on the ground (GroundItems), made on the first drop: Space on one (its
+   * *Pegar* prompt, `_findInteractable`) gives it back to the backpack (StoryRunner.gather) and saves.
+   */
+  _groundItems() {
+    return this.groundItems ??= new GroundItems({
+      scene: this.engine.scene,
+      height: (x, z) => this.tileMap.getHeight(x, z),
+      standable: (x, z) => this._standable(x, z),
+      take: (id, n) => {
+        const got = this.story?.gather(id, n) ?? 0;
+        if (got > 0) {
+          this.audio.playSfx('pickup', { volume: 0.6 });
+          this.campaign?.save();
+        }
+        return got;
+      },
+    });
+  }
+
+  /**
+   * The level's floating signs (World `floatSigns`: a `signpost` with `opts.float`) on the HUD's
+   * FloatSigns layer: the title (the sign's `speaker`, a term) and its lines translated by their keys,
+   * shown while their story group is there.
+   */
+  _setupFloatSigns() {
+    const list = this.world?.floatSigns ?? [];
+    if (!list.length && !this.ui.floatSigns) return;
+    this.ui.floatSigns ??= new FloatSigns(this.ui.hud.element);
+    this.ui.floatSigns.set(list.map((s) => ({
+      position: s.position,
+      title: s.speaker ? term(s.speaker) : '',
+      lines: s.pages.lines.map((l, k) => (typeof l === 'string' ? loc(typeof s.pages.keys?.[k] === 'string' ? s.pages.keys[k] : '', l) : '')).filter(Boolean),
+      present: () => !s.group || s.group.present,
+    })));
   }
 
   /**
@@ -1282,7 +1332,10 @@ export class Game {
     const len = Math.hypot(vx, vz) || 1;
     m.view.x = vx / len;
     m.view.z = vz / len;
+    // walking uncovers the fog round the player (a reveal from the same cell does nothing)
+    if (this.mapFog && this.mode === 'play') this.mapFog.reveal(m.player.x, m.player.z);
     if (this.mode === 'play' && !this.photoMode) this.ui.minimap.update(m);
+    this.ui.floatSigns?.update(this.engine.camera, this.mode === 'play' ? this.player.position : null);
     if (this.mapOpen) this.ui.worldMap.update(dt, m);
   }
 
@@ -1447,7 +1500,21 @@ export class Game {
     this.engine.input.addBindings({ journal: ['KeyB'] }, {});
     const { storyUIClasses, ResourceBar } = await import('./story/storyUI.js');
     this.ui.useStoryUI(storyUIClasses());
-    if (this.ui.journal) this.ui.journal.onSound = (name) => this.audio.playSfx(name, { volume: 0.5 });
+    if (this.ui.journal) {
+      this.ui.journal.onSound = (name) => this.audio.playSfx(name, { volume: 0.5 });
+      // a backpack item's action (its menu in the journal): drop it — on the ground in front of the
+      // player for a while (GroundItems) —, and show the backpack again
+      this.ui.journal.onItemAction = (id, action, n) => {
+        const k = action === 'drop' ? this.story?.dropItem(id, n) ?? 0 : 0;
+        if (!k) return;
+        // (beside the player, to the screen's right — the camera's x axis —: their sprite never
+        // hides it)
+        const p = this.player.position, e = this.engine.camera.matrixWorld.elements;
+        this._groundItems().drop(id, this.story.itemIconOf(id), k, p.x, p.z, e[0], e[2]);
+        this.ui.journal.setData(this.journalData());
+        this.campaign?.save();
+      };
+    }
     // a campaign with an inventory (CAMPAIGN_FORMAT.md §4.2): the resource bar (the backpack and the
     // equipment are the journal's tabs: `journalData`)
     if (this.story.inventory) {
@@ -1763,7 +1830,11 @@ export class Game {
     const flag = (typeof o.flag === 'string' && o.flag.trim()) || `res.${this.campaign?.levelId ?? 'level'}.${o.id}`;
     if (this.campaign) this.campaign.setFlag(flag);
     else this.story.state.setFlag(flag);
-    this.story.gather(item, int(o.amount, 2, 1, 20));
+    // (how much: a roll on the campaign's rarity table for the item — a common one 1 to 3 —, else
+    // the resource's `amount`)
+    const n = this.story.dropOf(item, int(o.amount, 2, 1, 20));
+    if (n > 0) this.story.gather(item, n);
+    else this.ui.hud.toast(t('story.pack.none'), 2, { kind: 'item' });
     this.particles.burst(kind === 'herbs' ? 'sparkle' : 'footstep', this._tmp.set(o.x, this.tileMap.getHeight(o.x, o.z) + 0.3, o.z), kind === 'herbs' ? 4 : 10);
   }
 
@@ -1894,6 +1965,12 @@ export class Game {
       : saved ? { level: saved.level } : null;
     const cls = this.campaign?.state.player?.cls;
     const role = cls ? t(`campaign.class.${cls}`) : '';
+    // the Healing Draughts the player carries (combat's, between levels the save's): shown in the
+    // backpack, in no slot of their own (the inventory strings are the journal's, loaded with it)
+    const draughts = Math.max(0, Math.floor(pc ? pc.potions : saved?.potions ?? 0));
+    if (draughts > 0 && Array.isArray(data.items)) {
+      data.items = [...data.items, { id: 'draught', name: t('inventory.draught'), text: t('inventory.draughtText'), icon: 'draught', pack: false, key: false, count: draughts, stock: 0, actions: [] }];
+    }
     return {
       ...data,
       stats,
@@ -2242,7 +2319,9 @@ export class Game {
     let bestNpc = null;
     let bestIt = null;
     const npcs = this.npcs;
-    const items = this.world.interactables;
+    // (what was dropped on the ground is picked up like any interactable)
+    const ground = this.groundItems?.items.length ? this.groundItems.interactables() : null;
+    const items = ground ? [...this.world.interactables, ...ground] : this.world.interactables;
     const n = npcs.length;
     for (let k = 0; k < n + items.length; k++) {
       const isNpc = k < n;
@@ -2256,8 +2335,9 @@ export class Game {
       const d = Math.hypot(dx, dz);
       if (d > radius || Math.abs(pos.y - p.y) > 1.3) continue;
       const dot = d > 1e-3 ? (dx * f.x + dz * f.z) / d : 1;
-      // must be (roughly) in front, unless the player stands on it
-      let score = d <= 0.55 || dot >= 0.25 ? d - dot * 0.7 : Infinity;
+      // must be (roughly) in front, unless the player stands on it or it is offered from any side
+      // (an item dropped on the ground: what is in front still wins)
+      let score = d <= 0.55 || dot >= 0.25 || (!isNpc && ref.anyFacing) ? d - dot * 0.7 : Infinity;
       // a story event over a door or a sign wins at the same spot (it is what the story wants now)
       if (!isNpc && ref.storyEvent) score -= 0.3;
       // an object's `lookSpan` (a door's leaf) is a second target within the same reach: its
@@ -2367,6 +2447,13 @@ export class Game {
         } else if (it.kind === 'resource') {
           // a tree to chop, a stone to break, herbs to pick: one strike per press
           await this.harvest(it);
+        } else if (it.kind === 'stash') {
+          // the camp's chest: the backpack's resources go into the stock, saved at once
+          const moved = this.story?.storePack() ?? {};
+          if (Object.keys(moved).length) {
+            this.audio.playSfx('open', { volume: 0.5 });
+            this.campaign?.save();
+          } else this.ui.hud.toast(t('story.pack.empty'), 1.8, { kind: 'item' });
         } else {
           if (it.text?.sfx && it.text.lines?.length) this.audio.playSfx(it.text.sfx, { volume: 0.6 });
           // a sign's, a door's, a well's text (and the defaults standing in for none) translated
@@ -2547,6 +2634,7 @@ export class Game {
     ui.hud.setTime(this.lighting.timeOfDay);
     this._updateRegion(dt);
     this._updateMaps(dt);
+    if (this.groundItems && this.mode === 'play') this.groundItems.update(dt);
     // (once a party exists: its frames under the vitals / location plate)
     if (this.party) this._updatePartyHud(playing);
     this.audioDirector.update(dt, pp);
@@ -2869,6 +2957,7 @@ export class Game {
       () => this.party?.dispose(),
       () => this.resolution?.dispose(),
       () => this.blobs?.dispose(),
+      () => this.groundItems?.dispose(),
       () => this.weather?.dispose(),
       () => this.critters?.dispose(this.spriteManager),
       () => this.npcs?.forEach((n) => n.dispose()),

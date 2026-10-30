@@ -97,6 +97,8 @@ export const BIG_LEVEL_BATCHING = Object.freeze({
  * @property {LevelObject} [object]     chests and waystones: the level object
  * @property {PropResult['controls']|null} [prop]   chests and waystones: the prop's `controls`
  * @property {boolean} [disabled]       set by the combat system on an opened chest: offers nothing
+ * @property {boolean} [anyFacing]      offered within reach whichever way the player faces (an item
+ *                                      dropped on the ground: GroundItems)
  * @property {(game: Game, it: Interactable) => unknown} [onInteract]
  *   set by the combat system on chests and waystones (open / rest) instead of showing `text`
  */
@@ -285,6 +287,12 @@ export class World {
      * @type {{ position: THREE.Vector3, group: StoryGroup|null }[]}
      */
     this._returnList = [];
+    /**
+     * Every floating sign (a `signpost` with `opts.float`): where its plate hangs, its title (the
+     * sign's `speaker`, untranslated), its pages with their keys, its live story group (or null).
+     * @type {{ position: THREE.Vector3, speaker: string, pages: { lines: any[], keys: any[] }, group: StoryGroup|null }[]}
+     */
+    this.floatSigns = [];
     /**
      * Waterfalls: { id, x, z, width, dir: [fx, fz], anchor (foot of the fall, in the pool), top,
      * splash (spray bursts + the roar in the ambience) } — every one, there or not: a live story
@@ -995,6 +1003,15 @@ export class World {
           break;
         }
         case 'signpost':
+          // a floating sign: its plate over the spot (Game → ui/FloatSigns.js), not read with Space
+          if (/** @type {any} */ (obj).opts?.float) {
+            const h = Number(/** @type {any} */ (obj).opts?.height);
+            this.floatSigns.push({
+              position: b.anchor.clone().setY(b.anchor.y + (Number.isFinite(h) ? Math.min(6, Math.max(0.5, h)) : 1.6)),
+              speaker: typeof obj.speaker === 'string' ? obj.speaker : '', pages, group: g,
+            });
+            break;
+          }
           if (lines.length) {
             // (the plate: the sign's `speaker` — '' none —, else the code default 'Signpost')
             const sp = /** @type {unknown} */ (obj.speaker);
@@ -1014,6 +1031,23 @@ export class World {
           // (a return mast: on the maps, so the way home is found on a big map)
           if (/** @type {any} */ (obj).opts?.kind === 'mast') this._returnList.push({ position: b.anchor.clone(), group: g });
           break;
+        case 'building': {
+          const bo = /** @type {any} */ (obj).opts ?? {};
+          if (bo.kind === 'chest') {
+            // the camp's chest: Space stores the backpack in the stock (Game's `stash`)
+            const y = b.anchor.y;
+            this._interact(obj.id, new THREE.Vector3(obj.x, y, obj.z), {
+              kind: 'stash', label: 'Store', radius: 1.5, prompt: new THREE.Vector3(obj.x, y + 1.5, obj.z), text: { speaker: '', lines: [] },
+            });
+          } else if (bo.kind === 'forge' && bo.stage === 'built') {
+            // a lit forge crackles like a campfire and is a fire on the maps
+            const position = b.anchor.clone();
+            this._fireList.push({ position, group: g });
+            if (g) g.fires.push(position);
+            if (!g || g.present) this.fires.push(position);
+          }
+          break;
+        }
         case 'resource': {
           // a full resource is gathered with Space (Game.harvest); a spent one is scenery
           const ro = /** @type {any} */ (obj).opts ?? {};
