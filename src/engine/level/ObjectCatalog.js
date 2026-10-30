@@ -112,6 +112,15 @@ export const BANNER_STAGES = ['pole', 'mast'];
 /** What a `stake` is (`opts.kind`): one stake with a ribbon, the return mast of a big map, or a roped building plot. */
 export const STAKE_KINDS = ['ribbon', 'mast', 'plot'];
 /**
+ * What a camp `building` is (`opts.kind`, props/CampProps.js `buildCampBuilding`) and its footprint
+ * (width × depth: CAMP_BUILDING_SIZE there — change both); its stages (`opts.stage`): `frame`, going
+ * up on its plot (footing, scaffold, logs waiting), and `built`. The altar has one stage.
+ */
+export const BUILDING_KINDS = ['forge', 'silo', 'lodge', 'altar', 'chest'];
+/** @see BUILDING_KINDS */
+export const BUILDING_STAGES = ['frame', 'built'];
+const BUILDING_SIZE = Object.freeze({ forge: [4, 3.5], silo: [3.5, 3.5], lodge: [5, 3.5], altar: [1.6, 1.2], chest: [1.6, 1.0] });
+/**
  * What a `resource` is (`opts.kind`, props/ResourceProps.js): a tree to chop, a stone to break, a
  * bush of herbs to pick. Its stages (`opts.stage`): `full`, gathered with Space, and `spent`, what
  * is left (a stump, rubble, bare twigs) until it grows back.
@@ -292,7 +301,11 @@ export const OBJECT_TYPES = {
   signpost: {
     label: 'Signpost', category: 'Props', placement: 'point', kind: 'prop', glyph: '⚑', color: '#c9a45c', radius: 0.3, rotatable: true,
     defaults: { rotation: 0, speaker: 'Signpost', text: ['↑ Somewhere nice'], opts: { boards: 2 } },
-    fields: [ROT, { key: 'opts.boards', label: 'Boards', type: 'int', min: 1, max: 3 }, { key: 'speaker', label: 'Speaker', type: 'text', i18n: true }, { ...TEXT, label: 'Sign text' }],
+    fields: [
+      ROT, { key: 'opts.boards', label: 'Boards', type: 'int', min: 1, max: 3 }, { key: 'speaker', label: 'Speaker', type: 'text', i18n: true }, { ...TEXT, label: 'Sign text' },
+      { key: 'opts.float', label: 'Floating sign', type: 'bool', help: 'No post: the speaker (its title) and the text float as a plate over the spot while the player is near (a building plot\'s sign). Not read with Space.' },
+      { key: 'opts.height', label: 'Float height', type: 'number', min: 0.5, max: 6, step: 0.1, help: 'Floating signs: how high over the ground the plate hangs (1.6).' },
+    ],
   },
 
   // ------------------------------------------------------------------ Camp
@@ -326,6 +339,17 @@ export const OBJECT_TYPES = {
       { key: 'opts.kind', label: 'Kind', type: 'select', options: STAKE_KINDS },
       { key: 'opts.width', label: 'Plot width', type: 'number', min: 1.5, max: 10, step: 0.5, help: 'Plots only.' },
       { key: 'opts.depth', label: 'Plot depth', type: 'number', min: 1.5, max: 10, step: 0.5, help: 'Plots only.' },
+      SEED,
+    ],
+  },
+  building: {
+    label: 'Camp building', category: 'Camp', placement: 'point', kind: 'prop', camp: true, glyph: '⌂', color: '#a8794a', radius: 2.0, rotatable: true, snap: 0.5,
+    help: 'A building of the camp on its plot; the front faces the rotation. Forge, silo, lodge: Frame while it goes up (footing, scaffold, logs), Built when done — show one at a time with when / unless. Altar, chest: one stage (the chest: Space stores the backpack in the camp’s stock).',
+    defaults: { rotation: 0, opts: { kind: 'forge', stage: 'frame', seed: 1 } },
+    fields: [
+      ROT,
+      { key: 'opts.kind', label: 'Kind', type: 'select', options: BUILDING_KINDS },
+      { key: 'opts.stage', label: 'Stage', type: 'select', options: BUILDING_STAGES, help: 'Not for the altar.' },
       SEED,
     ],
   },
@@ -879,6 +903,10 @@ export function objectBounds(obj) {
   else if (obj.type === 'flowerbox') { hw = (obj.opts?.length ?? 1.2) / 2; hd = 0.25; }
   else if (obj.type === 'tent') { const big = obj.opts?.stage === 'pavilion'; hw = big ? 2.4 : 1.3; hd = big ? 2.2 : 2.3; }
   else if (obj.type === 'mapTable') { hw = 0.95; hd = 0.55; }
+  else if (obj.type === 'building') {
+    const k = isOwnKey(BUILDING_SIZE, obj.opts?.kind) ? obj.opts.kind : 'forge';
+    hw = BUILDING_SIZE[k][0] / 2 + 0.3; hd = BUILDING_SIZE[k][1] / 2 + 0.3;
+  }
   else if (obj.type === 'stake' && obj.opts?.kind === 'plot') { hw = optNum(obj.opts?.width, 4, 1.5, 10) / 2 + 0.1; hd = optNum(obj.opts?.depth, 3, 1.5, 10) / 2 + 0.1; }
   else if (obj.type === 'waterfall') { hw = (obj.width ?? 2) / 2; hd = 0.3; }
   else if (obj.type === 'emitter') { hw = (obj.size?.[0] ?? 8) / 2; hd = (obj.size?.[2] ?? 8) / 2; }

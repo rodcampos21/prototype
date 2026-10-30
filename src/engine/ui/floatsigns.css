@@ -1,0 +1,20 @@
+/*
+ * FloatSigns (ui/FloatSigns.js): floating sign plates over spots of the world. Each sign's element
+ * sits at the projected point (0, 0); its plate hangs above it. `.lu-root …` so the rules win over
+ * base.css's `.lu-root .g`.
+ */
+.lu-root .lu-fsigns { position: absolute; inset: 0; pointer-events: none; }
+.lu-root .lu-fsign {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 3;
+  will-change: transform;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.24s steps(3, end), visibility 0s linear 0.24s;
+}
+.lu-root .lu-fsign.is-on { opacity: 1; visibility: visible; transition: opacity 0.24s steps(3, end), visibility 0s; }
+.lu-root .lu-fsign .lu-fsign__plate { position: absolute; }
+/* under a conversation the plates step aside (the dialog reads alone) */
+.lu-root--dialog .lu-fsign { opacity: 0 !important; visibility: hidden !important; }

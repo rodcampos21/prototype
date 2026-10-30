@@ -17,7 +17,7 @@ import {
   buildHaystack, buildFlowerbox,
 } from './props/SmallProps.js';
 import { buildChest, buildWaystone } from './props/CombatProps.js';
-import { buildTent, buildMapTable, buildBanner, buildStake } from './props/CampProps.js';
+import { buildTent, buildMapTable, buildBanner, buildStake, buildCampBuilding } from './props/CampProps.js';
 import { buildResource } from './props/ResourceProps.js';
 import {
   buildBed, buildTable, buildChair, buildShelf, buildHearth, buildCounter, buildRug, buildStaircase, buildWardrobe,
@@ -395,6 +395,15 @@ export class PropFactory {
    * @returns {PropResult}
    */
   stake(x, y, z, opts = {}) { return buildStake(this, x, y, z, opts); }
+
+  /**
+   * A building of the camp on its plot: `forge`, `silo` or `lodge` — going up (`frame`: footing,
+   * scaffold, logs) or `built` — or Surubin's `altar`. The front faces local +Z.
+   * @param {number} x @param {number} y @param {number} z
+   * @param {{ rotation?: number, kind?: string, stage?: string, seed?: number, id?: string }} [opts]
+   * @returns {PropResult}
+   */
+  building(x, y, z, opts = {}) { return buildCampBuilding(this, x, y, z, opts); }
 
   /**
    * A resource to gather: `tree` (a tree; spent: a stump and the felled trunk), `stone` (a boulder with

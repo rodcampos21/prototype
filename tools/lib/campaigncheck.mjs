@@ -583,6 +583,8 @@ export function checkCampaign(campaign, readLevel, { strict = false, levelChecks
       // (a villager's `flag` is set after talking; a full resource's when it is gathered — its own,
       // else res.<level>.<id>: Game.harvest)
       const setFlag = o?.type === 'npc' ? text(o.flag) : o?.type === 'resource' && o.opts?.stage !== 'spent' ? text(o.flag) || `res.${base}.${o.id}` : '';
+      // (a full resource gives its item when gathered: a giver, like a script's `give`)
+      if (o?.type === 'resource' && o.opts?.stage !== 'spent' && text(o.item)) gives.add(text(o.item));
       if (setFlag) {
         note(writes, setFlag, `${where} › flag`);
         note(levelWrites, setFlag, `${where} › flag`);
@@ -613,6 +615,10 @@ export function checkCampaign(campaign, readLevel, { strict = false, levelChecks
       if (story && !it) warn(`campaign.json: inventory.equipment.${slot}: "${id}" is not an item the story files declare`);
       else if (it && it.slot !== slot) warn(`campaign.json: inventory.equipment.${slot}: item "${id}" is ${it.slot ? `for the ${it.slot} slot` : 'no equipment (no "slot")'}`);
     }
+  }
+  // an item's rarity names a row of the campaign's rarity table (else gathering gives the resource's amount)
+  for (const [id, it] of Object.entries(story?.items ?? {})) {
+    if (it.rarity && !Object.hasOwn(inv?.rarity ?? {}, it.rarity)) warn(`story item "${id}": rarity "${it.rarity}" is not in campaign.json's inventory.rarity — gathering it gives the resource's amount`);
   }
   // the atlas (CAMPAIGN_FORMAT.md §4.1): every place with a road is a journey from the hub's map
   // table (a travel of the hub's file); its conditions and its sketch's are reads

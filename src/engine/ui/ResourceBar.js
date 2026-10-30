@@ -13,13 +13,13 @@ import './inventory.css';
 /** @import { Minimap } from './Minimap.js' */
 
 /**
- * ResourceBar — the HUD's resources (`.lu-resbar`, a campaign with an `inventory`: CAMPAIGN_FORMAT.md
- * §4.2), under the minimap in the top-right corner: an XS window as wide as the minimap with the
- * gold first, then each backpack item — its icon and how many the player carries, or at the camp
- * how many the stock holds — and at the foot the backpack's use and limit (`6/8`, red when full),
- * or at the camp the stock's chest. Laid out in art px of G's 640 × 360 frame (layout/layout.js),
- * again when the data, the minimap's place or the scale change. Inside the HUD element: it hides
- * with the HUD. Created by `UI.useResourceBar()`.
+ * ResourceBar — the camp's chest on the HUD (`.lu-resbar`, a campaign with an `inventory`:
+ * CAMPAIGN_FORMAT.md §4.2), under the minimap in the top-right corner, **at the camp only** (away
+ * the backpack is in the journal): an XS window as wide as the minimap headed by the chest and
+ * *Baú*, then the gold and each resource the chest holds — its icon and how many. Laid out in art
+ * px of G's 640 × 360 frame (layout/layout.js), again when the data, the minimap's place or the scale
+ * change. Inside the HUD element: it hides with the HUD. Created by `UI.useResourceBar()`.
+ * (Later, the camp's own work — villagers using its stock — reads the same chest.)
  */
 
 /** The bar's x and width (the minimap's), the rows' pitch, the inside's padding (art px). */
@@ -53,7 +53,7 @@ export class ResourceBar {
    * @param {InventoryData|null} data
    */
   setData(data) {
-    const key = data ? JSON.stringify([data.gold, data.pack, data.home, (data.items ?? []).filter((it) => it.pack).map((it) => [it.id, it.count, it.stock, it.icon])]) : '';
+    const key = data ? JSON.stringify([data.gold, data.home, (data.items ?? []).filter((it) => it.pack).map((it) => [it.id, it.stock, it.icon])]) : '';
     this._data = data;
     if (key === this._key) return;
     this._key = key;
@@ -82,13 +82,13 @@ export class ResourceBar {
     const y0 = this._top();
     this._y = y0;
     el.replaceChildren();
-    el.classList.toggle('is-empty', !d);
-    if (!d) return;
+    // (away from the camp: nothing — the backpack is in the journal)
+    el.classList.toggle('is-empty', !d || !d.home);
+    if (!d || !d.home) return;
     const k = pal();
     const rows = (d.items ?? []).filter((it) => it.pack);
-    const pack = d.pack ?? null;
     const n = 1 + rows.length;
-    const h = PAD + n * ROW + (pack ? 5 + ROW : 0) + PAD - 3;
+    const h = PAD + ROW + 5 + n * ROW + PAD - 3;
     anchorEl(el, 'tr', X, y0, W, h);
     win(el, { size: 'XS', corners: GEMS.gold(), cornerR: 2 }, X, y0, W, h);
     const L = X + PAD, R = X + W - PAD - 1;
@@ -105,22 +105,16 @@ export class ResourceBar {
       tx.dataset.id = id;
       y += ROW;
     };
+    // the heading: the chest, *Baú*; a rule under it
+    row(itemIcon('chest'), s('chest'), k.g4, 'chest', 'tiny');
+    put(el, hairline(W - PAD * 2, 'both', k.dm1), L, y + 1).setAttribute('aria-hidden', 'true');
+    y += 4;
     row(itemIcon('coin'), (Math.max(0, Math.floor(d.gold ?? 0))).toLocaleString('en-US'), k.kw, 'gold');
     for (const it of rows) {
-      const c = d.home ? it.stock ?? 0 : it.count;
+      const c = it.stock ?? 0;
       const ic = itemIcon(it.icon ?? '');
       ic.title = it.name;
       row(ic, String(c), c ? k.tx1 : k.tx3, it.id);
-    }
-    if (pack) {
-      put(el, hairline(W - PAD * 2, 'both', k.dm1), L, y + 1).setAttribute('aria-hidden', 'true');
-      y += 4;
-      if (d.home) {
-        row(itemIcon('chest'), s('stock'), k.g4, 'stock', 'tiny');
-      } else {
-        const full = pack.limit > 0 && pack.used >= pack.limit;
-        row(itemIcon('pack'), `${pack.used}/${pack.limit}`, full ? k.hp3 : k.tx1, 'pack');
-      }
     }
   }
 }

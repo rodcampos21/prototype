@@ -51,8 +51,10 @@ const table = {
     'prompt.rest': 'Descansar',
     'prompt.open': 'Abrir',
     'prompt.chop': 'Cortar',
+    'prompt.store': 'Guardar',
     'prompt.break': 'Quebrar',
     'prompt.gather': 'Colher',
+    'prompt.pickup': 'Pegar',
 
     'toast.noParty': 'Ninguém viaja com você.',
     /** a resource spent (Game.harvest): {item} the item's name, {n} how many */
@@ -129,8 +131,10 @@ const table = {
     'prompt.rest': 'Rest',
     'prompt.open': 'Open',
     'prompt.chop': 'Chop',
+    'prompt.store': 'Store',
     'prompt.break': 'Break',
     'prompt.gather': 'Gather',
+    'prompt.pickup': 'Pick up',
 
     'toast.noParty': 'No one travels with you.',
     'toast.gathered': '+{n} {item}',

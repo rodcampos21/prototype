@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { smoothstep, clamp } from '../../utils/math.js';
 import { TRIM } from './Details.js';
 import { rockGeom } from './SmallProps.js';
+import { buildHouse } from './House.js';
 
 /**
  * @import { PropFactory } from '../Props.js'
@@ -429,4 +430,239 @@ export function buildStake(f, x, y, z, opts = {}) {
   group.add(ribbons);
   ribbons.updateMatrixWorld(true);
   return f.result(group, { colliders });
+}
+
+// ---------------------------------------------------------------------------------------------
+// Buildings of the camp
+// ---------------------------------------------------------------------------------------------
+
+/**
+ * The footprint of each camp building (local, width along X × depth along Z), the size of the plot
+ * it stands on (ObjectCatalog.js keeps the same numbers for the editor's footprint: change both).
+ */
+export const CAMP_BUILDING_SIZE = Object.freeze({ forge: [4, 3.5], silo: [3.5, 3.5], lodge: [5, 3.5], altar: [1.6, 1.2], chest: [1.6, 1.0] });
+
+/**
+ * A building going up (`frame`): the plot's stone footing, four corner posts with two rings of
+ * beams, braces, a plank walk on the front, a ladder, a stack of logs and a heap of stones beside.
+ * Every camp building looks like this while it is being built (the scaffold of PLANO F1).
+ * @param {PropFactory} f @param {MeshBuilder} b
+ */
+function buildingFrame(f, b, w, d, rng) {
+  const hw = w / 2;
+  const hd = d / 2;
+  const stone = { top: f.extra.material('boulder_moss'), side: f.extra.material('boulder') };
+  // the footing: a low course of cut stone round the plot, a gap for the door
+  for (const s of [-1, 1]) {
+    b.box('stone_brick', [0.36, 0.26, d], { at: [s * (hw - 0.18), 0.13, 0], faces: { ny: false }, off: [rng.range(0, 1), 0] });
+    b.box('stone_brick', [hw - 0.5, 0.26, 0.36], { at: [s * (hw / 2 + 0.25), 0.13, hd - 0.18], faces: { ny: false } });
+  }
+  b.box('stone_brick', [w - 0.72, 0.26, 0.36], { at: [0, 0.13, -hd + 0.18], faces: { ny: false } });
+  // the posts, the beams and the braces
+  const H = 2.6;
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) b.box(TRIM, [0.12, H, 0.12], { at: [sx * (hw - 0.1), H / 2, sz * (hd - 0.1)], rotUV: true, faces: { ny: false } });
+  for (const y of [1.25, H - 0.08]) {
+    for (const sz of [-1, 1]) b.box(TRIM, [w - 0.1, 0.08, 0.08], { at: [0, y, sz * (hd - 0.1)], rotUV: true });
+    for (const sx of [-1, 1]) b.box(TRIM, [0.08, 0.08, d - 0.1], { at: [sx * (hw - 0.1), y, 0], rotUV: true });
+  }
+  for (const sx of [-1, 1]) strut(b, TRIM, [sx * (hw - 0.1), 0.15, -hd + 0.1], [sx * (hw - 0.1), 1.2, -hd + 0.1 + Math.min(1.4, d * 0.4)], 0.06);
+  strut(b, TRIM, [-hw + 0.1, 1.3, -hd + 0.1], [-hw + 0.1 + Math.min(1.6, w * 0.4), H - 0.1, -hd + 0.1], 0.06);
+  // the plank walk on the front beam, and the ladder up to it
+  for (let k = 0; k < 3; k++) b.box('wood_planks', [w - 0.3, 0.05, 0.16], { at: [0, 1.32, hd - 0.1 + (k - 1) * 0.18], off: [k * 0.4, 0] });
+  for (const s of [-1, 1]) strut(b, TRIM, [hw * 0.5 + s * 0.18, 0, hd + 0.55], [hw * 0.5 + s * 0.18, 1.45, hd + 0.05], 0.05);
+  for (let k = 1; k <= 4; k++) {
+    const t = k / 5;
+    b.box(TRIM, [0.4, 0.04, 0.04], { at: [hw * 0.5, 1.45 * t, hd + 0.55 - 0.5 * t], rotUV: true });
+  }
+  // the logs waiting (three below, two on top) and a heap of stones
+  const lx = -hw - 0.75;
+  for (const [dy, dz] of [[0.13, -0.28], [0.13, 0], [0.13, 0.28], [0.36, -0.14], [0.36, 0.14]]) {
+    b.tube('bark', [lx + dz, dy, -0.9], [lx + dz, dy, 0.9], 0.13, 0.12, { segments: 6, capTop: 'wood_planks', capBottom: 'wood_planks', twist: dz * 7 });
+  }
+  for (let k = 0; k < 5; k++) rockGeom(b, hw + 0.6 + rng.range(-0.25, 0.25), 0, rng.range(-0.5, 0.5), [0.2, 0.15, 0.18], rng, { ...stone, detail: 0, yaw: rng.range(0, 6) });
+}
+
+/** Where the forge's fire burns (local), its light and its chimney's smoke (`buildingForge`). */
+const FORGE_FIRE = Object.freeze({ x: -0.5, y: 0.9, z: -0.3, chimneyZ: -1.35, chimneyTop: 3.4 });
+
+/**
+ * The forge, an open-air smithy seen from above: a low stone wall at the back with a narrow plank
+ * awning over it on two posts (the tools hang there), the chimney rising through the awning, and in
+ * front of it, in the open, the stone hearth with its fire (a flame, a warm light day and night,
+ * embers, smoke from the chimney) and its bellows; the anvil on a stump, a quench barrel, a heap of
+ * charcoal — all forward of the awning, so the camera sees the work and not a roof.
+ * @param {PropFactory} f @param {MeshBuilder} b
+ */
+function buildingForge(f, b, w, d, rng) {
+  const hw = w / 2;
+  const hd = d / 2;
+  const F = FORGE_FIRE;
+  // the floor: flagstones, a little proud of the ground
+  b.box('stone_brick', [w, 0.1, d], { at: [0, 0.05, 0], faces: { ny: false }, off: [0.3, 0.2] });
+  // the back wall, waist high, and the awning over it (only the back: a metre deep)
+  b.box('stone_brick', [w, 1.0, 0.3], { at: [0, 0.5, -hd + 0.15], faces: { ny: false } });
+  const Ha = 2.3;
+  const front = -hd + 1.0;
+  for (const sx of [-1, 1]) b.box(TRIM, [0.15, Ha, 0.15], { at: [sx * (hw - 0.12), Ha / 2, front], rotUV: true, faces: { ny: false } });
+  b.box(TRIM, [w + 0.1, 0.12, 0.12], { at: [0, Ha - 0.04, front], rotUV: true });
+  const aw = [[hw + 0.25, Ha + 0.02, front + 0.2], [hw + 0.25, Ha + 0.5, -hd - 0.2], [-hw - 0.25, Ha + 0.5, -hd - 0.2], [-hw - 0.25, Ha + 0.02, front + 0.2]];
+  b.quad('wood_planks_dark', [aw[3], aw[0], aw[1], aw[2]], [[0, 0], [w / 1.5, 0], [w / 1.5, 0.9], [0, 0.9]]);
+  b.quad('wood_planks_dark', [aw[0], aw[3], aw[2], aw[1]], [[0, 0], [w / 1.5, 0], [w / 1.5, 0.9], [0, 0.9]], { color: [0.6, 0.6, 0.6] });
+  // the tools hanging from the awning's beam (tongs, hammers)
+  for (let k = 0; k < 4; k++) b.box('metal', [0.05, 0.5, 0.05], { at: [0.55 + k * 0.32, Ha - 0.35, front - 0.06], color: [0.5, 0.5, 0.55] });
+  // the chimney through the awning, and the hearth before it in the open, its bed of embers
+  b.box('chimney_stone', [0.8, F.chimneyTop, 0.7], { at: [F.x, F.chimneyTop / 2, F.chimneyZ], faces: { ny: false } });
+  b.box('stone_brick', [1.5, 0.8, 1.5], { at: [F.x, 0.4, (F.chimneyZ + 0.2 + F.z + 0.55) / 2 - 0.05], faces: { ny: false } });
+  b.lathe('ash', [{ y: 0.8, r: 0.45 }, { y: 0.85, r: 0.32 }, { y: 0.87, r: 0.02 }], { segments: 8, at: [F.x, 0, F.z], smooth: true });
+  // the bellows beside the hearth: two boards and the leather between
+  b.push([F.x - 1.05, 0.55, F.z - 0.15], [0, 0, -0.25]);
+  b.box('wood_planks_dark', [0.5, 0.06, 0.32], { at: [0, 0.12, 0] });
+  b.box('wood_planks_dark', [0.5, 0.06, 0.32], { at: [0, -0.12, 0] });
+  b.box('canvas', [0.42, 0.2, 0.28], { at: [-0.04, 0, 0], color: [0.45, 0.32, 0.22] });
+  b.box(TRIM, [0.3, 0.05, 0.05], { at: [-0.4, 0.12, 0] });
+  b.pop();
+  b.box(TRIM, [0.1, 0.55, 0.1], { at: [F.x - 1.05, 0.27, F.z - 0.15] });
+  // the anvil on its stump, in the open
+  const ax = 0.85, az = 0.55;
+  b.tube('bark', [ax, 0, az], [ax, 0.5, az], 0.24, 0.22, { segments: 7, capTop: 'wood_planks' });
+  b.box('metal', [0.55, 0.12, 0.2], { at: [ax, 0.62, az], color: [0.45, 0.45, 0.5] });
+  b.box('metal', [0.22, 0.12, 0.16], { at: [ax, 0.52, az], color: [0.4, 0.4, 0.45] });
+  b.tri('metal', [ax + 0.27, 0.68, az + 0.08], [ax + 0.27, 0.68, az - 0.08], [ax + 0.5, 0.65, az], [0, 0], [0.1, 0], [0.05, 0.1], { color: [0.45, 0.45, 0.5] });
+  b.box('metal', [0.06, 0.06, 0.3], { at: [ax - 0.05, 0.71, az + 0.02], rot: [0, 0.6, 0], color: [0.35, 0.35, 0.38] });
+  // the quench barrel and a heap of charcoal
+  b.lathe('wood_planks_dark', [{ y: 0, r: 0.26 }, { y: 0.35, r: 0.3 }, { y: 0.7, r: 0.26 }], { segments: 8, at: [hw - 0.45, 0, -0.35], capTop: true, smooth: true });
+  b.lathe('ash', [{ y: 0, r: 0.42 }, { y: 0.18, r: 0.3 }, { y: 0.28, r: 0.05 }], { segments: 7, at: [-hw + 0.5, 0.1, hd - 0.55], smooth: true, color: [0.35, 0.33, 0.34] });
+  const flame = f.flame({ width: 0.6, height: 0.6, seed: rng.range(0, 100), glowSize: 1.6, glowIntensity: 0.5 });
+  flame.object.position.set(F.x, F.y, F.z);
+  return flame;
+}
+
+/**
+ * The silo: a round tower of upright planks on a stone ring, hooped with rope, under a pointed
+ * thatch roof with a cap; a plank door at the front and a ladder up to the hatch.
+ * @param {PropFactory} f @param {MeshBuilder} b
+ */
+function buildingSilo(f, b, w) {
+  const R = w / 2 - 0.35;
+  const H = 3.2;
+  b.lathe('stone_brick', [{ y: 0, r: R + 0.18 }, { y: 0.45, r: R + 0.14 }], { segments: 12, capTop: true });
+  b.lathe('wood_planks', [{ y: 0.45, r: R }, { y: H, r: R - 0.05 }], { segments: 12 });
+  for (const y of [1.2, 2.3]) b.lathe('rope', [{ y: y - 0.04, r: R + 0.03 }, { y: y + 0.04, r: R + 0.03 }], { segments: 12 });
+  b.lathe('roof_thatch', [{ y: H - 0.15, r: R + 0.45 }, { y: H + 0.5, r: R * 0.65 }, { y: H + 1.55, r: 0.08 }], { segments: 12, capBottom: true });
+  b.lathe(TRIM, [{ y: H + 1.45, r: 0.1 }, { y: H + 1.8, r: 0.02 }], { segments: 6 });
+  // the door, and the ladder to the hatch under the eave
+  b.box('door', [0.8, 1.5, 0.08], { at: [0, 0.45 + 0.75, R - 0.02] });
+  for (const s of [-1, 1]) strut(b, TRIM, [R * 0.55 + s * 0.18, 0, R + 0.5], [R * 0.55 + s * 0.18, H - 0.2, R - 0.05], 0.05);
+  for (let k = 1; k <= 7; k++) {
+    const t = k / 8;
+    b.box(TRIM, [0.4, 0.04, 0.04], { at: [R * 0.55, (H - 0.2) * t, R + 0.5 - 0.55 * t], rotUV: true });
+  }
+  b.box('wood_planks_dark', [0.55, 0.5, 0.06], { at: [R * 0.55, H - 0.45, R - 0.02] });
+}
+
+/**
+ * Surubin's altar under the banner, made of what was left of the first building: a slab of stone
+ * on two stacked stones, a plank shelf, shells and fish spines along its edge, a pale salt stone in
+ * the middle, two stubs of candles.
+ * @param {PropFactory} f @param {MeshBuilder} b
+ */
+function buildingAltar(f, b, rng) {
+  const stone = { top: f.extra.material('boulder_moss'), side: f.extra.material('boulder') };
+  for (const s of [-1, 1]) {
+    rockGeom(b, s * 0.5, 0, 0, [0.28, 0.32, 0.3], rng, { ...stone, detail: 0, yaw: rng.range(0, 6) });
+    rockGeom(b, s * 0.48, 0.38, 0.02, [0.22, 0.2, 0.24], rng, { ...stone, detail: 0, yaw: rng.range(0, 6) });
+  }
+  b.box('stone_brick', [1.5, 0.14, 0.75], { at: [0, 0.68, 0], off: [0.3, 0.1] });
+  b.box('wood_planks', [1.2, 0.06, 0.4], { at: [0, 0.2, 0.18] });
+  // the salt stone in the middle (pale, catching the light), the candles, shells and spines
+  b.lathe('canvas', [{ y: 0, r: 0.12 }, { y: 0.16, r: 0.13 }, { y: 0.28, r: 0.04 }], { segments: 6, at: [0, 0.75, -0.05], smooth: true, capBottom: true, color: [1.35, 1.35, 1.4] });
+  for (const s of [-1, 1]) b.lathe('canvas', [{ y: 0, r: 0.04 }, { y: 0.14, r: 0.035 }], { segments: 6, at: [s * 0.45, 0.75, 0.05], capTop: true, color: [1.15, 1.1, 1.0] });
+  for (let k = 0; k < 7; k++) {
+    const x = -0.68 + k * 0.226;
+    if (k % 2) b.lathe('canvas', [{ y: 0, r: 0.07 }, { y: 0.04, r: 0.05 }, { y: 0.05, r: 0.01 }], { segments: 5, at: [x, 0.75, 0.3], color: [1.25, 1.05, 0.95] });
+    else b.tri('canvas', [x - 0.03, 0.75, 0.32], [x + 0.03, 0.75, 0.32], [x, 0.98, 0.36], [0, 0], [0.05, 0], [0.025, 0.2], { color: [1.2, 1.18, 1.1] });
+  }
+}
+
+/**
+ * The camp's chest, where the expeditions' resources are stored: a big iron-banded wooden chest on
+ * two beams, its lid rounded, a brass lock plate; a sack and a coil of rope beside it.
+ * @param {PropFactory} f @param {MeshBuilder} b
+ */
+function buildingChest(f, b, rng) {
+  const W = 1.25, D = 0.72, H = 0.62;
+  for (const sx of [-1, 1]) b.box(TRIM, [0.14, 0.12, D + 0.12], { at: [sx * (W / 2 - 0.15), 0.06, 0], rotUV: true });
+  b.box('wood_planks', [W, H, D], { at: [0, 0.12 + H / 2, 0], faces: { ny: false }, off: [rng.range(0, 1), 0] });
+  // the rounded lid: a half barrel along the chest
+  b.lathe('wood_planks_dark', [{ y: -W / 2, r: D / 2 }, { y: W / 2, r: D / 2 }], { segments: 10, at: [0, 0.12 + H, 0], rot: [0, 0, Math.PI / 2], capTop: true, capBottom: true, smooth: true });
+  // iron bands round body and lid, the corners, the lock plate
+  for (const x of [-W / 2 + 0.16, 0, W / 2 - 0.16]) {
+    b.box('metal', [0.07, H + 0.02, D + 0.03], { at: [x, 0.12 + H / 2, 0], color: [0.38, 0.38, 0.42] });
+    b.lathe('metal', [{ y: -0.035, r: D / 2 + 0.02 }, { y: 0.035, r: D / 2 + 0.02 }], { segments: 10, at: [x, 0.12 + H, 0], rot: [0, 0, Math.PI / 2], color: [0.38, 0.38, 0.42] });
+  }
+  b.box('metal', [0.18, 0.2, 0.04], { at: [0, 0.12 + H - 0.06, D / 2 + 0.02], color: [1.4, 1.1, 0.55] });
+  // a sack and a coil of rope beside
+  b.lathe('canvas', [{ y: 0, r: 0.2 }, { y: 0.2, r: 0.26 }, { y: 0.42, r: 0.18 }, { y: 0.5, r: 0.06 }], { segments: 8, at: [W / 2 + 0.28, 0, 0.12], smooth: true, capBottom: true, color: [0.85, 0.75, 0.6] });
+  b.lathe('rope', [{ y: 0, r: 0.2 }, { y: 0.1, r: 0.2 }], { segments: 10, at: [-W / 2 - 0.25, 0, 0.18], capTop: true, color: [0.95, 0.9, 0.8] });
+}
+/**
+ * A building of the camp (PLANO-DE-MECANICAS E, F1), on its plot: `forge`, `silo` or `lodge`, each
+ * either going up (`frame`: the footing, the scaffold, the logs and stones waiting) or `built`; or
+ * the `altar` (one stage). The front (the door, the open side) faces local +Z.
+ * - forge: an open shed with a stone hearth, its fire and chimney (a light day and night), an anvil;
+ * - silo: a round plank tower on a stone ring under a pointed thatch roof, a ladder to its hatch;
+ * - lodge: a log cabin with a thatch roof, a chimney and a lantern by the door (`buildHouse`);
+ * - altar: Surubin's altar of stone and planks, shells and fish spines on its edge;
+ * - chest: the camp's chest, where the resources are stored (one stage).
+ * opts: { rotation = 0, kind = 'forge', stage = 'frame', seed, id }
+ * @param {PropFactory} f
+ */
+export function buildCampBuilding(f, x, y, z, opts = {}) {
+  const kind = Object.hasOwn(CAMP_BUILDING_SIZE, opts.kind) ? opts.kind : 'forge';
+  const stage = kind === 'altar' || kind === 'chest' || opts.stage === 'built' ? 'built' : 'frame';
+  const [w, d] = CAMP_BUILDING_SIZE[kind];
+  const rot = opts.rotation ?? 0;
+  if (kind === 'lodge' && stage === 'built') {
+    return buildHouse(f, x, y, z, {
+      width: w, depth: d, rotation: rot, seed: opts.seed, id: opts.id ?? 'lodge', wall: 'log_wall', roof: 'roof_thatch',
+      gable: 'log_wall', plinthHeight: 0.3, storyHeight: 2.4, pitch: 40, chimney: true, chimneySide: 1, door: 'front',
+      shutters: false, flowerboxes: false, lantern: true, sign: false, woodpile: true, doorHood: false,
+    });
+  }
+  const rng = f.rng('campBuilding', x, z, opts.seed);
+  const b = f.builder(groundAO(0.6, 0.6));
+  /** @type {ReturnType<PropFactory['flame']>|null} */
+  let flame = null;
+  if (stage === 'frame') buildingFrame(f, b, w, d, rng);
+  else if (kind === 'forge') flame = buildingForge(f, b, w, d, rng);
+  else if (kind === 'silo') buildingSilo(f, b, w);
+  else if (kind === 'chest') buildingChest(f, b, rng);
+  else buildingAltar(f, b, rng);
+  const group = f.finish(b, `campBuilding:${kind}`, x, y, z, rot);
+  /** @type {any} */
+  const extras = {};
+  if (flame) {
+    group.add(flame.object);
+    group.updateMatrixWorld(true);
+    const at = (lx, ly, lz) => f.world(group, new THREE.Vector3(lx, ly, lz));
+    const F = FORGE_FIRE;
+    extras.lights = [{ position: at(F.x, F.y + 0.5, F.z + 0.3), color: 0xff7a30, intensity: 6, distance: 6.5, flicker: 0.45, nightOnly: false }];
+    extras.emitters = [
+      { preset: 'embers', position: at(F.x, F.y + 0.1, F.z), rate: 2.5 },
+      { preset: 'smoke', position: at(F.x, F.chimneyTop + 0.2, F.chimneyZ), rate: 1.8 },
+    ];
+    extras.flames = [flame];
+  }
+  // the frame is walked round and through its door gap only at the posts; the rest is solid
+  const hw = w / 2, hd = d / 2;
+  const colliders = stage === 'frame'
+    ? [-1, 1].flatMap((sx) => [-1, 1].map((sz) => {
+      const p = f.world(group, new THREE.Vector3(sx * (hw - 0.1), 0, sz * (hd - 0.1)));
+      return { type: /** @type {'circle'} */ ('circle'), x: p.x, z: p.z, r: 0.2 };
+    }))
+    : kind === 'silo' ? [{ type: /** @type {'circle'} */ ('circle'), x, z, r: hw - 0.15 }]
+      : kind === 'altar' ? f.boxColliders(group, -0.78, 0.78, -0.4, 0.4)
+        : kind === 'chest' ? f.boxColliders(group, -0.7, 0.7, -0.42, 0.42)
+        : f.boxColliders(group, -hw, hw, -hd, hd);
+  return f.result(group, { colliders, ...extras });
 }

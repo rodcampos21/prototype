@@ -60,12 +60,13 @@ const ICON_NAME = /^[a-z0-9][a-z0-9-]{0,31}$/;
 
 /**
  * @typedef {{ name: string, text: string, key: boolean, textKey?: string, pack?: true, icon?: string,
- *   slot?: EquipSlot, bonus?: Partial<Record<EquipStat, number>> }} StoryItem
+ *   slot?: EquipSlot, bonus?: Partial<Record<EquipStat, number>>, rarity?: string }} StoryItem
  *   key: a key item (the journal lists it apart; `take` never takes it unless named); textKey: its
  *   text's content key (the file's `textKeys.text`, docs/specs/I18N.md §4.2; absent: none); pack: a
  *   gathered resource — carried in the backpack, counted by its limit, stored in the camp's stock
  *   at home; icon: its icon in the inventory and the resource bar; slot / bonus: an equipment item
- *   (where it is worn, what it adds — shown, not applied yet)
+ *   (where it is worn, what it adds — shown, not applied yet); rarity: a name of the campaign's
+ *   `inventory.rarity` table — how much gathering it gives (CampaignFormat.rollDrop)
  * @typedef {{ id: string, text: string, textKey?: string }} QuestStage
  * @typedef {{ text: string, done: string, textKey?: string }} QuestGoal  `done`: a condition as scripts write it (`parseCondition`: `done: gold` reads the purse); the journal ticks the goal while it holds
  * @typedef {{ title: string, text: string, stages: QuestStage[], goals: QuestGoal[], textKey?: string }} StoryQuest
@@ -73,7 +74,9 @@ const ICON_NAME = /^[a-z0-9][a-z0-9-]{0,31}$/;
  *   `stages` by stage id, `goals` by the goal's raw index): each built stage and goal carries its own
  * @typedef {{ name: string, preset: string, portraitColor: string, talk: string }} StoryActor
  *   talk: the id of the script it says when talked to ('' = none: the villager's own dialogue)
- * @typedef {{ id: string, on: 'change'|'arrive', if: string, once: boolean, level: string, run: string, background: boolean }} StoryEvent
+ * @typedef {{ id: string, on: 'change'|'arrive'|'morning', if: string, once: boolean, level: string, run: string, background: boolean }} StoryEvent
+ *   on: `morning` runs at every new morning (5:00 passing, a rest until morning) while its `if`
+ *   holds, wherever the player is (the camp's works, PLANO-DE-MECANICAS D);
  *   run: a script id; level: `arrive` only in that level ('' = any; always '' for `change`); if: a
  *   condition as scripts write it (`parseCondition`: `if: gold` reads the purse); background: a
  *   background run (the file's `background: true`; anything else is false) — it holds no one and
@@ -151,6 +154,8 @@ export function addStoryJSON(story, raw, file, warnings) {
     const icon = text(o.icon).trim();
     if (o.icon != null && !ICON_NAME.test(icon)) warnings.push(where(`item "${id}": "icon" must be an icon name (a–z, 0–9, -) — ignored`));
     const slot = text(o.slot);
+    const rarity = text(o.rarity).trim();
+    if (o.rarity != null && !isStoryName(rarity)) warnings.push(where(`item "${id}": "rarity" must be a rarity's name — ignored`));
     if (o.slot != null && !EQUIP_SLOTS.includes(/** @type {any} */ (slot))) warnings.push(where(`item "${id}": "${show(o.slot)}" is not a slot (${EQUIP_SLOTS.join(', ')}) — ignored`));
     /** @type {Partial<Record<EquipStat, number>>} */
     const bonus = {};
@@ -164,6 +169,7 @@ export function addStoryJSON(story, raw, file, warnings) {
       ...(icon && ICON_NAME.test(icon) ? { icon } : {}),
       ...(EQUIP_SLOTS.includes(/** @type {any} */ (slot)) ? { slot: /** @type {EquipSlot} */ (slot) } : {}),
       ...(Object.keys(bonus).length ? { bonus } : {}),
+      ...(rarity && isStoryName(rarity) ? { rarity } : {}),
       ...(ik.keys?.text ? { textKey: ik.keys.text } : {}),
     };
   }
@@ -227,8 +233,8 @@ export function addStoryJSON(story, raw, file, warnings) {
     const id = eventIdOf(e, k);
     if (!isStoryName(id)) { warnings.push(where(`events[${k}]: "${id}" is not an event id — dropped`)); continue; }
     if (eventIds.has(id)) { warnings.push(where(`event "${id}" is declared twice — the second dropped`)); continue; }
-    const on = e.on === 'arrive' ? 'arrive' : 'change';
-    if (e.on !== on) warnings.push(where(`event "${id}": "on" must be "change" or "arrive" — "change" used`));
+    const on = e.on === 'arrive' || e.on === 'morning' ? e.on : 'change';
+    if (e.on !== on) warnings.push(where(`event "${id}": "on" must be "change", "arrive" or "morning" — "change" used`));
     let run = '';
     if (Array.isArray(e.run)) {
       // inline lines: kept as the script `event.<id>` (a `== event.<id>` script read before wins)

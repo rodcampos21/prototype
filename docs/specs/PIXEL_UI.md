@@ -430,6 +430,20 @@ device pixels. The default label is `t('dialog.prompt.talk')`.
   *Recurso para coletar* only while the map shows such markers), then YOU ARE IN with the
   region (name role, up to 3 lines), the key hints at the foot. The window opens with a stepped
   fade and rises 2 px.
+- **Fog of exploration** (`MapFog.js`; `Minimap.setFog`, `WorldMap.setFog` — a campaign's atlas
+  with `fog`, CAMPAIGN_FORMAT.md §4.1): a grid of one cell per world unit, 0 unseen … 255 seen;
+  walking reveals a disc round the player (10 units, a soft rim of 3.5). Both maps draw the unseen
+  over the tiles in `m-fog` (#1a1a26), its rim a 4 × 4 ordered dither read bilinearly from the
+  cells, the outermost speckle `m-fog2` (#2a2a3a) — painted again only when the fog moved (its
+  `version`). Markers, villagers, foes and the names of regions lying under it are left out; the
+  return mast always shows. On a campaign's overview only the level's own part is covered.
+
+**Floating signs** (`FloatSigns.js`, `floatsigns.css`; a `signpost` with `opts.float`, OBJECT_CATALOG.md)
+- A small gilt XS plate (GEMS.gold, ink1) hung on a 2-art-px stem over its spot: the title in tracked
+  small capitals (g4), then the lines in the line role — the first in tx1, the others (a cost, a
+  time) in kw — wrapped at 156 art px. Shown while the spot is within 12 units of the player, its
+  story group is there and it is on screen; fades in 3 steps; projected every frame (the prompt's
+  way), not occluded; hidden with the HUD and under a dialog.
 
 **Title and loading screen** (`TitleScreen.js`, `title.css`, `art/logo.js`, `game.html`)
 - G's group `mc` (40, 50, 560 × 300). `star(25)` 2 over the logo.
@@ -555,19 +569,29 @@ shrink; the roles are `roles()`)
   then "Hold {key} to skip" with a keycap.
 
 **Inventory** (a campaign with an `inventory`, CAMPAIGN_FORMAT.md §4.2; the bar: `UI.useResourceBar()`):
-- **Resource bar** (`.lu-resbar`, in the HUD): an XS window with gold corner gems as wide as the
-  minimap (76), 7 under it (at its place while the minimap is hidden), anchored top right. Rows
-  15 apart: the coin and the gold, each backpack item's 16 × 16 icon and how many are carried (at
-  the camp: how many the stock holds), dim at 0; under a dim rule the backpack and `used/limit`
-  (hp3 when full), at the camp the chest and *Estoque*. The combat skill bar's purse is hidden
-  (`lu-root--resources`): the bar shows the gold.
+- **The camp's chest panel** (`.lu-resbar`, ResourceBar.js, in the HUD) — **at the camp only**:
+  an XS window with gold corner gems as wide as the minimap (76), 7 under it (at its place while
+  the minimap is hidden), anchored top right. Rows 15 apart: the chest and *Baú* (tiny, g4), a dim
+  rule, the coin and the gold, then each backpack item's 16 × 16 icon and how many the chest holds,
+  dim at 0. Away from the camp it is hidden (the backpack is in the journal; combat keeps its own
+  purse).
 - **The journal's Backpack and Equipment tabs** (InventoryPanel.js): with `JournalData.inventory`
   they take the Items tab's place (QUESTS · BACKPACK · EQUIPMENT · CODEX; the gold shows on
   Backpack). On them Q / E switch tabs and the arrows move over the cells; the panel draws under
   the header instead of the list and detail boxes. Backpack: 24 × 24 sockets 27 apart, 8 to a
-  row at G's width (5 at least), two rows at least; the section heading's end shows `used/limit`;
-  under them the stock's sockets at the camp, a line elsewhere. The chosen socket lit, G's cursor
-  beside it; at the right the item's icon at 2×, its name, *Na mochila* / *No estoque* and its
+  row at G's width (5 at least). With a backpack: one socket per **slot** (`pack.limit`), each pack
+  item in stacks of `pack.stack` (one socket each, its count at its foot), the free slots empty,
+  then what the backpack does not count (key items); without one, two rows at least. The section
+  heading's end shows the slots `used/limit` (hp3 when full); under them the chest's sockets at the
+  camp (*Baú do acampamento*), a line elsewhere. The combat's Healing Draughts show after the slots
+  (the `draught` icon, their count). **The item's menu**: confirm (Space / Enter) or a second click
+  on a backpack item opens a small gilt XS window beside its cell — one 12-art-px row per action
+  (`InventoryItem.actions`: `drop` gives *Largar 1* and, on a stack, *Largar n*), then *Cancelar*
+  in tx2 (the actions in tx1) — the chosen row in g4 on a dim gold band (`card-sel0`, a g3 edge)
+  with G's cursor; the window stands over the panel's text (z 5); ↑ / ↓ choose, confirm takes, cancel closes the menu
+  (not the journal). The panel hands the choice to the game (`Journal.onItemAction`); a rebuild while
+  it is up opens it again at the same row. The chosen socket lit, G's cursor
+  beside it; at the right the item's icon at 2×, its name, *Na mochila* / *No baú* and its
   text. Equipment: the figure (frame 0 of the character sheet at 2×) in a 70-wide glass panel, the
   slots 34 apart either side (head, body, hands; weapon, feet, accessory) with their names in the
   tiny role, an empty one dim; the name and class under the figure; at the right the slot, the

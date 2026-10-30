@@ -95,6 +95,7 @@ A condition is a short expression; nothing is evaluated as code.
 ```
 bridge-mended                          a flag (a variable that is not 0)
 not refused and item:plank >= 3        items you carry
+stock:madeira >= 12                    what a campaign's camp chest holds (its stock alone)
 met = true                             true / false are 1 / 0
 quest:find-ilse = active               a quest's state: none | active | done | failed
 stage:find-ilse >= found-chart         a quest's stage, compared by the order of its declared stages
@@ -118,7 +119,7 @@ player = Rodrigo                       the name of the player's character (text;
 expr  := or ; or := and ('or' | '||') and … ; and := not ('and' | '&&') not … ; not := ('not' | '!') not | atom
 atom  := '(' expr ')' | 'true' | 'false' | ref [ ('=' | '==' | '!=' | '<' | '<=' | '>' | '>=') value ]
 ref   := name | kind ':' name | hour | day | gold | chapter | level | weather | visits | party | player
-kind  := item | quest | stage | visits | visited | done | party
+kind  := item | stock | quest | stage | visits | visited | done | party
 value := number | 'true' | 'false' | name
 number := plain decimals: 3, -2, 0.5, .5  (no exponent: 1e3 is neither a number nor a name)
 name  := letters, digits, _ . -  (not a number)
@@ -361,8 +362,11 @@ the purse, §3), `once`, `background` (below), an hour (`at`) or an enemy group 
 
 `once`: never again after it ran (saved: `<level>.<id>`; `done:<id>` reads it in its level,
 `done:<level>.<id>` anywhere — §3). The story files' **campaign events** have `on: change`
-(anywhere) or `on: arrive` (optionally in one `level`; `level` on a `change` event is ignored,
-with a warning); a `once` one is saved as `story.<id>`; `background` works as on a level event.
+(anywhere), `on: arrive` (optionally in one `level`; `level` on a `change` event is ignored,
+with a warning) or `on: morning` — every new morning, wherever the player is: the clock passing
+5:00 (time passing, a journey, the `time` command) or a `rest` until morning, while its `if` holds
+(the work of a camp that goes on overnight; a `background` one runs while the player walks on); a
+`once` one is saved as `story.<id>`; `background` works as on a level event.
 
 **Background events.** `background: true` (an `event` object's *Runs in the background*, a story
 file event's `"background": true`; absent or anything else: false) makes the event's run a
@@ -449,16 +453,18 @@ with a warning). They are merged in that order; a name declared twice keeps the 
 
 - `vars`: declared names and their values on a new game (`true` = 1).
 - `items`: display name, journal text, `key` (a key item, listed apart). `gold` is built in. A
-  campaign with an `inventory` also reads `pack: true` (a backpack item), `icon`, `slot` and
-  `bonus` (an equipment item) — [CAMPAIGN_FORMAT.md §4.2](CAMPAIGN_FORMAT.md#42-the-inventory-backpack-stock-and-equipment);
-  an item's count (`item:<id>`) is then what is carried and what the camp's stock holds.
+  campaign with an `inventory` also reads `pack: true` (a backpack item), `rarity` (a row of its
+  rarity table: how much gathering gives), `icon`, `slot` and `bonus` (an equipment item) —
+  [CAMPAIGN_FORMAT.md §4.2](CAMPAIGN_FORMAT.md#42-the-inventory-backpack-stock-and-equipment);
+  an item's count (`item:<id>`) is then what is carried and what the camp's stock holds, and
+  `stock:<id>` the stock alone.
 - `quests`: title, text, named `stages` (their order is what `stage:x >= y` compares), `goals`
   (ticked in the journal while `done` holds — a condition as scripts write it: `done: gold >= 10`
   reads the purse).
 - `actors`: name, look, name-plate colour, `talk` (a script id, or the lines inline: the script
   `actor.<id>`).
 - `scripts`: named scripts (`call`, actors' `talk`, events' `run`).
-- `events`: `id`, `on` (`change` | `arrive`), `if` (a condition as scripts write it), `once`,
+- `events`: `id`, `on` (`change` | `arrive` | `morning`), `if` (a condition as scripts write it), `once`,
   `level` (arrive only), `run` (a script id, or the lines inline: the script `event.<id>`),
   `background` (`true`: a background run, §6 — its script and the scripts its `call`s reach may
   use only what a background run may; a value other than `true` / `false` is warned and read as

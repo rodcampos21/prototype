@@ -31,7 +31,7 @@
  * (`item:plank`, `quest:find-ilse`, `party:sela`) or a value of the game (`hour`, `gold`, `party`
  * …: `kind` 'game').
  * @typedef {{ kind: RefKind, name: string }} Ref
- * @typedef {'' | 'item' | 'quest' | 'stage' | 'visits' | 'visited' | 'done' | 'party' | 'game'} RefKind
+ * @typedef {'' | 'item' | 'stock' | 'quest' | 'stage' | 'visits' | 'visited' | 'done' | 'party' | 'game'} RefKind
  * @typedef {'=' | '!=' | '<' | '<=' | '>' | '>='} Cmp
  */
 
@@ -39,7 +39,7 @@
  * Prefixes of `kind:name` references. `party:<who>` is 1 while that villager (its id, actor or
  * name, in any case) is a member of the player's party, else 0 (docs/specs/PARTY.md §7.2).
  */
-export const REF_KINDS = /** @type {const} */ (['item', 'quest', 'stage', 'visits', 'visited', 'done', 'party']);
+export const REF_KINDS = /** @type {const} */ (['item', 'stock', 'quest', 'stage', 'visits', 'visited', 'done', 'party']);
 
 /**
  * Values of the game a condition reads by a bare word: the hour of day, the day (1 on a new game,

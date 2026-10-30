@@ -84,10 +84,15 @@ const RESERVED = /^(con|prn|aux|nul|com[0-9]|lpt[0-9])$/;
 
 /**
  * The backpack and the equipment (CAMPAIGN_FORMAT.md §4.2). Gathered items (story items with
- * `pack`) go into the backpack, up to `pack` of them in all; arriving at the atlas's home stores
- * them in the camp's stock. The largest `grow` step whose `when` holds raises the limit (the silo).
+ * `pack`) go into the backpack: `pack` slots, each holding up to `stack` of one item; the player
+ * stores them in the camp's chest (the stock). The largest `grow` step whose `when` holds raises the
+ * slots (the silo). `rarity`: how much a resource gives when gathered, by its item's `rarity`.
  * @typedef {object} CampaignInventory
- * @property {number} pack   how many pack items the backpack holds (1–999)
+ * @property {number} pack   how many slots the backpack has (1–999)
+ * @property {number} stack  how many of one item a slot holds (1–99; 1: one item a slot)
+ * @property {Record<string, number[]>} rarity  a rarity's name → the chance (0–1) of getting at
+ *   least 1, 2, 3 … of the item from one gathering (`rollDrop`; a list that never grows: `[1, 0.4, 0.15]`
+ *   always gives one, two 40 % of the time, three 15 %)
  * @property {{ when: string, pack: number }[]} grow   a larger backpack while `when` (a story
  *   condition) holds
  * @property {Record<string, string>} equipment   slot (EQUIP_SLOTS) → the story item a new journey
@@ -254,13 +259,42 @@ function normalizeInventory(raw, warnings) {
     equipment[slot] = id;
   }
   if (r.equipment != null && !isPlain(r.equipment)) warnings.push('inventory.equipment must be an object — ignored');
-  return { pack, grow, equipment };
+  let stack = 1;
+  if (r.stack != null) {
+    if (Number.isInteger(r.stack) && r.stack >= 1 && r.stack <= 99) stack = r.stack;
+    else warnings.push('inventory.stack must be a whole number from 1 to 99 — 1 used');
+  }
+  /** @type {Record<string, number[]>} */
+  const rarity = Object.create(null);
+  for (const [name, list] of Object.entries(isPlain(r.rarity) ? r.rarity : {})) {
+    const ok = isStoryName(name) && Array.isArray(list) && list.length >= 1 && list.length <= 9 && list.every((p) => typeof p === 'number' && p >= 0 && p <= 1);
+    if (!ok) { warnings.push(`inventory.rarity.${show(name)}: a list of 1–9 chances from 0 to 1 — dropped`); continue; }
+    // (never growing: the chance of at least k+1 cannot pass that of at least k)
+    rarity[name] = list.map((p, k) => Math.min(p, ...list.slice(0, k)));
+  }
+  if (r.rarity != null && !isPlain(r.rarity)) warnings.push('inventory.rarity must be an object — ignored');
+  return { pack, stack, grow, equipment, rarity };
+}
+
+/**
+ * How many of an item one gathering gives: `chances[k]` is the chance of at least k + 1 (never
+ * growing, CampaignInventory.rarity). `rnd`: a number in [0, 1) (Math.random, or a seeded draw).
+ * @param {number[]} chances
+ * @param {number} rnd
+ * @returns {number}
+ */
+export function rollDrop(chances, rnd) {
+  let n = 0;
+  while (n < chances.length && rnd < chances[n]) n++;
+  return n;
 }
 
 /** @param {CampaignInventory} inv */
 function serializeInventory(inv) {
   return {
     pack: inv.pack,
+    ...(inv.stack > 1 ? { stack: inv.stack } : {}),
+    ...(Object.keys(inv.rarity).length ? { rarity: Object.fromEntries(Object.entries(inv.rarity).map(([k, v]) => [k, [...v]])) } : {}),
     ...(inv.grow.length ? { grow: inv.grow.map((g) => ({ when: g.when, pack: g.pack })) } : {}),
     ...(Object.keys(inv.equipment).length ? { equipment: { ...inv.equipment } } : {}),
   };

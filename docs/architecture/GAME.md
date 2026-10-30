@@ -12,6 +12,7 @@
 > [`src/game/Game.js`](../../src/game/Game.js), [`src/game/World.js`](../../src/game/World.js),
 > [`Player.js`](../../src/game/Player.js), [`Npc.js`](../../src/game/Npc.js),
 > [`Critters.js`](../../src/game/Critters.js), [`dialogue.js`](../../src/game/dialogue.js),
+> [`GroundItems.js`](../../src/game/GroundItems.js),
 > [`Weather.js`](../../src/game/Weather.js), [`WeatherLook.js`](../../src/game/WeatherLook.js),
 > [`LevelLook.js`](../../src/game/LevelLook.js),
 > [`AudioDirector.js`](../../src/game/AudioDirector.js),

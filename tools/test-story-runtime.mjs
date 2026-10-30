@@ -16,8 +16,9 @@ import { StoryState, storyReader, storyKey, isLooseFlag, journeySeed, readPartyR
 import { CampaignState, cleanPlayerName, PLAYER_NAME_MAX } from '../src/game/campaign/CampaignState.js';
 import { PLAYER_CLASSES, isPlayerClass, classLook } from '../src/game/campaign/PlayerClasses.js';
 import { weatherPhase, weatherPoolOf, rollWeather } from '../src/game/WeatherRoll.js';
-import { normalizeCampaign, parseCampaign, serializeCampaign } from '../src/game/campaign/CampaignFormat.js';
-import { placeState, journeyHours, journeyOf, isNightHour, NIGHT_CONDITION } from '../src/game/campaign/AtlasFormat.js';
+import { normalizeCampaign, parseCampaign, serializeCampaign, rollDrop } from '../src/game/campaign/CampaignFormat.js';
+import { placeState, journeyHours, journeyOf, isNightHour, NIGHT_CONDITION, fogLevel } from '../src/game/campaign/AtlasFormat.js';
+import { MapFog } from '../src/engine/ui/MapFog.js';
 import { buildStory } from '../src/game/campaign/StoryFormat.js';
 import { cachedCondition, evalCondition, parseScript, interpolate, isTextRef } from '../src/engine/level/StoryScript.js';
 import { MAX_PARTY, ruleOfPreset, normalizeRule, PARTY_PRESETS } from '../src/engine/level/PartyRules.js';
@@ -1465,22 +1466,79 @@ begin('resources grow back in the morning (the res. flags a harvest sets)');
   ok('sleeping until morning: cleared', !r.state.has('res.mata.erva-04'));
 }
 
+begin('the story\'s morning events (on: morning — the camp\'s works advance)');
+{
+  const built = buildStory([{ name: 'main.json', text: JSON.stringify({
+    format: 'luminati-story', vars: { 'obra.x': 0 },
+    events: [
+      { id: 'works', on: 'morning', background: true, if: 'obra.x = 1', run: ['var obra.x = 2'] },
+      { id: 'mornings', on: 'morning', background: true, run: ['var mornings + 1'] },
+    ],
+  }) }]);
+  eq('read as morning events, no warnings', [built.story.events.map((e) => e.on), built.warnings], [['morning', 'morning'], []]);
+  const r = new StoryRunner({ game: stubGame(), story: built.story, state: new StoryState(built.story), levelId: 'here' });
+  r.attachLevel('here');
+  r.state.vars['obra.x'] = 1;
+  const tick = async () => { r.update(0.016); await settle(); r.update(0.016); await settle(); };
+  r._passTime(1, 3);
+  await tick();
+  eq('before 5:00: nothing', [r.state.vars['obra.x'], r.state.vars.mornings ?? 0], [1, 0]);
+  r._passTime(4.5, 1);
+  await tick();
+  eq('passing 5:00: each morning event whose if holds runs', [r.state.vars['obra.x'], r.state.vars.mornings], [2, 1]);
+  r._passTime(4.5, 1);
+  await tick();
+  eq('… the next morning: the one whose if no longer holds does not', [r.state.vars['obra.x'], r.state.vars.mornings], [2, 2]);
+  r.rested(22);
+  await tick();
+  eq('a rest until morning is a morning too', r.state.vars.mornings, 3);
+}
+
+begin('the fog of exploration (MapFog, the atlas\'s fog, CampaignState.fog)');
+{
+  const fog = new MapFog(40, 30, { radius: 4, soft: 2 });
+  ok('a new fog: nothing seen', !fog.seen(10, 10) && fog.explored === 0);
+  ok('a reveal uncovers a disc round the point, not past it', fog.reveal(10, 10) && fog.seen(10, 10) && fog.seen(13, 10) && !fog.seen(17, 10));
+  const v = fog.version;
+  ok('… the same cell again changes nothing', !fog.reveal(10.3, 10.2) && fog.version === v);
+  ok('seenAny: a rect with any of it seen', fog.seenAny(12, 8, 20, 12) && !fog.seenAny(25, 20, 30, 25));
+  ok('outside the level: never seen', !fog.seen(-1, 5) && !fog.seen(50, 5));
+  const back = new MapFog(40, 30);
+  ok('encoded and read back the same (16 levels a cell)', back.decode(fog.encode()) && back.seen(10, 10) && back.seen(13, 10) && !back.seen(17, 10) && back.encode() === fog.encode());
+  ok('a save of another size or malformed is not read', !new MapFog(41, 30).decode(fog.encode()) && !back.decode('40x30:zz') && !back.decode('40x30:f9999') && !back.decode(7));
+  // the atlas's fog: its places' levels, not the hub
+  const camp = normalizeCampaign({ format: 'luminati-campaign', levels: ['camp', 'woods'], atlas: { home: 'camp', fog: true, places: [{ id: 'home', name: 'Camp', x: 5, y: 5, level: 'camp' }, { id: 'woods', name: 'Woods', x: 9, y: 9, level: 'woods' }] } });
+  const at = camp.campaign.atlas;
+  eq('atlas.fog: the places\' levels under it, the hub not', [fogLevel(at, 'woods'), fogLevel(at, 'camp'), fogLevel(at, 'elsewhere'), fogLevel({ ...at, fog: false }, 'woods')], [true, false, false, false]);
+  ok('… written back as read', parseCampaign(serializeCampaign(camp.campaign)).campaign.atlas?.fog === true);
+  const cs = new CampaignState(camp.campaign, 'c');
+  cs.fog.woods = fog.encode();
+  const read = CampaignState.fromJSON(camp.campaign, 'c', { ...JSON.parse(JSON.stringify(cs.toJSON())), fog: { woods: cs.fog.woods, nowhere: 'x', camp: 7 } });
+  eq('the save keeps each level\'s fog (a level the campaign has not, or no text, dropped)', Object.keys(read.fog), ['woods']);
+  ok('… none: nothing written', !('fog' in new CampaignState(camp.campaign, 'c').toJSON()));
+}
+
 begin('the backpack, the camp\'s stock and the equipment (CAMPAIGN_FORMAT.md §4.2)');
 {
   // the campaign's `inventory`
   const base = { format: 'luminati-campaign', levels: ['camp', 'woods'] };
   const inv = (v) => normalizeCampaign({ ...base, inventory: v });
   const good = inv({ pack: 8, grow: [{ when: 'obra.silo', pack: 16 }], equipment: { weapon: 'sword', head: 'helm' } });
-  eq('inventory: the limit, the larger steps, the equipment by slot', good.campaign.inventory, { pack: 8, grow: [{ when: 'obra.silo', pack: 16 }], equipment: { weapon: 'sword', head: 'helm' } });
+  eq('inventory: the limit, the larger steps, the equipment by slot (one item a slot, no rarity table by default)', JSON.parse(JSON.stringify(good.campaign.inventory)), { pack: 8, stack: 1, grow: [{ when: 'obra.silo', pack: 16 }], equipment: { weapon: 'sword', head: 'helm' }, rarity: {} });
   eq('… no warnings', good.warnings, []);
   const bad = inv({ pack: 0, grow: [{ pack: 4 }], equipment: { tail: 'x', feet: 'Not An Id!' } });
-  eq('a bad limit: 10, a step without `when` and unknown slots dropped', bad.campaign.inventory, { pack: 10, grow: [], equipment: {} });
+  eq('a bad limit: 10, a step without `when` and unknown slots dropped', JSON.parse(JSON.stringify(bad.campaign.inventory)), { pack: 10, stack: 1, grow: [], equipment: {}, rarity: {} });
   ok('… each warned', bad.warnings.length === 4, bad.warnings);
   eq('none: null, nothing written', [normalizeCampaign(base).campaign.inventory, serializeCampaign(normalizeCampaign(base).campaign).includes('"inventory"')], [null, false]);
   ok('written back as read', isDeepStrictEqual(parseCampaign(serializeCampaign(good.campaign)).campaign.inventory, good.campaign.inventory));
+  const stacked = inv({ pack: 6, stack: 5, rarity: { comum: [1, 0.4, 0.15], odd: [0.2, 0.6], bad: [2], 'Not A Name': [1] } });
+  eq('stack and the rarity table: a list that grows is clamped, a bad one dropped', [stacked.campaign.inventory?.stack, { ...stacked.campaign.inventory?.rarity }], [5, { comum: [1, 0.4, 0.15], odd: [0.2, 0.2] }]);
+  ok('… each dropped one warned, written back as read', stacked.warnings.length === 2 && isDeepStrictEqual(parseCampaign(serializeCampaign(stacked.campaign)).campaign.inventory, stacked.campaign.inventory), stacked.warnings);
+  eq('rollDrop: how many by the draw (at least 1 always, 2 under 0.4, 3 under 0.15)', [0.99, 0.5, 0.39, 0.1, 0].map((x) => rollDrop([1, 0.4, 0.15], x)), [1, 1, 2, 3, 3]);
+  eq('… a rare one may give none', [rollDrop([0.5, 0.12], 0.7), rollDrop([0.5, 0.12], 0.3), rollDrop([], 0)], [0, 1, 0]);
   // the items' fields
   const files = [{ name: 'main.json', text: JSON.stringify({ format: 'luminati-story', items: {
-    wood: { name: 'Wood', pack: true, icon: 'wood' },
+    wood: { name: 'Wood', pack: true, icon: 'wood', rarity: 'comum' },
     stone: { name: 'Stone', pack: true },
     sword: { name: 'Sword', slot: 'weapon', bonus: { atk: 2, luck: 3 }, icon: 'sword' },
     letter: { name: 'Letter', key: true, slot: 'pocket', icon: 'Bad Icon' },
@@ -1519,14 +1577,50 @@ begin('the backpack, the camp\'s stock and the equipment (CAMPAIGN_FORMAT.md §4
   r.state.setFlag('silo');
   eq('a larger step while its condition holds', [r.packLimit(), r.packRoom('wood')], [12, 6]);
   r.levelId = 'camp';
-  eq('at home: stored on arrival, gathered straight into the stock', [r.atHome, r.storePack(), r.gather('wood', 3), r.state.carried('wood'), r.state.stocked('wood')], [true, Object.assign(Object.create(null), { wood: 4, stone: 2 }), 3, 0, 7]);
+  eq('at home: the backpack stays packed until stored in the chest (storePack), gathering still fills it', [r.atHome, r.state.carried('wood'), r.storePack(), r.gather('wood', 3), r.state.carried('wood'), r.state.stocked('wood')], [true, 4, Object.assign(Object.create(null), { wood: 4, stone: 2 }), 3, 3, 4]);
   const d = r.inventoryData();
-  eq('inventoryData: the pack, home, the items with carried and stocked, the equipment by slot',
+  eq('inventoryData: the pack (slots and stack), home, the items with carried and stocked, the equipment by slot',
     [d.pack, d.home, d.items.map((x) => [x.id, x.count, x.stock, x.icon]), d.equipment?.map((e) => [e.slot, e.id])],
-    [{ used: 0, limit: 12 }, true, [['wood', 0, 7, 'wood'], ['stone', 0, 2, '']], [['weapon', 'sword'], ['body', ''], ['head', ''], ['hands', ''], ['feet', ''], ['accessory', '']]]);
+    [{ used: 3, limit: 12, stack: 1 }, true, [['wood', 3, 4, 'wood'], ['stone', 0, 2, '']], [['weapon', 'sword'], ['body', ''], ['head', ''], ['hands', ''], ['feet', ''], ['accessory', '']]]);
   ok('the journal counts both', r.journalData().items.find((x) => x.id === 'wood')?.count === 7);
+  // slots of 5: 6 slots hold 30 of one item, a slot of one item never takes another
+  camp.campaign.inventory = /** @type {any} */ ({ pack: 2, stack: 5, grow: [], equipment: {}, rarity: { comum: [1, 0.4] } });
+  r.levelId = 'woods';
+  r.storePack();
+  eq('stacks: 7 wood fill 2 slots of 5 (3 more fit in the second), nothing else fits', [r.gather('wood', 7), r.packUsed(), r.packRoom('wood'), r.packRoom('stone')], [7, 2, 3, 0]);
+  eq('… the room is the free slots and the last slot\'s rest', [r.gather('wood', 9), r.state.carried('wood'), r.packRoom('wood')], [3, 10, 0]);
+  eq('dropOf: an item with a rarity rolls on the table, else the resource\'s amount', [r.dropOf('wood', 4, 0.99), r.dropOf('wood', 4, 0.2), r.dropOf('stone', 4, 0.2)], [1, 2, 4]);
+  r.state.stock.wood = 3;
+  eq('dropItem: out of the backpack only (the chest kept), never more than carried; not a backpack item', [r.dropItem('wood', 4), r.state.carried('wood'), r.state.stocked('wood'), r.dropItem('wood', 99), r.state.carried('wood'), r.dropItem('sword', 1)], [4, 6, 3, 6, 0, 0]);
+  ok('… a backpack item offers the drop in its menu, an equipment item none', isDeepStrictEqual([r.inventoryData().items.find((x) => x.id === 'wood')?.actions, r.inventoryData().items.find((x) => x.id === 'sword')?.actions ?? []], [['drop'], []]));
   const plain = new StoryRunner({ game: stubGame(), story: built.story, state: new StoryState(built.story), levelId: 'woods' });
   eq('no campaign inventory: no limit, no equipment', [plain.packLimit(), plain.packRoom('wood'), plain.inventoryData().pack, plain.inventoryData().equipment], [0, Infinity, null, null]);
+}
+
+begin('items dropped on the ground (GroundItems.js)');
+{
+  const { GroundItems, LIFETIME } = await import('../src/game/GroundItems.js');
+  const { Scene } = await import('three');
+  let room = 2;
+  const gi = new GroundItems({
+    scene: new Scene(), height: () => 0, standable: (x, z) => ({ x, z }),
+    take: (_id, n) => { const k = Math.min(n, room); room -= k; return k; },
+  });
+  const it = gi.drop('wood', 'wood', 3, 0, 0, 0, 1);
+  eq('lands a step beside the player, with a Pick up prompt there', [it?.x, +(it?.z ?? 0).toFixed(2), it?.it.label, it?.it.position.z.toFixed(2), gi.interactables().length], [0, 1, 'Pick up', '1.00', 1]);
+  gi.update(0.1);
+  eq('walking about takes nothing', [gi.items.length, room], [1, 2]);
+  eq('Space: what the backpack holds; the rest stays on the ground', [it?.it.onInteract?.(), room, gi.items.length, it?.n], [2, 0, 1, 1]);
+  room = 5;
+  eq('… Space again: picked up, gone', [it?.it.onInteract?.(), gi.items.length, gi.interactables().length, room], [1, 0, 0, 4]);
+  gi.drop('stone', 'stone', 1, 0, 0, 0, 0);
+  gi.update(LIFETIME - 1);
+  eq('still there a second before the end', [gi.items.length], [1]);
+  gi.update(1);
+  eq(`gone after ${LIFETIME} s`, [gi.items.length], [0]);
+  gi.drop('wood', 'wood', 1, 0, 0, 1, 0);
+  gi.clear();
+  eq('clear (a new level): none left, the sprites out of the scene', [gi.items.length, gi.group.children.length], [0, 0]);
 }
 
 begin('the weather a map rolls (WeatherRoll.js), the story holding it');

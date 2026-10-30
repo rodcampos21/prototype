@@ -54,6 +54,8 @@ const TOKENS = {
   'm-g': '#5f9a3e', 'm-G': '#3f7434', 'm-f': '#8fb14e', 'm-F': '#7a5433', 'm-s': '#d6c08b', 'm-p': '#b18a5c',
   'm-c': '#8d8a8e', 'm-k': '#a6a39b', 'm-m': '#6e7d5c', 'm-r': '#5d5a60', 'm-t': '#2b4f2a', 'm-b': '#9c6b3f', 'm-w': '#3b7fa6',
   'm-void': '#101018', 'm-cliff': '#3e3228', 'm-light': '#9fc46a',
+  // the fog of exploration over the maps (MapFog): the unseen, and its speckle along the edge
+  'm-fog': '#1a1a26', 'm-fog2': '#2a2a3a',
   'm-mute': 'rgba(6, 8, 18, 0.15)', 'm-wedge': 'rgba(255, 240, 200, 0.42)',
   'm-vig0': 'rgba(6, 8, 18, 0.55)', 'm-vig1': 'rgba(6, 8, 18, 0.38)', 'm-vig2': 'rgba(6, 8, 18, 0.3)', 'm-ol': 'rgba(20, 14, 6, 0.92)',
   // the day bar: the sky across the day
