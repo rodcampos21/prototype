@@ -195,6 +195,7 @@ Um dia dura cerca de 36 minutos reais (`TIME_SPEED`: 1 hora de jogo = 90 s).
    `time`, ou um `rest` até de manhã) enquanto o `if` vale, em qualquer fase. As obras avançam ali.
 3. **Contagens com prazo** (EV01 saqueadores, EV02 a fera marcha, EV03 comerciante…): uma tabela
    `timers` em `story/main.json` (`id`, começa quando, duração em dias, o que acontece ao expirar).
+   **Marco: M6** (decidido em 2026-10-30).
    Cada contagem guarda o dia em que começou e expira em `inicio + duracao`. Regra do caderno: no
    máximo **dois eventos com contagem ativa ao mesmo tempo**. A Noite de névoa (EV06) dura uma
    noite, de 18:30 até a manhã seguinte.
@@ -302,6 +303,21 @@ carga, e o número de luzes fica fixo.
   tabela de construções, o menu, os comandos de história `build <slot> <construção>` e as condições
   `building:<slot> = forja` e `stage:<slot> >= pronto`, além do suporte no editor (o inspetor do
   espaço lista as opções e mostra a prévia de cada estágio).
+  **Núcleo feito (2026-10-29, M4):** o objeto `buildSlot` (a fase guarda o lote; o jogo o expande na
+  carga em lote com cordas, andaime e construção de cada opção e um marcador `<lote>.front`:
+  `src/engine/level/BuildSlots.js`), a tabela `buildings` dos arquivos de história (nome, texto,
+  custo, dias, `prop`, scripts `start` e `done`) e o `BuildingSystem` (placa flutuante, Espaço no
+  lote: o que há no baú, começar pagando do baú; cada manhã aproxima a obra; pronta, roda `done`),
+  o comando `build <lote> <construção> [built]` / `build <lote> none` e as condições
+  `building:<lote>` e **`slot:<lote>`** (`empty`, `frame`, `built` — `stage:` já era a etapa de uma
+  missão). Os estados vão no save (`slots`). A campanha foi migrada sem mudar o jogo: os lotes
+  `lote-forja`, `lote-silo` e `lote-alojamento`; o silo dobra a mochila com `slot:lote-silo >= built`.
+  **A comida entrou nos custos** (forja 12 madeira, 10 pedra, 4 comida; silo 14 madeira, 6 pedra, 4
+  comida; alojamento 16 madeira, 6 ervas, 4 comida), vinda por enquanto de **arbustos de frutas**
+  (recurso `berries`, item `comida`) na Mata da Clareira; rebalancear quando o Riacho existir.
+  **Falta no M4:** a janela de construção (escolha entre várias opções, hoje uma escolha no diálogo),
+  os ícones das construções e o suporte no editor ([§8](#8-m4-o-que-falta-plano-de-execução)). **Foram
+  para o M6 (decidido em 2026-10-30):** os níveis (forja nível 2) e as contagens EV01/EV02.
 
 **Crescimento por ato** (acampamento → vila → cidade fortificada → metrópole): cada ato é um
 **capítulo** com um arquivo variante do acampamento (terreno maior, mais espaços, muralhas). As
@@ -498,10 +514,13 @@ Design na Bíblia, seção *O protagonista*.
 | --- | --- | --- |
 | **M1, Idioma** | Jogo em português, sem japonês e chinês | A |
 | **M2, Acampamento jogável** | Campanha Ato I: criação de personagem → prólogo → C02 → acampamento na clareira → mapa do Surubin → Mata da Clareira → volta; cavaleiro com visual próprio e falando; clima sorteado por mapa; mais monstros à noite | B, G1, I, J, F1 (tenda, mesa do mapa, estandarte, altar), F2 (cavaleiro) |
-| **M3, Primeira obra** | ~~Mochila e estoque, HUD de recursos, janela de inventário (mochila + equipamento, C 2, 2a, 2b), cena de viagem entre mapas (G1 5a), estaca de volta maior (5b), recursos visíveis (5d), névoa no minimapa (5c), C03 com a escolha forja / silo / alojamento, obra que avança a cada manhã, altar, dormir no alojamento (protótipo E1)~~ (feitos em 2026-10-29); falta: coleta em várias expedições com as fases do Riacho e da Pedreira (e a comida nos custos) | C, D, E1, F1 (forja, silo, alojamento, andaime) |
-| **M4, Sistema de construção** | `buildSlot` + `BuildingSystem` + menu + editor; contagens EV01/EV02 | E2, D completo, F4 |
-| **M5, Fase 1–3 do Ato I** | Odo, Fumaça na Serra, Pedras Riscadas, duelo do mestre | F2 (NPCs), F3 |
-| **M6, Atlas completo** | Atlas do Ato I com os 12 (13) nós, contagens visíveis | G2 |
+| **M3, Primeira obra** | ~~Mochila e estoque, HUD de recursos, janela de inventário (mochila + equipamento, C 2, 2a, 2b), cena de viagem entre mapas (G1 5a), estaca de volta maior (5b), recursos visíveis (5d), névoa no minimapa (5c), C03 com a escolha forja / silo / alojamento, obra que avança a cada manhã, altar, dormir no alojamento (protótipo E1)~~ (concluído em 2026-10-29). As fases do Riacho e da Pedreira foram para o backlog (M6?) e a comida nos custos para o M4 | C, D, E1, F1 (forja, silo, alojamento, andaime) |
+| **M4, Sistema de construção** | ~~`buildSlot` + tabela de construções + `BuildingSystem` + comando `build` e condições `building:` / `slot:` (a campanha migrada, sem mudar o jogo); a comida nos custos (arbustos de frutas na Mata até o Riacho existir)~~ (núcleo feito em 2026-10-29). **Falta para fechar os conceitos:** a janela de construção, os ícones das construções e o suporte no editor de fases — plano detalhado em [§8](#8-m4-o-que-falta-plano-de-execução) | E2, F4 |
+| **M5, Itens, personagem e habilidades** | Itens, equipar, atributos, experiência e habilidades do cavaleiro — o que já existe e as decisões em aberto em [§9](#9-m5-preparação) | C 2b (a lógica de equipar), J |
+| **M6 (provisório), Fases de expedição e o tempo da campanha** | Riacho dos Juncos (comida) e Pedreira da Encosta; coleta em várias expedições; rebalancear os custos; **níveis de construção** (forja nível 2: reabrir a obra num lote pronto); **contagens com prazo** EV01/EV02 (D 3) | B 1, C, D completo, E2 (níveis) |
+
+**Backlog** (sem marco ainda): Fase 1–3 do Ato I (Odo, Fumaça na Serra, Pedras Riscadas, duelo do
+mestre; F2 NPCs, F3); atlas completo do Ato I com os 12 (13) nós e as contagens visíveis (G2).
 
 Cada marco termina com as checagens de sempre: `typecheck`, `level:check --campaign`, testes de
 história, build, capturas revisadas e documentação atualizada.
@@ -517,3 +536,123 @@ história, build, capturas revisadas e documentação atualizada.
 - **Save só no navegador** (`localStorage`): suficiente para single player. Exportar ou importar save
   é uma melhoria futura.
 - **Fases geradas só mudam pelo gerador**: o acampamento e os nós devem nascer de `tools/make-ato-1.mjs`.
+
+## 8. M4: o que falta (plano de execução)
+
+Escrito em 2026-10-30, para executar em seguida. O núcleo já existe (E2 acima;
+[CAMPAIGN_FORMAT.md §4.3](../../specs/CAMPAIGN_FORMAT.md#43-buildings-and-build-slots)). Os três itens
+fecham o conceito de construção; níveis e contagens ficam para o M6.
+
+### 8.1 Janela de construção
+
+Hoje Espaço no lote abre o diálogo: a fala com o que há no baú e uma escolha (uma opção: *Começar:
+Forja* / *Ainda não*; várias: uma linha por construção). A janela substitui isso para qualquer lote.
+
+1. **Componente novo** no kit de UI pixel (`src/engine/ui/BuildPanel.js` + `buildpanel.css`), no
+   estilo do diário (janela dourada G, cantos com gemas, fonte pixel). Abre por cima do jogo e pausa
+   como o diário. Recebe dados prontos e traduzidos (a UI não lê a história):
+   `{ slot, title, chest: [{ icon, name, have }], options: [{ id, icon, name, text, cost: [{ icon, name, need, have }], days, affordable }] }`.
+2. **Layout:** à esquerda, a lista das construções do lote (ícone, nome; as sem recurso esmaecidas,
+   como os espaços vazios da mochila); à direita, a escolhida: nome, texto, custo item a item com
+   `tem / precisa` (verde quando basta, vermelho quando falta), dias de obra e um botão *Construir*
+   (desabilitado sem recurso). Embaixo, o baú resumido (ícones e quantidades).
+3. **Controles:** setas escolhem, Espaço/Enter constrói (som de confirmação), Esc fecha; mouse com
+   clique na lista e no botão. Gamepad como no diário.
+4. **Jogo:** `BuildingSystem.use(slot, options)` passa a montar os dados e abrir a janela
+   (`game.ui.buildPanel.open(data)` → promessa com o id escolhido ou nada); a escolha chama
+   `begin(slot, id)`, que já cobra do baú e enfileira o `start`. Sai o diálogo atual.
+5. **Textos:** os rótulos da janela em `src/game/story/strings.js` (`build.*`, pt e en); os nomes e
+   textos das construções continuam vindo da tabela (`term()` / `loc()`).
+6. **Pronto quando:** um lote com uma e com várias opções abre a janela; construir funciona com
+   teclado, mouse e controle; sem recurso o botão fica desabilitado e o que falta aparece em vermelho;
+   testes do `BuildingSystem` cobrem os dados da janela; PIXEL_UI.md ganha a receita do componente.
+
+### 8.2 Ícones das construções
+
+1. **Ícones 16 × 16** no estilo dos ícones de item (`src/engine/ui/art/icons/`, novo `buildings.js`,
+   paleta de `icons/core.js`): `forge` (bigorna com chama), `silo` (torre redonda de tábuas com
+   telhado de palha), `lodge` (cabana de toras), `altar` (laje com a pedra de sal) e `plot` (estacas
+   com corda, para o lote vazio e a lista).
+2. **Dado:** a tabela de construções ganha `icon` (opcional; padrão: o do `prop`). Validação no
+   `StoryFormat` como o `icon` dos itens.
+3. **Onde aparecem:** na janela de construção (lista e título), na placa flutuante do lote (ícone ao
+   lado do título) e no sandbox da arte de UI (`sandbox/ui_art.html`), para aprovar a arte a 6×.
+4. **Pronto quando:** os cinco ícones aprovados em captura, usados na janela e na placa, com os
+   testes de ícones (se houver hash de arte, atualizar).
+
+### 8.3 Suporte no editor de fases
+
+O `buildSlot` já tem os campos genéricos no inspetor (rotação, *Buildings* como texto, largura,
+profundidade, seed) e aparece como um marcador, porque não constrói nada sozinho.
+
+1. **Prévia 3D e 2D:** o editor expande o lote como o jogo (`expandBuildSlots` em
+   `src/engine/level/BuildSlots.js`) para desenhar o lote com cordas no Viewport3D
+   (`viewport3d/ObjectPreview.js`) e o retângulo do lote no mapa 2D (`map2d/Map2DView.js`), em vez do
+   glifo. Também a prévia de objetos (`sandbox/props.html`), para conferir as peças do acampamento.
+2. **Prévia do estágio:** um campo de editor só de visualização (não salvo na fase) no inspetor do
+   lote: *Prévia* = vazio · andaime · pronto, e qual construção mostrar quando há várias. Integrar
+   com a *Story preview* existente (View › Story preview…), que já aceita valores: `slot:<lote>` e
+   `building:<lote>` entram como referências válidas ali.
+3. **Escolha das construções:** o campo *Buildings* vira uma lista de marcar com as construções da
+   tabela da campanha aberta (o editor já carrega os arquivos de história da campanha), com aviso
+   quando um id não existe.
+4. **Checagens:** o *Check for problems* do editor mostra os mesmos erros do `level:check`
+   (construção inexistente, lote sem opções).
+5. **Documentação:** OBJECT_CATALOG.md (*buildSlot*, editor), docs/user/LEVEL_EDITOR_GUIDE.md (como
+   pôr um lote) e EDITOR.md se mudar a arquitetura do inspetor.
+6. **Pronto quando:** pôr um lote no editor mostra as cordas, a prévia troca entre vazio, andaime e
+   pronto, as opções vêm da tabela, e os testes do editor (`npm run api:test` e afins) passam.
+
+### 8.4 Ordem e fechamento
+
+Ícones primeiro (a janela e o editor usam), depois a janela, depois o editor. Fecha o M4 com as
+checagens de sempre e capturas da janela e do editor para aprovação.
+
+## 9. M5: preparação
+
+Escopo do M5 (pedido em 2026-10-29): **itens, personagem e habilidades**. O detalhe será decidido
+com vocês; aqui fica o que a engine e a campanha já têm e as perguntas a responder antes de começar.
+
+### 9.1 O que já existe
+
+- **Itens e equipamento (dados prontos, lógica não):** cada item da história pode ter `slot`
+  (`weapon`, `body`, `head`, `hands`, `feet`, `accessory`) e `bonus` (`hp`, `mp`, `atk`, `def`); o
+  cavaleiro começa com o equipamento básico (`inventory.equipment`); o diário mostra a aba
+  *Equipamento* com os espaços e os bônus. **Os bônus não são aplicados** e não há como trocar de
+  equipamento (CAMPAIGN_FORMAT.md §4.2).
+- **Menu de item:** a mochila já tem o menu de ações por item (`InventoryItem.actions`, hoje só
+  *Largar*): *Usar* e *Equipar* entram ali.
+- **Combate do cavaleiro** (`src/game/combat/PlayerCombat.js`, `rules.js`, COMBAT.md §6): nível
+  (até `LEVEL_CAP`), XP por inimigo, HP / MP / ATK / DEF calculados pelo nível, combo de 3 golpes,
+  esquiva, 3 habilidades destravadas por nível (`SKILLS`), poção de cura, melhorias (`UPGRADES`:
+  HP, MP, ataque) e o núcleo do chefe. Tudo vale nas fases com combate; o save guarda o progresso.
+- **Classes:** a criação de personagem tem as classes da campanha (`PlayerClasses.js`; o Ato I só usa
+  o Cavaleiro Errante) com estágios de visual (`looks`); a party tem as classes warden / ranger /
+  mystic com presets de regra (PARTY.md).
+- **Ícones de item:** madeira, pedra, ervas, comida, espada, armadura, elmo, luvas, botas, anel,
+  mochila, poção.
+
+### 9.2 Perguntas para vocês (decidir antes do M5)
+
+1. **Equipar:** só no acampamento (no baú) ou em qualquer lugar pelo diário? Trocar equipamento
+   devolve o antigo para a mochila (ocupa espaço) ou para o baú?
+2. **De onde vêm itens novos:** forja (o Odo forja com recursos do baú), baús das expedições,
+   inimigos, comerciante (EV03)? Isso decide se o M5 precisa de uma receita de forja.
+3. **Atributos:** manter HP / MP / ATK / DEF ou acrescentar algum (velocidade, crítico, resistência
+   ao sal)? Os bônus somam ao valor do nível?
+4. **Experiência:** o nível do combate (já existe) é o nível do personagem, ou haverá outra
+   progressão (fé, rank do Surubin, juramentos do cavaleiro)?
+5. **Habilidades:** as 3 atuais do combate viram as do Cavaleiro Errante? Haverá árvore ou escolha
+   por nível? Habilidades fora do combate (coletar mais rápido, carregar mais)?
+6. **Consumíveis:** só a poção de cura, ou comida e ervas viram consumíveis (*Usar* no menu da
+   mochila: comer recupera algo, ervas viram poção)?
+7. **Especializações do cavaleiro** (Juramentado, do Sal, Lâmina Antiga — Bíblia): entram no M5 ou
+   depois? Elas trocam o visual inteiro (`looks`) e talvez as habilidades.
+
+### 9.3 Proposta de primeiros passos (a confirmar)
+
+1. Aplicar os bônus do equipamento aos atributos do combate e mostrar o total no diário.
+2. *Equipar* / *Desequipar* no menu do item (com a regra decidida na pergunta 1).
+3. *Usar* para consumíveis (com a regra da pergunta 6).
+4. Uma ficha do personagem no diário (nível, XP, atributos com e sem bônus, habilidades).
+5. Depois, conforme as respostas: forja de itens, árvore de habilidades, especializações.

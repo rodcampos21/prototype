@@ -55,6 +55,7 @@ const table = {
     'prompt.break': 'Quebrar',
     'prompt.gather': 'Colher',
     'prompt.pickup': 'Pegar',
+    'prompt.build': 'Construir',
 
     'toast.noParty': 'Ninguém viaja com você.',
     /** a resource spent (Game.harvest): {item} the item's name, {n} how many */
@@ -135,6 +136,7 @@ const table = {
     'prompt.break': 'Break',
     'prompt.gather': 'Gather',
     'prompt.pickup': 'Pick up',
+    'prompt.build': 'Build',
 
     'toast.noParty': 'No one travels with you.',
     'toast.gathered': '+{n} {item}',

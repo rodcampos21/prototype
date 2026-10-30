@@ -570,6 +570,10 @@ export function storyStrings(story, o = {}) {
     c.term(it?.name, 'name', 'story.item.name', `${dir} › item ${id} › name`);
     c.unit(builtKey(it), it?.text, 'line', 'story.item.text', `${dir} › item ${id} › text`, it?.name ? { prev: short(it.name) } : {});
   }
+  for (const [id, b] of Object.entries(isPlain(story.buildings) ? story.buildings : {})) {
+    c.term(b?.name, 'name', 'story.building.name', `${dir} › building ${id} › name`);
+    c.unit(builtKey(b), b?.text, 'line', 'story.building.text', `${dir} › building ${id} › text`, b?.name ? { prev: short(b.name) } : {});
+  }
   for (const [id, q] of Object.entries(isPlain(story.quests) ? story.quests : {})) {
     const prev = q?.title ? { prev: short(q.title) } : {};
     c.term(q?.title, 'name', 'story.quest.title', `${dir} › quest ${id} › title`);

@@ -122,10 +122,13 @@ export const BUILDING_STAGES = ['frame', 'built'];
 const BUILDING_SIZE = Object.freeze({ forge: [4, 3.5], silo: [3.5, 3.5], lodge: [5, 3.5], altar: [1.6, 1.2], chest: [1.6, 1.0] });
 /**
  * What a `resource` is (`opts.kind`, props/ResourceProps.js): a tree to chop, a stone to break, a
- * bush of herbs to pick. Its stages (`opts.stage`): `full`, gathered with Space, and `spent`, what
- * is left (a stump, rubble, bare twigs) until it grows back.
+ * bush of herbs or of berries (food) to pick. Its stages (`opts.stage`): `full`, gathered with
+ * Space, and `spent`, what is left (a stump, rubble, bare twigs, a bush picked bare) until it grows
+ * back.
  */
-export const RESOURCE_KINDS = ['tree', 'stone', 'herbs'];
+export const RESOURCE_KINDS = ['tree', 'stone', 'herbs', 'berries'];
+/** A resource's kind as the game reads it: a RESOURCE_KINDS entry, anything else a tree. @param {unknown} kind */
+export const resourceKind = (kind) => /** @type {'tree'|'stone'|'herbs'|'berries'} */ (RESOURCE_KINDS.includes(/** @type {any} */ (kind)) ? kind : 'tree');
 /** @see RESOURCE_KINDS */
 export const RESOURCE_STAGES = ['full', 'spent'];
 
@@ -350,6 +353,19 @@ export const OBJECT_TYPES = {
       ROT,
       { key: 'opts.kind', label: 'Kind', type: 'select', options: BUILDING_KINDS },
       { key: 'opts.stage', label: 'Stage', type: 'select', options: BUILDING_STAGES, help: 'Not for the altar.' },
+      SEED,
+    ],
+  },
+  buildSlot: {
+    // (kind marker: the slot itself builds nothing — the game expands it into props, BuildSlots.js)
+    label: 'Build slot', category: 'Camp', placement: 'point', kind: 'marker', camp: true, story: true, glyph: '⌗', color: '#c98a3f', radius: 2.0, rotatable: true, snap: 0.5,
+    help: 'A plot where the player raises one of the story’s buildings (its “buildings” table): the roped plot with a floating sign — what it is, what it costs — while empty, Space to begin one, then its frame and, mornings later, the building. Scripts read building:<id> and slot:<id> and change it with build. Its when / unless apply to all of it.',
+    defaults: { rotation: 0, options: 'forja', opts: { width: 4, depth: 3.5, seed: 1 } },
+    fields: [
+      ROT,
+      { key: 'options', label: 'Buildings', type: 'text', help: 'The building ids it may hold (the story’s buildings table), separated by spaces or commas.' },
+      { key: 'opts.width', label: 'Plot width', type: 'number', min: 1.5, max: 10, step: 0.5 },
+      { key: 'opts.depth', label: 'Plot depth', type: 'number', min: 1.5, max: 10, step: 0.5 },
       SEED,
     ],
   },
@@ -907,7 +923,7 @@ export function objectBounds(obj) {
     const k = isOwnKey(BUILDING_SIZE, obj.opts?.kind) ? obj.opts.kind : 'forge';
     hw = BUILDING_SIZE[k][0] / 2 + 0.3; hd = BUILDING_SIZE[k][1] / 2 + 0.3;
   }
-  else if (obj.type === 'stake' && obj.opts?.kind === 'plot') { hw = optNum(obj.opts?.width, 4, 1.5, 10) / 2 + 0.1; hd = optNum(obj.opts?.depth, 3, 1.5, 10) / 2 + 0.1; }
+  else if ((obj.type === 'stake' && obj.opts?.kind === 'plot') || obj.type === 'buildSlot') { hw = optNum(obj.opts?.width, 4, 1.5, 10) / 2 + 0.1; hd = optNum(obj.opts?.depth, 3, 1.5, 10) / 2 + 0.1; }
   else if (obj.type === 'waterfall') { hw = (obj.width ?? 2) / 2; hd = 0.3; }
   else if (obj.type === 'emitter') { hw = (obj.size?.[0] ?? 8) / 2; hd = (obj.size?.[2] ?? 8) / 2; }
   else if (obj.type === 'critters') { hw = hd = obj.radius ?? 2.5; }

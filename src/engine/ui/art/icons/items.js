@@ -80,6 +80,28 @@ export const ITEM_ICONS = {
       '................',
     ],
   },
+  // Food (berries): main the stem and leaf; a b c the berries (c their shine).
+  food: {
+    palette: pal(MAIN.GREEN, ACCENT.RED),
+    rows: [
+      '................',
+      '.........oo.....',
+      '........ohlo....',
+      '.......ohlmo....',
+      '......om.oo.....',
+      '..ooo.om..ooo...',
+      '.obcbo.mo.obcbo.',
+      '.occbaomo.occba.',
+      '.obbbao.ooobbba.',
+      '..oaaooobcboaao.',
+      '...oo.occbbo.o..',
+      '......obbbao....',
+      '......oabaao....',
+      '.......oooo.....',
+      '................',
+      '................',
+    ],
+  },
   // The backpack: main the leather; a b c the buckle.
   pack: {
     palette: pal(MAIN.LEATHER, ACCENT.GOLD),

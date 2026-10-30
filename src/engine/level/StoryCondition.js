@@ -31,15 +31,21 @@
  * (`item:plank`, `quest:find-ilse`, `party:sela`) or a value of the game (`hour`, `gold`, `party`
  * …: `kind` 'game').
  * @typedef {{ kind: RefKind, name: string }} Ref
- * @typedef {'' | 'item' | 'stock' | 'quest' | 'stage' | 'visits' | 'visited' | 'done' | 'party' | 'game'} RefKind
+ * @typedef {'' | 'item' | 'stock' | 'quest' | 'stage' | 'visits' | 'visited' | 'done' | 'party' | 'building' | 'slot' | 'game'} RefKind
  * @typedef {'=' | '!=' | '<' | '<=' | '>' | '>='} Cmp
  */
 
 /**
  * Prefixes of `kind:name` references. `party:<who>` is 1 while that villager (its id, actor or
  * name, in any case) is a member of the player's party, else 0 (docs/specs/PARTY.md §7.2).
+ * `building:<slot>` is what a build slot holds (a building's id, `none` while empty) and
+ * `slot:<slot>` how far it stands (`SLOT_STAGES`: 0 empty, 1 frame — going up —, 2 built;
+ * `slot:lote-forja >= built`) — STORY_SCRIPT.md §3.
  */
-export const REF_KINDS = /** @type {const} */ (['item', 'stock', 'quest', 'stage', 'visits', 'visited', 'done', 'party']);
+export const REF_KINDS = /** @type {const} */ (['item', 'stock', 'quest', 'stage', 'visits', 'visited', 'done', 'party', 'building', 'slot']);
+
+/** A build slot's stages, in order (`slot:<slot>` is the index: compared with these words or numbers). */
+export const SLOT_STAGES = /** @type {const} */ (['empty', 'frame', 'built']);
 
 /**
  * Values of the game a condition reads by a bare word: the hour of day, the day (1 on a new game,
@@ -62,7 +68,7 @@ export const RESERVED_WORDS = new Set([...GAME_REFS, 'and', 'or', 'not', 'true',
 export const QUEST_STATES = /** @type {const} */ (['none', 'active', 'done', 'failed']);
 
 /** Kinds whose value is text (compared to a word); every other reference is a number. */
-const TEXT_REFS = new Set(['quest', 'game:chapter', 'game:level', 'game:weather', 'game:player']);
+const TEXT_REFS = new Set(['quest', 'building', 'game:chapter', 'game:level', 'game:weather', 'game:player']);
 /** Is a reference's value text (quest state, chapter, level, weather, the player's name) rather than a number? @param {Ref} r */
 export const isTextRef = (r) => TEXT_REFS.has(r.kind) || TEXT_REFS.has(`${r.kind}:${r.name}`);
 
@@ -178,6 +184,11 @@ function rightValue(ref, t, cmp, v) {
   }
   // (a stage reference compares with a stage name, whatever it is called)
   if (ref.kind === 'stage') return v;
+  // (a slot's stage: one of its words)
+  if (ref.kind === 'slot') {
+    if (!SLOT_STAGES.includes(/** @type {any} */ (v))) throw new Error(`a slot is ${SLOT_STAGES.join(', ')} (or 0–2) — not "${v}"`);
+    return v;
+  }
   const low = v.toLowerCase();
   if (low === 'true') return 1;
   if (low === 'false') return 0;

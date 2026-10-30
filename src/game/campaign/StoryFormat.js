@@ -15,7 +15,7 @@
 // (the small condition module, not the script parser: the campaign files load with every campaign)
 import { isStoryName, isFlagName, scriptLines, titleCase, eventIdOf, stageIdOf } from '../../engine/level/StoryCondition.js';
 import { cleanTextKeysOf, cleanQuestTextKeys } from '../../engine/i18n/ContentKeys.js';
-import { CHARACTER_PRESET_NAMES } from '../../engine/level/ObjectCatalog.js';
+import { CHARACTER_PRESET_NAMES, BUILDING_KINDS } from '../../engine/level/ObjectCatalog.js';
 import { showValue } from '../../engine/utils/own.js';
 
 export const STORY_FORMAT = 'luminati-story';
@@ -67,6 +67,14 @@ const ICON_NAME = /^[a-z0-9][a-z0-9-]{0,31}$/;
  *   at home; icon: its icon in the inventory and the resource bar; slot / bonus: an equipment item
  *   (where it is worn, what it adds — shown, not applied yet); rarity: a name of the campaign's
  *   `inventory.rarity` table — how much gathering it gives (CampaignFormat.rollDrop)
+ * @typedef {{ name: string, text: string, textKey?: string, cost: Record<string, number>, days: number,
+ *   prop: string, start: string, done: string }} StoryBuilding
+ *   a building a build slot may hold (`buildings`, CAMPAIGN_FORMAT.md §4.3): name (a term) and text
+ *   (its content key `textKey`) on the slot's floating sign; cost: item id → count, paid from the
+ *   camp's stock when the player begins it; days: the mornings it takes to stand; prop: the
+ *   `building` prop's kind it shows (ObjectCatalog BUILDING_KINDS); start / done: script ids ('' none)
+ *   run when the player begins it at its slot (a foreground run) and the morning it stands (a
+ *   background run)
  * @typedef {{ id: string, text: string, textKey?: string }} QuestStage
  * @typedef {{ text: string, done: string, textKey?: string }} QuestGoal  `done`: a condition as scripts write it (`parseCondition`: `done: gold` reads the purse); the journal ticks the goal while it holds
  * @typedef {{ title: string, text: string, stages: QuestStage[], goals: QuestGoal[], textKey?: string }} StoryQuest
@@ -92,6 +100,7 @@ const ICON_NAME = /^[a-z0-9][a-z0-9-]{0,31}$/;
  * @typedef {object} Story
  * @property {Record<string, number>} vars      declared variables / flags and their start values
  * @property {Record<string, StoryItem>} items
+ * @property {Record<string, StoryBuilding>} buildings
  * @property {Record<string, StoryQuest>} quests
  * @property {Record<string, StoryActor>} actors
  * @property {Record<string, { lines: string[], file: string, line: number }>} scripts
@@ -103,7 +112,7 @@ const ICON_NAME = /^[a-z0-9][a-z0-9-]{0,31}$/;
 /** @returns {Story} */
 export function emptyStory() {
   return {
-    vars: Object.create(null), items: Object.create(null), quests: Object.create(null), actors: Object.create(null),
+    vars: Object.create(null), items: Object.create(null), buildings: Object.create(null), quests: Object.create(null), actors: Object.create(null),
     scripts: Object.create(null), events: [], starts: Object.create(null),
   };
 }
@@ -171,6 +180,41 @@ export function addStoryJSON(story, raw, file, warnings) {
       ...(Object.keys(bonus).length ? { bonus } : {}),
       ...(rarity && isStoryName(rarity) ? { rarity } : {}),
       ...(ik.keys?.text ? { textKey: ik.keys.text } : {}),
+    };
+  }
+  for (const [id, v] of entries(r.buildings)) {
+    if (!isStoryName(id) || id === 'none') { warnings.push(where(`buildings: "${id}" is not a building id — dropped`)); continue; }
+    if (dup(story.buildings, id, 'building')) continue;
+    const o = isPlain(v) ? v : {};
+    const bk = cleanTextKeysOf('item', o.textKeys);
+    if (bk.dropped) warnings.push(where(`building "${id}": ${bk.dropped} malformed or unknown text key(s) dropped`));
+    /** @type {Record<string, number>} */
+    const cost = Object.create(null);
+    for (const [k, n] of entries(o.cost)) {
+      if (!isStoryName(k) || k === 'gold' || !Number.isInteger(n) || n < 1 || n > 1e6) { warnings.push(where(`building "${id}": cost "${k}" must be an item id with a whole number from 1 — dropped`)); continue; }
+      cost[k] = n;
+    }
+    const days = Number.isInteger(o.days) && o.days >= 1 && o.days <= 365 ? o.days : 1;
+    if (o.days !== undefined && days !== o.days) warnings.push(where(`building "${id}": "days" must be a whole number from 1 to 365 — 1 used`));
+    const prop = text(o.prop);
+    if (!BUILDING_KINDS.includes(prop)) warnings.push(where(`building "${id}": "prop" must be one of ${BUILDING_KINDS.join(', ')} — "${BUILDING_KINDS[0]}" used`));
+    // `start` / `done`: a script id, or inline lines kept as the script `building.<id>.start` / `.done`
+    const script = (field) => {
+      const s = o[field];
+      if (Array.isArray(s)) {
+        const sid = `building.${id}.${field}`;
+        if (!Object.hasOwn(story.scripts, sid)) story.scripts[sid] = { lines: scriptLines(s), file, line: 1 };
+        return sid;
+      }
+      if (s === undefined || s === '') return '';
+      if (isStoryName(text(s).trim())) return text(s).trim();
+      warnings.push(where(`building "${id}": "${field}" names no script — ignored`));
+      return '';
+    };
+    story.buildings[id] = {
+      name: text(o.name).trim() || titleCase(id), text: text(o.text), cost, days,
+      prop: BUILDING_KINDS.includes(prop) ? prop : BUILDING_KINDS[0], start: script('start'), done: script('done'),
+      ...(bk.keys?.text ? { textKey: bk.keys.text } : {}),
     };
   }
   for (const [id, v] of entries(r.quests)) {
@@ -344,13 +388,13 @@ export function buildStory(files) {
 /**
  * The file text of a `.json` story file (generators): the sections in a fixed order, two-space
  * indent, final newline. `scripts` keep one line per array entry.
- * @param {Record<string, any>} s the sections (vars, items, quests, actors, scripts, events,
- *   starts) as the file holds them
+ * @param {Record<string, any>} s the sections (vars, items, buildings, quests, actors, scripts,
+ *   events, starts) as the file holds them
  * @returns {string}
  */
 export function serializeStory(s) {
   const out = { format: STORY_FORMAT, version: STORY_VERSION };
-  for (const k of ['vars', 'items', 'quests', 'actors', 'scripts', 'events', 'starts']) {
+  for (const k of ['vars', 'items', 'buildings', 'quests', 'actors', 'scripts', 'events', 'starts']) {
     const v = s[k];
     if (v && (Array.isArray(v) ? v.length : Object.keys(v).length)) out[k] = v;
   }

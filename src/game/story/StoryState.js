@@ -12,7 +12,7 @@
  * one for the session. A save is untrusted data: `fromJSON` keeps only names that are names,
  * finite numbers within bounds and at most 4 096 entries per map. Every map is prototype-less.
  */
-import { isFlagName, isStoryName } from '../../engine/level/StoryCondition.js';
+import { isFlagName, isStoryName, SLOT_STAGES } from '../../engine/level/StoryCondition.js';
 import { MAX_PARTY, isClass, classForWeapon, normalizeRule } from '../../engine/level/PartyRules.js';
 import { ownValue } from '../../engine/utils/own.js';
 import { isGuid } from '../../engine/i18n/ContentKeys.js';
@@ -239,6 +239,9 @@ export function storyReader(stateOf, ctx) {
         case 'visited': return ctx.visited?.().includes(ref.name) ? 1 : 0;
         // (`party:<who>`: a member, by id, actor or name — PARTY.md §7.2)
         case 'party': return partyHas(s.party, ref.name) ? 1 : 0;
+        // (a build slot: what stands there — 'none' while empty — and how far: 0 empty, 1 frame, 2 built)
+        case 'building': return s.slot(ref.name)?.b ?? 'none';
+        case 'slot': return s.slot(ref.name)?.stage ?? 0;
         // (`done:<id>`: this level's event; `done:<level>.<id>` another level's; a story file's
         // event; a `once` block's key)
         case 'done': return s.isDone(`${ctx.level()}.${ref.name}`) || s.isDone(ref.name) || s.isDone(`story.${ref.name}`) || s.isDone(`once:${ref.name}`) ? 1 : 0;
@@ -257,7 +260,8 @@ export function storyReader(stateOf, ctx) {
     },
     word(ref, w) {
       if (ref.kind === 'stage') return stageIndex(ref.name, w);
-      if (ref.kind === 'quest' || (ref.kind === 'game' && (ref.name === 'chapter' || ref.name === 'level' || ref.name === 'weather' || ref.name === 'player'))) return w;
+      if (ref.kind === 'slot') return SLOT_STAGES.indexOf(/** @type {any} */ (w));
+      if (ref.kind === 'quest' || ref.kind === 'building' || (ref.kind === 'game' && (ref.name === 'chapter' || ref.name === 'level' || ref.name === 'weather' || ref.name === 'player'))) return w;
       return stateOf().get(w);
     },
     // (`${stage:q}` shows the stage's id, `${quest:q}` its state)
@@ -304,6 +308,13 @@ export class StoryState {
     this.equip = map();
     /** The starting equipment was given (a later `inventory.equipment` change leaves a save as it is). */
     this.equipped = false;
+    /**
+     * The build slots (`buildSlot` objects; BuildingSystem): slot id → the building there (`b`), its
+     * stage (1 frame — going up —, 2 built; an empty slot has no entry) and the mornings it still
+     * needs while going up (`left`). Saved.
+     * @type {Record<string, { b: string, stage: 1|2, left: number }>}
+     */
+    this.slots = map();
     this.gold = 0;
     /** @type {Record<string, QuestState>} */
     this.quests = map();
@@ -445,6 +456,20 @@ export class StoryState {
     }
     if (Object.keys(moved).length) this.version++;
     return moved;
+  }
+
+  /**
+   * Take `n` of `id` from the camp's stock only (a building's cost: BuildingSystem.begin). Returns
+   * how many were taken.
+   * @param {string} id
+   * @param {number} n
+   */
+  takeStock(id, n) {
+    const k = Math.min(this.stocked(id), Math.max(0, Math.trunc(Number(n) || 0)));
+    if (!k) return 0;
+    setCount(this.stock, id, this.stocked(id) - k);
+    this.version++;
+    return k;
   }
 
   /**
@@ -605,6 +630,22 @@ export class StoryState {
     return n;
   }
 
+  /** A build slot's state (null: empty). @param {string} id */
+  slot(id) {
+    return Object.hasOwn(this.slots, id) ? this.slots[id] : null;
+  }
+
+  /**
+   * Put building `b` on slot `id` at `stage` (1 going up for `left` more mornings, 2 built); `b` ''
+   * empties the slot.
+   * @param {string} id @param {string} b @param {1|2} [stage] @param {number} [left]
+   */
+  setSlot(id, b, stage = 1, left = 1) {
+    if (!b) delete this.slots[id];
+    else if (Object.keys(this.slots).length < MAX || Object.hasOwn(this.slots, id)) this.slots[id] = { b, stage, left: stage === 1 ? Math.max(1, Math.floor(left)) : 0 };
+    this.version++;
+  }
+
   /** The per-level memory of base level `id` (created on first use). @param {string} id */
   levelMemory(id) {
     if (!Object.hasOwn(this.levels, id)) this.levels[id] = { homes: map() };
@@ -632,6 +673,8 @@ export class StoryState {
       ...(Object.keys(this.stock).length ? { stock: { ...this.stock } } : {}),
       ...(Object.keys(this.equip).length ? { equip: { ...this.equip } } : {}),
       ...(this.equipped ? { equipped: true } : {}),
+      // (the build slots — absent without any)
+      ...(Object.keys(this.slots).length ? { slots: Object.fromEntries(Object.entries(this.slots).map(([k, v]) => [k, { ...v }])) } : {}),
       gold: this.gold,
       // (a script's stage texts with their content keys and English beside them — each absent
       // without any)
@@ -672,6 +715,10 @@ export class StoryState {
     for (const [k, v] of entries(d.stock)) if (isStoryName(k) && k !== 'gold' && num(v) !== null && v > 0) s.stock[k] = Math.min(LIMIT, Math.floor(v));
     for (const [k, v] of entries(d.equip)) if (isStoryName(k) && isStoryName(v) && v !== 'gold') s.equip[k] = v;
     s.equipped = d.equipped === true;
+    for (const [k, v] of entries(d.slots)) {
+      if (!isStoryName(k) || !isPlain(v) || !isStoryName(v.b) || (v.stage !== 1 && v.stage !== 2)) continue;
+      s.slots[k] = { b: v.b, stage: v.stage, left: v.stage === 1 ? Math.max(1, Math.min(999, Math.floor(num(v.left) ?? 1))) : 0 };
+    }
     s.gold = Math.max(0, Math.min(LIMIT, Math.floor(num(d.gold) ?? 0)));
     for (const [k, q] of entries(d.quests)) {
       if (!isStoryName(k) || !isPlain(q)) continue;

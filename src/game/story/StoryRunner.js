@@ -55,6 +55,7 @@ import { Nav } from '../combat/Nav.js';
 import { titleCase, EQUIP_SLOTS } from '../campaign/StoryFormat.js';
 import { rollDrop } from '../campaign/CampaignFormat.js';
 import { storyReader } from './StoryState.js';
+import { BuildingSystem } from '../building/BuildingSystem.js';
 import storyStrings from './strings.js';
 
 // (the game creates a single level's story state from the same lazily loaded module)
@@ -174,6 +175,8 @@ export class StoryRunner {
     this.story = story;
     this.state = state;
     this.levelId = levelId;
+    /** The build slots' rules (the story's `buildings`; CAMPAIGN_FORMAT.md §4.3). */
+    this.buildings = new BuildingSystem(this);
     /** @type {Map<string, ParsedScript>} parsed scripts by source key and text (tags included) */
     this._parsed = new Map();
     /** @type {LevelEvent[]} */
@@ -960,11 +963,13 @@ export class StoryRunner {
   }
 
   /**
-   * A new morning (5:00 passing, a rest until morning): what was gathered grows back (`_regrow`)
-   * and the story files' `morning` events whose `if` holds run — the camp's works advance there.
+   * A new morning (5:00 passing, a rest until morning): what was gathered grows back (`_regrow`),
+   * the buildings going up are a morning nearer (BuildingSystem.morning) and the story files'
+   * `morning` events whose `if` holds run.
    */
   _morning() {
     this._regrow();
+    this.buildings.morning();
     for (const ge of this.globalEvents) if (ge.def.on === 'morning') this._triggerGlobal(ge);
   }
 
@@ -1668,6 +1673,7 @@ export class StoryRunner {
       case 'clear': s.setVar(a.name, 0); return '';
       case 'var': s.setVar(a.name, a.by === '=' ? a.value : s.get(a.name) + (a.by === '+' ? a.value : -a.value)); return '';
       case 'give': case 'take': this._items(a.item, n.op === 'give' ? a.count : -a.count, run); return '';
+      case 'build': this.buildings.place(a.slot, a.building, a.built); return '';
       case 'quest': this._quest(a, n.tk); return '';
       case 'home': {
         const actor = this._actor(a.who);

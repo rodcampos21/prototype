@@ -1072,7 +1072,7 @@ begin('L: bark');
 // =================================================================================================
 begin('M: background runs');
 {
-  eq('BACKGROUND_OPS', [...BACKGROUND_OPS].sort(), ['banner', 'bark', 'break', 'call', 'clear', 'emote', 'face', 'give', 'heal', 'home', 'music', 'party', 'quest', 'set', 'sfx', 'shake', 'stop', 'take', 'teleport', 'toast', 'var', 'wait', 'walk', 'weather']);
+  eq('BACKGROUND_OPS', [...BACKGROUND_OPS].sort(), ['banner', 'bark', 'break', 'build', 'call', 'clear', 'emote', 'face', 'give', 'heal', 'home', 'music', 'party', 'quest', 'set', 'sfx', 'shake', 'stop', 'take', 'teleport', 'toast', 'var', 'wait', 'walk', 'weather']);
   ok('BACKGROUND_OPS: commands of the language, none a block', [...BACKGROUND_OPS].every((op) => Object.hasOwn(SCRIPT_COMMANDS, op)) && !['if', 'elif', 'else', 'choice', 'loop', 'once', 'cycle', 'seq', 'pick'].some((op) => BACKGROUND_OPS.has(op)));
   const one = (line) => backgroundIssue(node([line]));
   eq('backgroundIssue: dialogue, the narrator, "- text"', [one('Hollis: Hi.'), one(': The river roars.'), one('- Hm.')], ['dialogue needs the player', 'dialogue needs the player', 'dialogue needs the player']);
