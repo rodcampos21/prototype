@@ -190,7 +190,9 @@ Um dia dura cerca de 36 minutos reais (`TIME_SPEED`: 1 hora de jogo = 90 s).
 2. **A virada que conta é a manhã** (5:00), a mesma que o sorteio de clima já detecta
    (`weatherPhase` em `src/game/WeatherRoll.js`). Primeiro protótipo: um evento de campanha
    `on: morning` que roda a cada nova manhã em qualquer fase. Depois vira um sistema (`DayClock`)
-   que avança obras e contagens.
+   que avança obras e contagens. **Feito (2026-10-29):** os eventos dos arquivos de história aceitam
+   `on: morning` (STORY_SCRIPT.md §6): rodam a cada manhã (o relógio passando das 5:00, a viagem, o
+   `time`, ou um `rest` até de manhã) enquanto o `if` vale, em qualquer fase. As obras avançam ali.
 3. **Contagens com prazo** (EV01 saqueadores, EV02 a fera marcha, EV03 comerciante…): uma tabela
    `timers` em `story/main.json` (`id`, começa quando, duração em dias, o que acontece ao expirar).
    Cada contagem guarda o dia em que começou e expira em `inicio + duracao`. Regra do caderno: no
@@ -200,7 +202,9 @@ Um dia dura cerca de 36 minutos reais (`TIME_SPEED`: 1 hora de jogo = 90 s).
    cena pode segurar a hora (`time 21`), mas o dia continua contando depois dela.
 5. **Dormir** (Bíblia, *Dormir*): só no alojamento, depois de construído. Pula até a manhã
    seguinte e avança o dia, as obras e as contagens; um prazo pode vencer durante a noite. Antes
-   do alojamento, o tempo só passa jogando.
+   do alojamento, o tempo só passa jogando. **Feito (2026-10-29):** Espaço na porta do alojamento
+   pronto (*Dormir*) dorme até as 8:00, só de noite (das 18:00 às 5:00; de dia, *Ainda é dia*). A
+   cura fica para quando o acampamento tiver vida (hoje ele não tem combate).
 5a. **A noite** (Bíblia, *A noite*): de 18:30 até a manhã, os nós têm muito mais monstros e podem
    aparecer variantes mais fortes. **Feito (2026-10-28):** cada fase de expedição declara grupos
    de inimigos extras com `when: hour >= 18.5 or hour < 5` (`NIGHT_CONDITION` em
@@ -269,6 +273,31 @@ carga, e o número de luzes fica fixo.
 - **E1, protótipo sem mudar a engine** (validar o design rápido): o gerador da campanha escreve,
   para cada espaço, todos os objetos de cada estágio com `when: slot-norte = 3` etc., e o menu é uma
   `choice` do Surubin. Funciona hoje, mas não escala.
+  **Feito (2026-10-29), no gerador da campanha:** cada lote tem `obra.<forja|silo|alojamento>` (0 o
+  lote com as estacas, 1 em obra, 2 pronta) e um objeto `building` por estágio (OBJECT_CATALOG,
+  *building*: `frame` — alicerce, andaime, toras — e `built`). Espaço no lote mostra o custo e o
+  que há no acampamento (mochila + estoque) e oferece começar; a C03 é a primeira vez (na volta ao
+  acampamento com material para uma obra, ou no lote): só as obras com material são oferecidas, com
+  as falas do Caderno. Começar paga do estoque, ergue o andaime e a missão *Os alicerces* vai para a
+  etapa *obra*. A manhã seguinte (o evento `obras-de-manha`) põe a obra de pé e, depois da C03, o
+  altar; a cena do altar (Caderno, *Na manhã seguinte*) conclui a missão. As obras seguintes ganham
+  um comentário do Surubin. Custos do Caderno **sem a comida** (o Riacho dos Juncos, que dá comida,
+  ainda não tem fase): forja 12 madeira e 10 pedra; silo 14 madeira e 6 pedra; alojamento 16 madeira
+  e 6 ervas — rebalancear quando o Riacho e a Pedreira existirem. O silo pronto dobra a mochila
+  (`obra.silo >= 2`). **Mudado (2026-10-29, pedido):** a mochila tem 6 espaços (12 com o silo), cada
+  um com até 5 de um recurso (`inventory.stack`); cada coleta dá pela tabela de raridade da campanha
+  (`inventory.rarity`; os básicos, `comum`: sempre 1, 2 em 40 %, 3 em 15 %), e se coleta à vontade
+  enquanto houver recurso no mapa e espaço na mochila. Nada é guardado sozinho na volta: o baú do
+  acampamento (ao lado da tenda) guarda com Espaço, e o painel de recursos aparece só no acampamento,
+  mostrando o baú. As obras pagam do baú (`stock:<item>`); a C03 também dispara logo depois de
+  guardar. Depois: trabalhos dos colonos que consomem o estoque do baú (tocar a forja).
+  **Mudado de novo (2026-10-29, pedido):** nada de conversa obrigatória com o Surubin para construir.
+  Cada lote tem uma placa flutuante (`signpost` com `opts.float`) dizendo o que é, quanto custa e em
+  quanto tempo fica pronto; Espaço no lote mostra o que há no baú e oferece começar. O Surubin reage:
+  na primeira obra vem e diz as falas da C03 do Caderno (a escolha útil, o estandarte, *uma comunidade
+  começa pela fé*), nas outras um balão. Na mochila, Espaço no item abre um menu (por ora *Largar 1*,
+  *Largar n*, *Cancelar*), e as poções de cura do combate aparecem nela. O que se larga fica no chão
+  ao lado do jogador por 20 s (pisca nos últimos 5): Espaço nele (*Pegar*) devolve à mochila.
 - **E2, sistema de verdade**: o objeto `buildSlot`, `BuildingSystem` em `src/game/building/`, a
   tabela de construções, o menu, os comandos de história `build <slot> <construção>` e as condições
   `building:<slot> = forja` e `stage:<slot> >= pronto`, além do suporte no editor (o inspetor do
@@ -367,6 +396,10 @@ acampamento: a viagem é pela mesa do Surubin. Versão mínima:
    ponto de retorno e dos lugares da fase (regiões nomeadas), recursos e baús, a névoa do que ainda
    não foi visto (revelar ao andar), o norte e a legibilidade das trilhas e do riacho. Resultado
    esperado da análise: o que o `Minimap.js` já faz, o que falta e uma proposta antes de mexer.
+   **Feito (2026-10-29):** `atlas.fog` (CAMPAIGN_FORMAT §4.1) e `MapFog` (PIXEL_UI §5): nas fases
+   dos lugares (não no acampamento) o minimapa e o mapa-múndi cobrem o que não foi visto; andar
+   revela 10 u em volta com borda pontilhada; marcadores, recursos, inimigos e nomes de região só na
+   parte vista, o mastro de volta sempre. Fica no save por fase (`fog`).
    **Decidido (2026-10-28): névoa de exploração.** O minimapa (e o mapa-múndi da fase) mostra só o
    que o jogador já percorreu; o resto fica coberto por uma névoa. Andar revela um raio em volta do
    cavaleiro, com a borda suave. O que foi revelado fica guardado no save, por fase, e continua
@@ -465,7 +498,7 @@ Design na Bíblia, seção *O protagonista*.
 | --- | --- | --- |
 | **M1, Idioma** | Jogo em português, sem japonês e chinês | A |
 | **M2, Acampamento jogável** | Campanha Ato I: criação de personagem → prólogo → C02 → acampamento na clareira → mapa do Surubin → Mata da Clareira → volta; cavaleiro com visual próprio e falando; clima sorteado por mapa; mais monstros à noite | B, G1, I, J, F1 (tenda, mesa do mapa, estandarte, altar), F2 (cavaleiro) |
-| **M3, Primeira obra** | ~~Mochila e estoque, HUD de recursos, janela de inventário (mochila + equipamento, C 2, 2a, 2b), cena de viagem entre mapas (G1 5a), estaca de volta maior (5b), recursos visíveis (5d)~~ (feitos em 2026-10-29), névoa no minimapa (5c), coleta em várias expedições (Mata, Riacho, Pedreira), C03 com a escolha forja / silo / alojamento, obra que avança a cada manhã, altar, dormir no alojamento (protótipo E1) | C, D, E1, F1 (forja, silo, alojamento, andaime) |
+| **M3, Primeira obra** | ~~Mochila e estoque, HUD de recursos, janela de inventário (mochila + equipamento, C 2, 2a, 2b), cena de viagem entre mapas (G1 5a), estaca de volta maior (5b), recursos visíveis (5d), névoa no minimapa (5c), C03 com a escolha forja / silo / alojamento, obra que avança a cada manhã, altar, dormir no alojamento (protótipo E1)~~ (feitos em 2026-10-29); falta: coleta em várias expedições com as fases do Riacho e da Pedreira (e a comida nos custos) | C, D, E1, F1 (forja, silo, alojamento, andaime) |
 | **M4, Sistema de construção** | `buildSlot` + `BuildingSystem` + menu + editor; contagens EV01/EV02 | E2, D completo, F4 |
 | **M5, Fase 1–3 do Ato I** | Odo, Fumaça na Serra, Pedras Riscadas, duelo do mestre | F2 (NPCs), F3 |
 | **M6, Atlas completo** | Atlas do Ato I com os 12 (13) nós, contagens visíveis | G2 |

@@ -28,7 +28,7 @@ const FACINGS = ['down', 'up', 'left', 'right'];
 const PREFIX = 'luminati.campaign.';
 export const SAVE_VERSION = 2;
 /** The top-level keys of a save this engine reads (the rest are kept in `extra`). */
-const KNOWN = new Set(['version', 'story', 'level', 'at', 'via', 'time', 'weather', 'combat', 'opened', 'cleared', 'visited', 'chapter', 'savedAt', 'playTime', 'player', 'weatherLock']);
+const KNOWN = new Set(['version', 'story', 'level', 'at', 'via', 'time', 'weather', 'combat', 'opened', 'cleared', 'visited', 'chapter', 'savedAt', 'playTime', 'player', 'weatherLock', 'fog']);
 /** The longest name a player may give their character (characters, after trimming). */
 export const PLAYER_NAME_MAX = 16;
 
@@ -45,6 +45,8 @@ export function cleanPlayerName(v) {
 }
 /** At most this many group ids per level in `cleared` (a saved game is untrusted). */
 const MAX_IDS = 4096;
+/** The longest fog a save may hold for a level (characters of MapFog.encode). */
+const MAX_FOG = 200000;
 /** Keys never copied into `extra` (they would change its prototype, not add a field). */
 const UNSAFE_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
 
@@ -131,6 +133,12 @@ export class CampaignState {
     this.cleared = Object.create(null);
     /** @type {string[]} the levels entered so far (the campaign's world map dims the others) */
     this.visited = [];
+    /**
+     * Level id → what the player has seen of it under the fog of exploration (MapFog.encode; the
+     * atlas's `fog`: its places' levels).
+     * @type {Record<string, string>}
+     */
+    this.fog = Object.create(null);
     /** Chapter id in force when saved ('' = none yet). */
     this.chapter = '';
     this.savedAt = 0;
@@ -189,6 +197,7 @@ export class CampaignState {
       opened: { ...this.opened },
       cleared: { ...this.cleared },
       visited: [...this.visited],
+      ...(Object.keys(this.fog).length ? { fog: { ...this.fog } } : {}),
       chapter: this.chapter,
       savedAt: this.savedAt,
       playTime: Math.round(this.playTime),
@@ -248,6 +257,10 @@ export class CampaignState {
       if (!Array.isArray(v) || !campaign.levels.some((l) => l.id === k)) continue;
       const ids = [...new Set(v.filter((id) => typeof id === 'string' && id && id.length <= 200))].slice(0, MAX_IDS);
       if (ids.length) s.cleared[k] = ids;
+    }
+    // (only levels of the campaign; MapFog.decode checks each against its level when it is read)
+    for (const [k, v] of Object.entries(isPlain(d.fog) ? d.fog : {})) {
+      if (typeof v === 'string' && v.length <= MAX_FOG && campaign.levels.some((l) => l.id === k)) s.fog[k] = v;
     }
     s.chapter = text(d.chapter);
     s.savedAt = num(d.savedAt) ?? 0;

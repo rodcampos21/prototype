@@ -233,6 +233,7 @@ is `src/game/campaign/AtlasFormat.js`; the screen `src/engine/ui/AtlasScreen.js`
 | `title`, `subtitle` | The map's heading (blank title: the UI's *Map*). |
 | `home` | The hub level (required, a level of the campaign): its map table opens the map. |
 | `entrance` | Where a journey back arrives in the hub (blank: its player start). |
+| `fog` | `true`: the places' levels (not the hub) start under a **fog of exploration** — their minimap and world map show only what the player has walked (below). Default off. |
 | `size` | `[w, h]` map units (default `[100, 60]`; north up). Every point is clamped inside. |
 | `places[]` | `id` (a slug), `name`, `x`, `y`, `icon` (`camp` `forest` `reeds` `quarry` `den` `ruin`), `level` (where it travels; blank or not a level of the campaign: no road yet — shown, not travelled), `entrance` (there; blank: its player start), `hours` (each way, 0–12, default 1), `rumor` / `known` / `explored` (story conditions, the flag rule), `yields` (what is found there), `notes` (`{ rumor, known, explored }`: the cartographer's note in each state; a state without one shows the one before), `road` (`{ there, back, night }`: lines of the journey card — going there, coming home, coming home at night, else `back`; one per journey, in turn by the expeditions made). |
 | `sketch[]` | What is drawn: `kind` `sea` `forest` `hills` `reeds` (polygons, `points`), `coast` `road` `river` (lines, `points`; a river swells toward its last point), `label` (`at`, `name`), `fish` (the Baiacu Rei, `at`), `wreck` (`at`); `when`: drawn only while it holds. |
@@ -270,54 +271,81 @@ the map, or a `use` exit back at the place (the return mast, a `stake` of kind `
 the maps) — moves the clock on by that place's `hours` (`journeyOf` / `journeyHours`; the day turns
 at midnight and `time` events run, as for the `time` command).
 
+**The fog of exploration** (`fog: true`; `MapFog`, PIXEL_UI.md §5). On a place's level the minimap
+and the world map cover what the player has not seen: walking uncovers a disc round them (10 world
+units, a soft rim of 3.5) with a dithered edge. Markers, villagers, foes and the names of regions
+lying under it are left out — the way back (the return mast) always shows. What was seen is kept per
+level in the save (§7) and stays seen on the next expeditions; a level whose size changed starts
+unseen again.
+
 **Checks.** `level:check --campaign` counts every place with a road as a travel from the hub (so it
 is reachable), reads the places' and the sketch's conditions, and fails on an `entrance` the hub or
 the place lacks.
 
 ### 4.2 The inventory: backpack, stock and equipment
 
-*(Optional; additive, October 2026.)* `inventory` gives the player a **backpack** with a limit, the
-camp's **stock** and the **equipment** slots, shown in the journal (B: its Backpack and
-Equipment tabs take the Items tab's place) and the HUD's
-resource bar ([PIXEL_UI.md §5](PIXEL_UI.md#5-component-recipes)):
+*(Optional; additive, October 2026.)* `inventory` gives the player a **backpack** of slots, the
+camp's **stock** (its chest) and the **equipment** slots, shown in the journal (B: its Backpack and
+Equipment tabs take the Items tab's place), and at the camp the HUD's chest panel
+([PIXEL_UI.md §5](PIXEL_UI.md#5-component-recipes)):
 
 ```json
 "inventory": {
-  "pack": 8,
-  "grow": [{ "when": "obra.silo", "pack": 16 }],
+  "pack": 6,
+  "stack": 5,
+  "grow": [{ "when": "obra.silo >= 2", "pack": 12 }],
+  "rarity": { "comum": [1, 0.4, 0.15], "incomum": [0.85, 0.3, 0.08], "raro": [0.5, 0.12], "lendario": [0.2] },
   "equipment": { "weapon": "espada-de-viagem", "body": "cota-de-viagem", "head": "elmo-amassado" }
 }
 ```
 
 | Field | Type | Default | Meaning |
 | --- | --- | --- | --- |
-| `pack` | integer 1–999 | 10 | How many backpack items the player can carry in all. |
-| `grow` | `[{ when, pack }]` | `[]` | A larger backpack while `when` (a story condition) holds: the largest step that holds wins. |
+| `pack` | integer 1–999 | 10 | How many **slots** the backpack has. |
+| `stack` | integer 1–99 | 1 | How many of one item a slot holds (7 wood at 5 a slot fill two slots; a slot never mixes items). |
+| `grow` | `[{ when, pack }]` | `[]` | More slots while `when` (a story condition) holds: the largest step that holds wins. |
+| `rarity` | name → `[p1, p2, …]` | `{}` | How much one gathering gives an item of that rarity: `pk` is the chance (0–1) of getting **at least k** (1–9 entries; a list that grows is clamped to never grow). `[1, 0.4, 0.15]`: always one, two 40 % of the time, three 15 %. A rare `[0.5, 0.12]` may give none. Kept for the rarer resources to come. |
 | `equipment` | slot → item id | `{}` | What a new journey wears (given once; a later change leaves a save as it is). Slots: `weapon`, `body`, `head`, `hands`, `feet`, `accessory`. |
 
 The story files' items say what goes where ([STORY_SCRIPT.md §8](STORY_SCRIPT.md#8-story-files)):
-`pack: true` marks a **backpack item** (a gathered resource: `madeira`, `pedra` …), `icon` names its
-icon (`src/engine/ui/art/icons/items.js`: `wood`, `stone`, `herbs`, `sword`, `armor`, `helm`,
-`gloves`, `boots`, `ring`, `pack` and the core icons; an unknown name shows a gem), `slot` and
-`bonus` (`{ hp, mp, atk, def }`, whole numbers) make an **equipment** item.
+`pack: true` marks a **backpack item** (a gathered resource: `madeira`, `pedra` …), `rarity` names a
+row of the table above, `icon` names its icon (`src/engine/ui/art/icons/items.js`: `wood`, `stone`,
+`herbs`, `sword`, `armor`, `helm`, `gloves`, `boots`, `ring`, `pack` and the core icons; an unknown
+name shows a gem), `slot` and `bonus` (`{ hp, mp, atk, def }`, whole numbers) make an **equipment**
+item.
 
 - **Gathering.** A `resource` ([OBJECT_CATALOG.md](OBJECT_CATALOG.md#resource)) gives its item into
-  the backpack, as much as it has room for (`StoryRunner.gather`); with the backpack full the
-  player cannot strike it (a toast: go back to the camp). A script's `give` is never limited.
-- **Home.** Arriving at the atlas's `home` ([§4.1](#41-the-atlas)) stores everything the backpack
-  holds in the stock (a toast lists it; the game saves). At home, gathered items go straight into
-  the stock. Without an atlas there is no home: the backpack is never emptied.
+  the backpack: a roll on its rarity's row (`rollDrop`; an item without a rarity, or a rarity the
+  table lacks: the resource's `amount`), as much as the backpack has room for — the free slots'
+  worth plus what the item's last slot still holds (`StoryRunner.packRoom` / `gather`). With no room
+  the player cannot strike it (a toast: go back and store it in the chest). The player gathers as
+  long as the map has resources and the backpack room. A script's `give` is never limited.
+- **The camp's chest.** At the atlas's `home` ([§4.1](#41-the-atlas)) a `building` of kind `chest`
+  ([OBJECT_CATALOG.md](OBJECT_CATALOG.md#building)) stores the backpack in the stock with Space (a
+  toast lists it; the game saves). Nothing is stored by itself: arriving home the backpack stays
+  packed. The HUD's chest panel (at home only) shows the gold and what the stock holds. Without an
+  atlas there is no home: the backpack is never emptied. (Later, the camp's villagers' own work —
+  the forge kept running — reads the same stock.)
+- **Dropping.** In the journal's Backpack, Space (or a second click) on a backpack item opens its
+  action menu: *Largar 1*, *Largar n* (its stack) and *Cancelar* (`InventoryItem.actions`: `drop`;
+  more actions later). Dropping takes it out of the backpack only (`StoryRunner.dropItem`; the
+  chest is not touched), with a toast, and saves. What was dropped lies on the ground a step beside
+  the player, to the screen's right (`GroundItems`: its icon ringed in pale gold, bobbing; it blinks
+  in the last 5 s) for 20 s, then is gone. Space on it — the *Pegar* prompt, offered within reach
+  whichever way the player faces (`Interactable.anyFacing`) — takes back what the backpack holds;
+  the rest stays. Not saved; a new level clears it. The combat's Healing Draughts show in the backpack
+  too (in no slot of their own; not dropped).
 - **Counting.** An item's count — what `item:madeira` reads, what the journal shows — is what the
-  player carries **and** what the stock holds. `take` takes from the stock first, then from the
-  backpack, so a building's cost is paid from both.
+  player carries **and** what the stock holds; `stock:madeira` reads the chest alone (a building's
+  cost: what was brought home and stored). `take` takes from the stock first, then from the backpack.
 - **Equipment.** The slots show what is worn and the item's bonus; **equipping is not there yet**
   (the bonuses are not applied). The data is the final shape, so the mechanic only adds logic.
 - **The save.** The story part keeps `stock` (item → count), `equip` (slot → item) and `equipped`
   (the starting equipment was given) — each absent while empty ([§7](#7-saved-games)).
 
 **Checks.** `level:check --campaign` reads the `grow` conditions, warns when a starting item is
-not declared or is not for its slot, and counts the starting equipment as used.
-
+not declared or is not for its slot, counts the starting equipment as used, counts a resource's item
+as given, and warns about an item whose `rarity` the table lacks.
 ## 5. Story: flags, conditions, chapters
 
 The story itself — conditions, scripts, events, talk scripts, actors, items, quests, cutscenes,
@@ -549,9 +577,10 @@ start, i.e. an editor play-test: `….test`), JSON, **version 2**:
 ```
 { version: 2, story: { vars, items, itemNames?, gold, quests, done, counters, visits, day, levels, ending?, pending?, seed?, party? },
   level, at: { x, z, facing }, via?: { from, entrance }, time, weather, combat, opened, cleared,
-  visited, chapter, savedAt, playTime, player?: { name, cls }, weatherLock? }
+  visited, chapter, savedAt, playTime, player?: { name, cls }, weatherLock?, fog? }
 ```
 
+- **The fog of exploration.** `fog` (additive): level id → what the player has seen of it under the atlas's fog (§4.1): `<width>x<depth>:` then runs of `<level 0–f><count, base 36>` joined by `.` (16 levels a cell). Kept only for a level of the campaign, at most 200 000 characters; a fog of another size than its level is not read. Absent: nothing seen.
 - **The held weather.** `weatherLock` (additive): the weather the story holds (`weather rain` in a script, until `weather auto`, STORY_SCRIPT.md): while set, arriving in a level keeps it and the maps' weather pools roll nothing. Absent: none.
 - **The character.** `player` (a campaign with `player.create`, once the creation is confirmed):
   the name given (control and formatting characters dropped, spaces made one, trimmed, at most 16

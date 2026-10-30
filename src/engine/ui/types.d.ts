@@ -109,6 +109,11 @@ export interface InventoryItem {
   count: number;
   /** in the camp's stock */
   stock?: number;
+  /**
+   * what the player may do with it from the backpack's action menu (Space on its cell): `drop` (one,
+   * or the whole stack) — more later; none: no menu
+   */
+  actions?: string[];
 }
 
 /** A slot of `InventoryData.equipment`: the item worn there (id '' when empty). */
@@ -136,8 +141,11 @@ export interface InventoryStats {
  */
 export interface InventoryData {
   gold?: number;
-  /** the backpack's use and limit; null: no backpack (no limit shown) */
-  pack?: { used: number; limit: number } | null;
+  /**
+   * the backpack's slots used and its slots, and how many of one item a slot holds (`stack`, 1 when
+   * absent); null: no backpack (no limit shown)
+   */
+  pack?: { used: number; limit: number; stack?: number } | null;
   /** at the camp: the stock is shown (and the resource bar counts it) */
   home?: boolean;
   items?: InventoryItem[];

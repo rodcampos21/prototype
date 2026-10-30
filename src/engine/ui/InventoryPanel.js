@@ -33,6 +33,8 @@ import { wrapLines } from './Journal.js';
  */
 
 /** @typedef {'pack'|'gear'} InventoryTab */
+/** A backpack or chest cell's item id (`pack:madeira:3` → `madeira`). @param {string} cid */
+const itemIdOf = (cid) => cid.replace(/^(pack|stock):/, '').replace(/:\d+$/, '');
 /** A cell: its socket's size and pitch (art px). */
 const CELL = 24, PITCH = 27;
 /** The equipment's slots by column (left, right), top to bottom. */
@@ -55,6 +57,7 @@ export function cleanInventory(data) {
   const items = (Array.isArray(d.items) ? d.items : []).filter((it) => it && typeof it === 'object').map((it, i) => ({
     id: str(it.id) || `#${i}`, name: str(it.name) || str(it.id), text: str(it.text), icon: str(it.icon),
     pack: !!it.pack, key: !!it.key, count: whole(it.count), stock: whole(it.stock),
+    actions: (Array.isArray(it.actions) ? it.actions : []).filter((a) => typeof a === 'string' && /^[a-z]{1,20}$/.test(a)),
   }));
   const SLOTS = ['weapon', 'body', 'head', 'hands', 'feet', 'accessory'];
   /** @type {Required<InventorySlot>[]|null} */
@@ -62,7 +65,7 @@ export function cleanInventory(data) {
     slot: e.slot, id: str(e.id), name: str(e.name), text: str(e.text), icon: str(e.icon),
     bonus: Object.fromEntries(Object.entries(e.bonus && typeof e.bonus === 'object' ? e.bonus : {}).filter(([k, v]) => ['hp', 'mp', 'atk', 'def'].includes(k) && Number.isFinite(v) && v)),
   })) : null;
-  const pk = d.pack && typeof d.pack === 'object' ? { used: whole(d.pack.used), limit: whole(d.pack.limit) } : null;
+  const pk = d.pack && typeof d.pack === 'object' ? { used: whole(d.pack.used), limit: whole(d.pack.limit), stack: Math.max(1, whole(d.pack.stack)) } : null;
   const st = d.stats && typeof d.stats === 'object' ? d.stats : null;
   return {
     gold: whole(d.gold), pack: pk, home: !!d.home, items, equipment,
@@ -91,7 +94,12 @@ function vRule(h) {
 }
 
 /**
- * @typedef {{ id: string, el: HTMLElement, x: number, y: number }} Cell
+ * @typedef {{ id: string, el: HTMLElement, x: number, y: number, n: number }} Cell
+ */
+
+/**
+ * An entry of a cell's action menu: the action's id ('' cancels), how many it takes, its label.
+ * @typedef {{ action: string, n: number, label: string, el?: HTMLElement }} MenuRow
  */
 
 export class InventoryPanel {
@@ -99,6 +107,15 @@ export class InventoryPanel {
     if (!hasStrings('inventory')) registerStrings('inventory', INVENTORY);
     /** @type {((name: 'blip'|'confirm') => void) | null} sound hook (the journal's) */
     this.onSound = null;
+    /**
+     * @type {((id: string, action: string, n: number) => void) | null} an item's action chosen from
+     * its menu (the game's: `drop` takes `n` out of the backpack)
+     */
+    this.onAction = null;
+    /** @type {{ el: HTMLElement, rows: MenuRow[], index: number, id: string }|null} the open action menu */
+    this._menu = null;
+    /** @type {{ x: number, y: number, w: number, RH: number, PADM: number }|null} where the menu is drawn */
+    this._menuBox = null;
     /** the chosen cell's id per tab (kept across builds while it exists) */
     this._sel = { pack: '', gear: 'weapon' };
     /** @type {InventoryTab} */
@@ -119,6 +136,51 @@ export class InventoryPanel {
   /** The chosen cell's id ('' with none). */
   get selectedId() { return this._cells[this._index]?.id ?? ''; }
 
+  /** Is a cell's action menu open (the journal routes its keys here: arrows, confirm, cancel)? */
+  get menuOpen() { return !!this._menu; }
+
+  /**
+   * Confirm on the chosen cell: its action menu — a backpack item with actions (`drop`: one, or the
+   * whole stack; more actions later) and *Cancelar* —, or with the menu open, its chosen entry.
+   * Returns true when something happened. `quiet`: no sound (the menu opened again after a rebuild).
+   * @param {{ quiet?: boolean }} [o]
+   */
+  activate({ quiet = false } = {}) {
+    if (this._menu) { this._chooseMenu(); return true; }
+    const c = this._cells[this._index];
+    if (!c || this._tab !== 'pack' || !c.id.startsWith('pack:')) return false;
+    const id = itemIdOf(c.id);
+    const it = this._data.items.find((x) => x.id === id);
+    if (!it || !it.actions.length) return false;
+    /** @type {MenuRow[]} */
+    const rows = [];
+    for (const a of it.actions) {
+      if (a === 'drop') {
+        rows.push({ action: 'drop', n: 1, label: s('action.drop') });
+        if (c.n > 1) rows.push({ action: 'drop', n: c.n, label: s('action.dropStack', { n: c.n }) });
+      } else rows.push({ action: a, n: c.n, label: s(`action.${a}`) });
+    }
+    rows.push({ action: '', n: 0, label: s('action.cancel') });
+    this._openMenu(c, id, rows);
+    if (!quiet) this.onSound?.('confirm');
+    return true;
+  }
+
+  /** Move the menu's choice up / down (wrapping). @param {-1|1} d */
+  menuMove(d) {
+    const m = this._menu;
+    if (!m) return;
+    m.index = (m.index + d + m.rows.length) % m.rows.length;
+    this._paintMenu();
+    this.onSound?.('blip');
+  }
+
+  /** Close the action menu (cancel). */
+  closeMenu() {
+    this._menu?.el.remove();
+    this._menu = null;
+  }
+
   /**
    * Fill the journal's window under its header with a tab.
    * @param {HTMLElement} g the window's group
@@ -127,6 +189,10 @@ export class InventoryPanel {
    * @param {InventoryData|null|undefined} data
    */
   build(g, G, tab, data) {
+    // (a menu open over the chosen cell is opened again after the rebuild — the story's data may
+    // arrive while it is up — at the same entry)
+    const reopen = this._menu ? { cell: this.selectedId, index: this._menu.index } : null;
+    this._menu = null;
     this._g = g;
     this._G = geom(G);
     this._tab = tab;
@@ -141,6 +207,10 @@ export class InventoryPanel {
     else this._buildGear(g);
     const keep = this._cells.findIndex((c) => c.id === this._sel[tab]);
     this._select(keep >= 0 ? keep : 0);
+    if (reopen && reopen.cell === this.selectedId && this.activate({ quiet: true }) && this._menu) {
+      this._menu.index = Math.min(reopen.index, this._menu.rows.length - 1);
+      this._paintMenu();
+    }
   }
 
   /**
@@ -190,12 +260,76 @@ export class InventoryPanel {
     put(b, itemIcon(o.icon, o.dim ? DUSK_ICON() : undefined), x + 4, y + 4, 1, 'lu-inv__icon');
     if (o.n !== undefined && o.n > 1) txt(b, String(o.n), x + CELL - 2, y + CELL - 9, { font: 'num', color: k.tx1, align: 'right', ol: true, cls: 'lu-inv__count' });
     const i = this._cells.length;
-    this._cells.push({ id: o.id, el: b, x, y });
+    this._cells.push({ id: o.id, el: b, x, y, n: o.n ?? 1 });
     b.addEventListener('mousedown', (e) => e.preventDefault());
     b.addEventListener('click', (e) => {
       e.stopPropagation();
+      if (this._menu) this.closeMenu();
       if (i !== this._index) { this._select(i); this.onSound?.('blip'); }
+      // (a second click on the chosen item: its actions)
+      else this.activate();
     });
+  }
+
+/**
+   * The action menu beside a cell: a small gilt window, one row per entry, the chosen one lit with
+   * the cursor; rows are buttons too.
+   * @param {Cell} c @param {string} id @param {MenuRow[]} rows
+   */
+  _openMenu(c, id, rows) {
+    this.closeMenu();
+    const g = /** @type {HTMLElement} */ (this._g);
+    const k = pal();
+    const RH = 12, PADM = 5;
+    const w = Math.max(70, ...rows.map((r) => measure(r.label, 'line') + 18));
+    const h = PADM * 2 + rows.length * RH - 2;
+    const x = Math.min(this._G.DIV - w - 4, c.x + CELL + 6), y = c.y;
+    const el = box(g, x, y, w, h, 'lu-inv__menu');
+    win(el, { size: 'XS', corners: GEMS.gold(), cornerR: 1, fill: k.ink1 }, x, y, w, h);
+    rows.forEach((r, i) => {
+      const rb = /** @type {HTMLButtonElement} */ (box(el, x + 3, y + PADM + i * RH - 2, w - 6, RH, 'lu-inv__menu-row', 'button'));
+      rb.type = 'button';
+      rb.setAttribute('aria-label', r.label);
+      r.el = rb;
+      rb.addEventListener('mousedown', (e) => e.preventDefault());
+      rb.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (!this._menu) return;
+        this._menu.index = i;
+        this._chooseMenu();
+      });
+    });
+    this._menu = { el, rows, index: 0, id };
+    this._menuBox = { x, y, w, RH, PADM };
+    this._paintMenu();
+  }
+
+  /** The menu's rows in their colours, the cursor at the chosen one. */
+  _paintMenu() {
+    const m = this._menu;
+    if (!m || !this._menuBox) return;
+    const k = pal();
+    const { x, y, RH, PADM } = this._menuBox;
+    m.el.querySelectorAll('.lu-inv__menu-text').forEach((n) => n.remove());
+    m.rows.forEach((r, i) => {
+      const on = i === m.index;
+      const ty = y + PADM + i * RH + 3;
+      r.el?.classList.toggle('is-on', on);
+      txc(m.el, r.label, x + 13, ty, { font: 'line', color: on ? k.g4 : r.action ? k.tx1 : k.tx2, drop: true, cls: 'lu-inv__menu-text' });
+      if (on) put(m.el, glyph('cursor'), x + 3, ty - 4, 1, 'nudge lu-inv__menu-text');
+    });
+  }
+
+  /** The menu's chosen entry: close it and hand the action to the game (nothing for *Cancelar*). */
+  _chooseMenu() {
+    const m = this._menu;
+    if (!m) return;
+    const r = m.rows[m.index];
+    this.closeMenu();
+    if (r?.action) {
+      this.onSound?.('confirm');
+      this.onAction?.(m.id, r.action, r.n);
+    } else this.onSound?.('blip');
   }
 
   /** An empty cell (no item: a dim socket). @param {HTMLElement} g @param {number} x @param {number} y */
@@ -218,14 +352,21 @@ export class InventoryPanel {
     section(g, UP(s('pack')), L, L + LW - (right ? measure(right, 'num') + 6 : 0), y);
     if (right) txc(g, right, L + LW, y, { font: 'num', color: full ? k.hp3 : k.g4, align: 'right', drop: true, cls: 'lu-inv__use' });
     y += 9;
-    // the backpack's cells: two rows at least
-    const packRows = Math.max(2, Math.ceil(carried.length / cols));
-    for (let i = 0; i < packRows * cols; i++) {
+    // the backpack's slots: each pack item in stacks of `stack` (one slot each), the free slots
+    // empty, then what the backpack does not count (key items) — without a backpack, two rows
+    const per = d.pack?.stack ?? 1;
+    /** @type {({ it: Required<InventoryItem>, n: number }|null)[]} */
+    const cells = [];
+    for (const it of carried) if (it.pack && d.pack) for (let c = it.count; c > 0; c -= per) cells.push({ it, n: Math.min(per, c) });
+    if (d.pack) while (cells.length < d.pack.limit) cells.push(null);
+    for (const it of carried) if (!(it.pack && d.pack)) cells.push({ it, n: it.count });
+    if (!d.pack) while (cells.length < 2 * cols) cells.push(null);
+    const packRows = Math.max(1, Math.ceil(cells.length / cols));
+    cells.forEach((st, i) => {
       const cx = L + (i % cols) * PITCH, cy = y + Math.floor(i / cols) * PITCH;
-      const it = carried[i];
-      if (it) this._cell(g, cx, cy, { id: `pack:${it.id}`, icon: it.icon, n: it.count, label: `${it.name} ×${it.count}` });
+      if (st) this._cell(g, cx, cy, { id: `pack:${st.it.id}:${i}`, icon: st.it.icon, n: st.n, label: `${st.it.name} ×${st.n}` });
       else this._emptyCell(g, cx, cy);
-    }
+    });
     y += packRows * PITCH + 10;
     // the stock: its cells at the camp, a line elsewhere
     if (d.pack) {
@@ -329,7 +470,7 @@ export class InventoryPanel {
       }
     };
     if (this._tab === 'pack') {
-      const id = c.id.replace(/^(pack|stock):/, '');
+      const id = itemIdOf(c.id);
       const it = this._data.items.find((x) => x.id === id);
       if (!it) return;
       put(det, itemIcon(it.icon, { scale: 2 }), DX0, y);

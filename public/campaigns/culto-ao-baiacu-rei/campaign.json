@@ -42,6 +42,7 @@
     "subtitle": "Terra Selvagem",
     "home": "clareira-do-riacho",
     "entrance": "mesa",
+    "fog": true,
     "places": [
       {
         "id": "acampamento",
@@ -278,11 +279,28 @@
     ]
   },
   "inventory": {
-    "pack": 8,
+    "pack": 6,
+    "stack": 5,
+    "rarity": {
+      "comum": [
+        1,
+        0.4,
+        0.15
+      ],
+      "incomum": [
+        0.85,
+        0.3,
+        0.08
+      ],
+      "raro": [0.5, 0.12],
+      "lendario": [
+        0.2
+      ]
+    },
     "grow": [
       {
-        "when": "obra.silo",
-        "pack": 16
+        "when": "obra.silo >= 2",
+        "pack": 12
       }
     ],
     "equipment": {

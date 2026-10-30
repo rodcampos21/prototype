@@ -53,6 +53,7 @@ import { createCharacterSheet } from '../../engine/pixel/CharacterSprites.js';
 import { CONVERSATIONS, levelConversation } from '../dialogue.js';
 import { Nav } from '../combat/Nav.js';
 import { titleCase, EQUIP_SLOTS } from '../campaign/StoryFormat.js';
+import { rollDrop } from '../campaign/CampaignFormat.js';
 import { storyReader } from './StoryState.js';
 import storyStrings from './strings.js';
 
@@ -357,10 +358,16 @@ export class StoryRunner {
     return !!ownValue(this.story?.items ?? {}, id)?.pack;
   }
 
-  /** How many pack items the player carries now. */
+  /** How many of one item a backpack slot holds (`inventory.stack`; 1 without a backpack). */
+  packStack() {
+    return this.inventory?.stack ?? 1;
+  }
+
+  /** How many backpack slots the player's pack items fill now (each up to `packStack` of one item). */
   packUsed() {
+    const k = this.packStack();
     let n = 0;
-    for (const id of this.packIds()) n += this.state.carried(id);
+    for (const id of this.packIds()) n += Math.ceil(this.state.carried(id) / k);
     return n;
   }
 
@@ -374,19 +381,21 @@ export class StoryRunner {
   }
 
   /**
-   * How many more of `id` the player can gather now: any number at home or for an item the
-   * backpack does not hold, else the room the backpack has left.
+   * How many more of `id` the backpack takes now: the free slots' worth plus what its last slot of
+   * `id` still holds; any number for an item the backpack does not hold (or without a backpack).
    * @param {string} id
    */
   packRoom(id) {
     const limit = this.packLimit();
-    if (!limit || this.atHome || !this.isPack(id)) return Infinity;
-    return Math.max(0, limit - this.packUsed());
+    if (!limit || !this.isPack(id)) return Infinity;
+    const k = this.packStack();
+    const c = this.state.carried(id);
+    return Math.max(0, limit - this.packUsed()) * k + (c % k ? k - (c % k) : 0);
   }
 
   /**
-   * Gather `n` of `id` (Game.harvest): as much as the backpack takes (a toast when it is full); at
-   * home straight into the stock. Returns how many were given.
+   * Gather `n` of `id` (Game.harvest): as much as the backpack takes (a toast when it is full).
+   * Returns how many were given.
    * @param {string} id
    * @param {number} n
    */
@@ -394,13 +403,25 @@ export class StoryRunner {
     const fit = Math.min(n, this.packRoom(id));
     if (fit > 0) this._items(id, fit, { fast: false });
     if (fit < n) this.game.ui.hud.toast(t('story.pack.full'), 2.2, { kind: 'item' });
-    if (fit > 0 && this.atHome && this.isPack(id)) this.state.storeItems([id]);
     return Math.max(0, fit);
   }
 
   /**
-   * Store the backpack in the camp's stock (arriving home: CampaignRuntime.travel), with a toast
-   * of what was stored. Returns what moved (id → count; empty: nothing).
+   * How many of `id` one gathering gives: a roll on the campaign's rarity table for the item's
+   * `rarity` (CampaignFormat.rollDrop — it may be none), else `fallback` (the resource's `amount`).
+   * @param {string} id
+   * @param {number} fallback
+   * @param {number} [rnd] a number in [0, 1) (default Math.random)
+   */
+  dropOf(id, fallback, rnd = Math.random()) {
+    const rarity = ownValue(this.story?.items ?? {}, id)?.rarity;
+    const table = rarity ? ownValue(this.inventory?.rarity ?? {}, rarity) : null;
+    return table ? rollDrop(table, rnd) : fallback;
+  }
+
+  /**
+   * Store the backpack in the camp's stock (the camp's chest: Game's `stash` interaction), with a
+   * toast of what was stored. Returns what moved (id → count; empty: nothing).
    */
   storePack() {
     if (!this.inventory) return {};
@@ -408,6 +429,19 @@ export class StoryRunner {
     const parts = Object.entries(moved).map(([id, n]) => `${n} ${term(this.itemName(id))}`);
     if (parts.length) this.game.ui.hud.toast(t('story.pack.stored', { items: parts.join(', ') }), 3, { kind: 'item' });
     return moved;
+  }
+
+  /**
+   * Drop `n` of a backpack item the player carries (the backpack's action menu): out of the
+   * backpack, with a toast (Game lays it on the ground: GroundItems). Returns how many were dropped.
+   * @param {string} id
+   * @param {number} n
+   */
+  dropItem(id, n) {
+    if (!this.isPack(id)) return 0;
+    const k = this.state.dropCarried(id, n);
+    if (k) this.game.ui.hud.toast(t('inventory.dropped', { n: k, item: term(this.itemName(id)) }), 2, { kind: 'item' });
+    return k;
   }
 
   /** A new journey's equipment (`inventory.equipment`), given once. */
@@ -435,7 +469,8 @@ export class StoryRunner {
     };
     const ids = new Set([...this.packIds(), ...Object.keys(s.items), ...Object.keys(s.stock)]);
     const items = [...ids].filter((id) => s.count(id) > 0 || this.isPack(id))
-      .map((id) => ({ ...info(id), count: s.carried(id), stock: s.stocked(id) }));
+      // (a backpack item can be dropped from its menu; the others — key items — not)
+      .map((id) => ({ ...info(id), count: s.carried(id), stock: s.stocked(id), actions: this.isPack(id) ? ['drop'] : [] }));
     const equipment = inv ? EQUIP_SLOTS.map((slot) => {
       const id = Object.hasOwn(s.equip, slot) ? s.equip[slot] : '';
       const it = id ? ownValue(declared, id) : null;
@@ -443,7 +478,7 @@ export class StoryRunner {
     }) : null;
     return {
       gold: this.gold,
-      pack: inv ? { used: this.packUsed(), limit: this.packLimit() } : null,
+      pack: inv ? { used: this.packUsed(), limit: this.packLimit(), stack: this.packStack() } : null,
       home: this.atHome,
       items,
       equipment,
@@ -491,7 +526,7 @@ export class StoryRunner {
    */
   rested(hourBefore) {
     if (hourBefore >= 8) this.state.day++;
-    this._regrow();
+    this._morning();
     this.state.version++;
     this._prevTime = this._clock();
   }
@@ -798,7 +833,7 @@ export class StoryRunner {
     const d = ge.def;
     const key = `story.${d.id}`;
     if (d.once && this.state.isDone(key)) return;
-    if (!resume && d.on === 'arrive' && d.if && !this.test(d.if)) return;
+    if (!resume && (d.on === 'arrive' || d.on === 'morning') && d.if && !this.test(d.if)) return;
     const sc = this._script(d.run);
     if (!sc) return;
     const spec = { kind: 'story', key: `story:${d.id}`, nodes: sc.nodes, onceKey: d.once ? key : '' };
@@ -913,15 +948,24 @@ export class StoryRunner {
       this.state.day++;
       this.state.version++;
     }
-    // the morning (5:00): what was gathered grows back
+    // the morning (5:00): what was gathered grows back, the `morning` events run
     const dawn = ((((REGROW_HOUR - from) % 24) + 24) % 24);
-    if (dawn > 0 && dawn <= d) this._regrow();
+    if (dawn > 0 && dawn <= d) this._morning();
     for (const le of this.events) {
       const at = le.obj.at;
       if (le.obj.on !== 'time' || typeof at !== 'number' || !Number.isFinite(at)) continue;
       const k = ((((at % 24) - from) % 24) + 24) % 24;
       if (k > 0 && k <= d) this._trigger(le);
     }
+  }
+
+  /**
+   * A new morning (5:00 passing, a rest until morning): what was gathered grows back (`_regrow`)
+   * and the story files' `morning` events whose `if` holds run — the camp's works advance there.
+   */
+  _morning() {
+    this._regrow();
+    for (const ge of this.globalEvents) if (ge.def.on === 'morning') this._triggerGlobal(ge);
   }
 
   /**
@@ -1818,6 +1862,11 @@ export class StoryRunner {
    */
   itemName(id) {
     return ownValue(this.story?.items ?? {}, id)?.name ?? (this.state.itemNameOf(id) || titleCase(id));
+  }
+
+  /** An item's icon (the story file's; '' when it has none). @param {string} id */
+  itemIconOf(id) {
+    return ownValue(this.story?.items ?? {}, id)?.icon ?? '';
   }
 
   /** A quest's title (the English: the story file's, else the one a script saved; shown as `term(title)`). @param {string} id */

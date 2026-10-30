@@ -131,6 +131,7 @@ export class LevelObjectBuilder {
       case 'mapTable':
       case 'banner':
       case 'stake':
+      case 'building':
       // resources to gather (props/ResourceProps.js)
       case 'resource': {
         if (obj.type === 'house' && !opts.upperWall) delete opts.upperWall;

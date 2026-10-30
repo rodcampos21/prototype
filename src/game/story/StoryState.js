@@ -231,6 +231,8 @@ export function storyReader(stateOf, ctx) {
       switch (ref.kind) {
         case '': return s.get(ref.name);
         case 'item': return s.count(ref.name);
+        // (what the camp's chest holds: the stock alone)
+        case 'stock': return s.stocked(ref.name);
         case 'quest': return s.quest(ref.name)?.state ?? 'none';
         case 'stage': return stageIndex(ref.name, s.quest(ref.name)?.stage ?? '');
         case 'visits': return visitsOf(s, ref.name);
@@ -443,6 +445,21 @@ export class StoryState {
     }
     if (Object.keys(moved).length) this.version++;
     return moved;
+  }
+
+  /**
+   * Drop `n` of what the player carries of `id` (the backpack's *Largar*: the stock is not touched).
+   * Returns how many were dropped.
+   * @param {string} id
+   * @param {number} n
+   */
+  dropCarried(id, n) {
+    const c = this.carried(id);
+    const k = Math.min(c, Math.max(0, Math.trunc(Number(n) || 0)));
+    if (!k) return 0;
+    setCount(this.items, id, c - k);
+    this.version++;
+    return k;
   }
 
   /**

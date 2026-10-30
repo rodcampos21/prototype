@@ -30,7 +30,7 @@ export const LIVE_STORY_TYPES = new Set([
   'house', 'windmill', 'well', 'waterfall', 'critters', 'emitter',
   'enemy', 'chest', 'waystone',
   'bed', 'table', 'chair', 'shelf', 'hearth', 'counter', 'rug', 'staircase', 'wardrobe', 'wallWindow', 'sacks',
-  'tent', 'mapTable', 'banner', 'stake', 'resource',
+  'tent', 'mapTable', 'banner', 'stake', 'resource', 'building',
 ]);
 
 /**

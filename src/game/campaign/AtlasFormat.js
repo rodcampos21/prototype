@@ -84,6 +84,8 @@ const ROAD_PARTS = /** @type {const} */ (['there', 'back', 'night']);
  * @property {string} subtitle
  * @property {string} home      the hub level: its `mapTable` opens the map; returns arrive there
  * @property {string} entrance  where a return arrives in the hub ('' its player start)
+ * @property {boolean} fog  the places' levels (not the hub) start under a fog of exploration: their
+ *   minimap and world map show only what the player has walked (`fogLevel`, CampaignState.fog)
  * @property {[number, number]} size  map units
  * @property {AtlasFeature[]} sketch
  * @property {AtlasPlace[]} places
@@ -172,7 +174,18 @@ export function normalizeAtlas(raw, levels, warnings) {
     });
   }
   if (!places.some((p) => p.level === home)) warnings.push(`atlas: no place is the hub "${home}" — the map shows no camp`);
-  return { title: text(a.title), subtitle: text(a.subtitle), home, entrance: text(a.entrance), size, sketch, places };
+  if (a.fog != null && typeof a.fog !== 'boolean') warnings.push('atlas.fog must be true or false — off');
+  return { title: text(a.title), subtitle: text(a.subtitle), home, entrance: text(a.entrance), fog: a.fog === true, size, sketch, places };
+}
+
+/**
+ * Does a level start under the fog of exploration: the atlas has `fog` and the level is one of its
+ * places' (not the hub)?
+ * @param {Atlas|null|undefined} at
+ * @param {string} levelId
+ */
+export function fogLevel(at, levelId) {
+  return !!at?.fog && !!levelId && levelId !== at.home && at.places.some((p) => p.level === levelId);
 }
 
 /**
@@ -186,6 +199,7 @@ export function serializeAtlas(at) {
     ...(at.subtitle ? { subtitle: at.subtitle } : {}),
     home: at.home,
     ...(at.entrance ? { entrance: at.entrance } : {}),
+    ...(at.fog ? { fog: true } : {}),
     ...(sameSize ? {} : { size: at.size }),
     places: at.places.map((p) => ({
       id: p.id, name: p.name, x: p.x, y: p.y, icon: p.icon,

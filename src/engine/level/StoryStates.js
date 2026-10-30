@@ -113,7 +113,7 @@ function compare(a, cmp, b) {
 export function valueRange(ref) {
   switch (ref.kind) {
     case 'visited': case 'done': case 'party': return { int: true, min: 0, max: 1 };
-    case 'item': case 'visits': case 'stage': return { int: true, min: 0, max: Infinity };
+    case 'item': case 'stock': case 'visits': case 'stage': return { int: true, min: 0, max: Infinity };
     case 'game':
       if (ref.name === 'day') return { int: true, min: 1, max: Infinity };
       if (ref.name === 'gold' || ref.name === 'visits') return { int: true, min: 0, max: Infinity };

@@ -65,7 +65,10 @@ import { group, put, win, place, U, keyHints, section, capW } from './layout/lay
  *   _box?: { left: number, right: number, top: number, bottom: number }|null }}
  */
 
-/** @import { PaintedMap } from './art/minimap.js' */
+/**
+ * @import { PaintedMap } from './art/minimap.js'
+ * @import { MapFog } from './MapFog.js'
+ */
 
 const DEFAULT_FACING = Object.freeze({ x: 0, z: 1 });
 /**
@@ -166,6 +169,11 @@ export class Minimap {
     this._y = MM_Y;
     /** A marker's place after `aside` (reused). */
     this._at = { x: 0, y: 0 };
+    /** @type {MapFog|null} the fog of exploration over the map (`setFog`) */
+    this._fog = null;
+    /** @type {HTMLCanvasElement|null} the fog's cover in art pixels, and the fog version it shows */
+    this._fogCanvas = null;
+    this._fogVer = -1;
     // below the anchor (the clock): its height depends on the fonts, the language and the scale
     this._anchor = anchor;
     this._place = () => this._placeBelowAnchor();
@@ -226,6 +234,16 @@ export class Minimap {
     this._apply();
   }
 
+  /**
+   * The fog of exploration over the map (null: none): the unseen is covered and the markers in it
+   * are left out (the way back excepted). Set after `setMap`, for the same level.
+   * @param {MapFog|null} fog
+   */
+  setFog(fog) {
+    this._fog = fog ?? null;
+    this._fogVer = -1;
+  }
+
   /** Shown when there is a map and the level allows it (environment.minimap). */
   get enabled() { return this._enabled; }
   set enabled(v) {
@@ -257,6 +275,16 @@ export class Minimap {
       ctx.fillRect(0, 0, V, V);
     } else ctx.clearRect(0, 0, V, V);
     ctx.drawImage(base, -x0, -y0);
+    // the fog of exploration: the unseen covered (its art pixels painted again when it moved)
+    const fog = this._fog;
+    if (fog) {
+      if (fog.version !== this._fogVer || !this._fogCanvas) {
+        this._fogCanvas ??= document.createElement('canvas');
+        fog.paint(this._fogCanvas, ppt);
+        this._fogVer = fog.version;
+      }
+      ctx.drawImage(this._fogCanvas, -x0, -y0);
+    }
     // muted toward today's tone: one flat ink wash over the tiles
     ctx.fillStyle = k['m-mute'];
     ctx.fillRect(0, 0, V, V);
@@ -264,7 +292,8 @@ export class Minimap {
     if (s.view && (s.view.x || s.view.z)) ctx.drawImage(wedgeSprite(Math.atan2(s.view.x, -s.view.z), px, py), px - WEDGE_APEX, py - WEDGE_APEX);
     ctx.drawImage(vignetteSprite(V), 0, 0);
     // the markers in G's order: points of interest and campfires, waystones and chests, villagers,
-    // the boss and the foes, the party (indexed loops: no per-frame allocation)
+    // the boss and the foes, the party (indexed loops: no per-frame allocation); under the fog only
+    // the way back
     const marks = s.markers;
     for (const pass of PASSES) {
       if (marks) {
@@ -272,17 +301,17 @@ export class Minimap {
           const m = marks[i];
           if (m.hidden) continue;
           const kind = kindOf(m.kind);
-          if (PASS[kind] !== pass) continue;
+          if (PASS[kind] !== pass || (fog && kind !== 'return' && !fog.seen(m.x, m.z))) continue;
           this._mark(kind, Math.floor(m.x * ppt) - x0, Math.floor(m.z * ppt) - y0, px, py);
         }
       }
       if (pass === 1) {
         const np = s.npcs;
-        if (np) for (let i = 0; i < np.length; i++) this._mark('npc', Math.floor(np[i].x * ppt) - x0, Math.floor(np[i].z * ppt) - y0, px, py);
+        if (np) for (let i = 0; i < np.length; i++) if (!fog || fog.seen(np[i].x, np[i].z)) this._mark('npc', Math.floor(np[i].x * ppt) - x0, Math.floor(np[i].z * ppt) - y0, px, py);
       }
     }
     const en = s.enemies;
-    if (en) for (let i = 0; i < en.length; i++) this._mark('enemy', Math.floor(en[i].x * ppt) - x0, Math.floor(en[i].z * ppt) - y0, px, py);
+    if (en) for (let i = 0; i < en.length; i++) if (!fog || fog.seen(en[i].x, en[i].z)) this._mark('enemy', Math.floor(en[i].x * ppt) - x0, Math.floor(en[i].z * ppt) - y0, px, py);
     const pa = s.party;
     if (pa) for (let i = 0; i < pa.length; i++) this._mark('party', Math.floor(pa[i].x * ppt) - x0, Math.floor(pa[i].z * ppt) - y0, px, py);
     const f = s.facing ?? DEFAULT_FACING;
@@ -542,6 +571,11 @@ export class WorldMap {
     this._sigX = NaN;
     this._sigY = NaN;
     this._sigN = -1;
+    /** @type {MapFog|null} the fog of exploration over the level's part of the map (`setFog`) */
+    this._fog = null;
+    /** @type {HTMLCanvasElement|null} its cover at the map's scale, and the fog version it shows */
+    this._fogCanvas = null;
+    this._fogVer = -1;
     this._disposed = false;
     this._offScale = onScale(parent, () => this._invalidate());
   }
@@ -573,6 +607,18 @@ export class WorldMap {
     this._regions = Array.isArray(regions) ? regions : [];
     // (the markers' boxes were the old map's: the next update places the names for this one)
     this._obstacles = [];
+    this._invalidate();
+  }
+
+  /**
+   * The fog of exploration over the level (null: none; set after `setMap`): on the map at `origin`,
+   * the unseen part of the level is covered, its markers and the names of the regions not seen yet
+   * left out (the way back excepted). The rest of a campaign overview is not touched.
+   * @param {MapFog|null} fog
+   */
+  setFog(fog) {
+    this._fog = fog ?? null;
+    this._fogVer = -1;
     this._invalidate();
   }
 
@@ -899,9 +945,12 @@ export class WorldMap {
     // (airier type, placed after the places inside it)
     const list = [];
     const seen = new Set();
+    const fog = this._fog, [fx, fz] = this._origin;
     for (const r of this._regions) {
       const name = String(r?.name ?? '').trim();
       if (!name || seen.has(name) || ![r.minX, r.maxX, r.minZ, r.maxZ].every(Number.isFinite)) continue;
+      // (a region of the fogged level is named once any of it was seen; the rest of an overview as ever)
+      if (fog && r.minX - fx >= 0 && r.minZ - fz >= 0 && r.maxX - fx <= fog.width && r.maxZ - fz <= fog.depth && !fog.seenAny(r.minX - fx, r.minZ - fz, r.maxX - fx, r.maxZ - fz)) continue;
       seen.add(name);
       list.push({ name, r, x: (r.minX + r.maxX) / 2, z: (r.minZ + r.maxZ) / 2, size: Math.abs((r.maxX - r.minX) * (r.maxZ - r.minZ)), area: false });
     }
@@ -1021,6 +1070,14 @@ export class WorldMap {
     bc.imageSmoothingEnabled = false;
     bc.clearRect(0, 0, b.width, b.height);
     if (this._base) bc.drawImage(this._base, 0, 0);
+    // the fog's cover over the level's part of the map
+    const fog = this._fog;
+    if (fog && this._base) {
+      this._fogCanvas ??= document.createElement('canvas');
+      fog.paint(this._fogCanvas, this._scale);
+      this._fogVer = fog.version;
+      bc.drawImage(this._fogCanvas, Math.round(this._origin[0] * this._scale), Math.round(this._origin[1] * this._scale));
+    }
     this.ctx.imageSmoothingEnabled = false;
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
   }
@@ -1077,6 +1134,13 @@ export class WorldMap {
     }
     // (the legend's rows for what the map shows: the window is laid out again)
     this._setMarkLegend(ret, res);
+    // the fog moved (the map opened after a walk): its cover painted again, the names placed again
+    const fog = this._fog;
+    if (fog && fog.version !== this._fogVer) {
+      this._drawBase();
+      this._sigX = NaN;
+    }
+    const hid = (/** @type {string} */ kind, /** @type {number} */ x, /** @type {number} */ z) => !!fog && kind !== 'return' && !fog.seen(x, z);
     if (px !== this._sigX || py !== this._sigY || nm !== this._sigN) {
       this._sigX = px;
       this._sigY = py;
@@ -1093,13 +1157,13 @@ export class WorldMap {
           const m = marks[i];
           if (m.hidden) continue;
           const kind = kindOf(m.kind);
-          if (PASS[kind] === pass) dot(kind, m.x, m.z);
+          if (PASS[kind] === pass && !hid(kind, m.x, m.z)) dot(kind, m.x, m.z);
         }
       }
-      if (pass === 1) { const np = s.npcs; if (np) for (let i = 0; i < np.length; i++) dot('npc', np[i].x, np[i].z); }
+      if (pass === 1) { const np = s.npcs; if (np) for (let i = 0; i < np.length; i++) if (!hid('npc', np[i].x, np[i].z)) dot('npc', np[i].x, np[i].z); }
     }
     const en = s.enemies;
-    if (en) for (let i = 0; i < en.length; i++) dot('enemy', en[i].x, en[i].z);
+    if (en) for (let i = 0; i < en.length; i++) if (!hid('enemy', en[i].x, en[i].z)) dot('enemy', en[i].x, en[i].z);
     // the party: over villagers and enemies, under the player's ring and arrow
     for (let i = 0; i < pn; i++) dot('party', pa[i].x, pa[i].z);
     // a region name left over the "you are here" arrow fades back (the markers draw over it too)

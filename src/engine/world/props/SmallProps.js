@@ -172,10 +172,18 @@ export function buildCrateStack(f, x, y, z, opts = {}) {
 /**
  * Wooden signpost with `boards` arrow boards (sign_board texture; the editor offers 1–3) stacked
  * down the post, pointing alternately right and left.
- * opts: { rotation = 0, boards = 2, seed, id = 'signpost' }
+ * opts: { rotation = 0, boards = 2, seed, id = 'signpost', float = false } — `float`: no post at
+ * all (an empty object, no collider): the game shows the sign's text as a floating plate over the
+ * spot instead (World `floatSigns`, ui/FloatSigns.js).
  * @param {PropFactory} f
  */
 export function buildSignpost(f, x, y, z, opts = {}) {
+  if (opts.float) {
+    const group = new THREE.Group();
+    group.position.set(x, y, z);
+    group.name = 'signpost:float';
+    return f.result(group, { colliders: [] });
+  }
   const rng = f.rng('signpost', x, z, opts.seed);
   const b = f.builder(groundAO(0.5));
   const Hp = 2.3;

@@ -554,6 +554,12 @@ export class Journal {
     /** The Backpack and Equipment tabs' content (a campaign with an inventory). */
     this._inv = new InventoryPanel();
     this._inv.onSound = (name) => this._sound(name);
+    /**
+     * @type {((id: string, action: string, n: number) => void) | null} a backpack item's action chosen
+     * from its menu (InventoryPanel: `drop`)
+     */
+    this.onItemAction = null;
+    this._inv.onAction = (id, action, n) => this.onItemAction?.(id, action, n);
     /** @type {ListEntry[]} entries of the shown list, in order */
     this._entries = [];
     this._index = -1;
@@ -666,13 +672,23 @@ export class Journal {
   update(dt, input) {
     if (!this._open) return false;
     const pressed = (name) => !!input && (typeof input.consumeAction === 'function' ? input.consumeAction(name) : input.actionPressed(name));
+    // (an item's action menu: the arrows choose, confirm takes, cancel closes it — not the journal)
+    if (isPanel(this._tab) && this._inv.menuOpen && !this._closeQueued) {
+      if (pressed('cancel')) { this._inv.closeMenu(); this._sound('blip'); }
+      else if (pressed('confirm')) this._inv.activate();
+      else if (pressed('up')) this._inv.menuMove(-1);
+      else if (pressed('down')) this._inv.menuMove(1);
+      return false;
+    }
     if (pressed('cancel') || this._closeQueued) {
       this.close();
       if (this.onClose) this.onClose();
       return true;
     }
-    // (the inventory's tabs: Q / E switch tabs, the arrows move over the cells)
+    // (the inventory's tabs: Q / E switch tabs, the arrows move over the cells, confirm opens the
+    // chosen item's actions)
     if (isPanel(this._tab)) {
+      if (pressed('confirm')) { this._inv.activate(); return false; }
       if (pressed('camLeft')) this._cycleTab(-1);
       else if (pressed('camRight')) this._cycleTab(1);
       else {
