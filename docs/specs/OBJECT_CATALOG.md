@@ -680,11 +680,18 @@ of it.
 | `opts.width` | number | `4` | 1.5–10, step 0.5 | The plot. |
 | `opts.depth` | number | `3.5` | 1.5–10, step 0.5 | The plot. |
 | `opts.seed` | int | `1` | 0–9999 | The stakes and the buildings. |
+| `opts.preview` | select | — | `empty` · `frame` · `built` | **Editor only** (the game ignores it): what the editor's 3D view shows — the plot, or its first building going up or built. |
 
-**In the game:** while empty, a floating sign over the plot (its building's name, text, cost and
-days; several: one line each) and Space within reach of the ropes (*Construir*): what the camp's
-chest holds, and the choice to begin one with its cost there (`BuildingSystem`). Scripts read
-`building:<id>` / `slot:<id>` and change it with `build`.
+**In the game:** while empty, a floating sign over the plot (its building's icon, name, text, cost
+and days; several: one line each) and Space within reach of the ropes (*Construir*): the build
+window (`BuildingSystem`, PIXEL_UI.md). Scripts read `building:<id>` / `slot:<id>` and change it
+with `build`.
+
+**In the editor:** the 2D map draws the roped plot (dashed, a stake at each corner, the front edge
+solid) and, zoomed in or selected, its buildings; the 3D view builds the part `opts.preview` asks
+for, in its building's look from the campaign's story files. Under *Buildings* the inspector lists
+the campaign's buildings as buttons that add or remove one, and warns about an id the story does not
+have; *Check for problems* reports it (an error) and a slot with none (a warning).
 
 ### resource
 

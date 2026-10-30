@@ -257,6 +257,11 @@ export class UI {
      */
     this.floatSigns = null;
     /**
+     * The build window (`useBuildPanel()`; null until a build slot opens it).
+     * @type {import('./BuildPanel.js').BuildPanel|null}
+     */
+    this.buildPanel = null;
+    /**
      * The cutscene's letterbox and skip hint (`useStoryUI()`; null without the story UI): the bars,
      * their gilt hairlines, the skip hint's group (laid out per scale) and its ring.
      * @type {{ letterbox: HTMLElement, bars: HTMLElement[], lines: HTMLCanvasElement[],
@@ -558,6 +563,18 @@ export class UI {
     return this.resources;
   }
 
+  /**
+   * The build window (BuildPanel.js; a campaign's build slots, CAMPAIGN_FORMAT.md §4.3), made on the
+   * first call from the caller's class, like the story UI's. While open it takes the input (z 7,
+   * like the journal).
+   * @param {typeof import('./BuildPanel.js').BuildPanel} Cls
+   * @returns {import('./BuildPanel.js').BuildPanel}
+   */
+  useBuildPanel(Cls) {
+    this.buildPanel ??= new Cls(this.root);
+    return this.buildPanel;
+  }
+
   useStoryUI(classes) {
     if (this._story) return { journal: this.journal, emotes: this.emotes, endCard: this.endCard };
     const { Journal, Emotes, EndCard } = classes ?? {};
@@ -782,6 +799,11 @@ export class UI {
       dialogInput = undefined;
     }
     this.resources?.update();
+    // the build window (z 7, like the journal) takes it next
+    if (this.buildPanel?.isOpen) {
+      this.buildPanel.update(dt, dialogInput);
+      dialogInput = undefined;
+    }
     // the atlas (z 7, like the journal) takes it next
     if (this.atlas?.isOpen) {
       this.atlas.update(dt, dialogInput);
@@ -838,6 +860,8 @@ export class UI {
     this.resources = null;
     this.floatSigns?.dispose();
     this.floatSigns = null;
+    this.buildPanel?.dispose();
+    this.buildPanel = null;
     this.debug.dispose();
     this.worldMap.dispose();
     this.minimap.dispose();

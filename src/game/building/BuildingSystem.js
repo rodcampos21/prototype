@@ -55,14 +55,14 @@ export class BuildingSystem {
    * The floating sign over an empty slot, translated: one building — its name, text, cost and days
    * —; several — each with its cost.
    * @param {string[]} options the slot's buildings
-   * @returns {{ title: string, lines: string[] }}
+   * @returns {{ title: string, lines: string[], icon: string }} icon: the building's (several: the plot's)
    */
   sign(options) {
     const list = options.filter((b) => this.building(b));
     if (list.length === 1) {
       const b = /** @type {StoryBuilding} */ (this.building(list[0]));
       return {
-        title: term(b.name),
+        title: term(b.name), icon: b.icon,
         lines: [
           ...(b.text ? [loc(b.textKey ?? '', b.text)] : []),
           t('story.build.cost', { items: this.itemsText(b.cost) }),
@@ -71,22 +71,63 @@ export class BuildingSystem {
       };
     }
     return {
-      title: t('story.build.plot'),
+      title: t('story.build.plot'), icon: 'plot',
       lines: list.map((id) => { const b = /** @type {StoryBuilding} */ (this.building(id)); return t('story.build.option', { name: term(b.name), items: this.itemsText(b.cost) }); }),
     };
   }
 
   /**
-   * Space at an empty slot: what the chest holds for its buildings, and the choice to begin one —
-   * paid from the chest, its `start` script queued (Game._interact awaits it).
+   * What the build window shows for a slot's buildings, translated (BuildPanel's data): the title
+   * (one building's name, else the empty plot's), each building with its icon, text, cost item by
+   * item (what the chest has, what it needs), its days and whether the chest pays for it, and what
+   * the chest holds of everything they cost.
+   * @param {string[]} options the slot's buildings
+   * @returns {import('../../engine/ui/BuildPanel.js').BuildPanelData}
+   */
+  panelData(options) {
+    const s = this.runner.state;
+    const list = options.filter((b) => this.building(b));
+    const icon = (/** @type {string} */ item) => this.runner.itemIconOf(item);
+    const name = (/** @type {string} */ item) => term(this.runner.itemName(item));
+    /** @type {Record<string, number>} */
+    const have = {};
+    for (const b of list) for (const item of Object.keys(this.building(b)?.cost ?? {})) if (s.stocked(item) > 0) have[item] = s.stocked(item);
+    const one = list.length === 1 ? this.building(list[0]) : null;
+    return {
+      title: one ? term(one.name) : t('story.build.plot'),
+      chest: Object.entries(have).map(([item, n]) => ({ icon: icon(item), name: name(item), have: n })),
+      options: list.map((id) => {
+        const b = /** @type {StoryBuilding} */ (this.building(id));
+        return {
+          id, icon: b.icon, name: term(b.name), text: b.text ? loc(b.textKey ?? '', b.text) : '',
+          cost: Object.entries(b.cost).map(([item, n]) => ({ icon: icon(item), name: name(item), need: n, have: s.stocked(item) })),
+          days: b.days === 1 ? t('story.build.days.one') : t('story.build.days', { n: b.days }),
+          affordable: this.affordable(id),
+        };
+      }),
+      labels: { build: t('story.build.build'), chest: t('story.build.chestLabel'), chestEmpty: t('story.build.chestNone'), select: t('story.build.select'), close: t('story.build.close') },
+    };
+  }
+
+  /**
+   * Space at an empty slot: the build window (`game.ui.buildPanel`) with its buildings — the one
+   * chosen begins, paid from the chest, its `start` script queued (Game._interact awaits it).
+   * Without the window (a page that never made it): the dialog says what the chest holds and offers
+   * the choice.
    * @param {string} slot the slot's id
    * @param {string[]} options its buildings
    */
   async use(slot, options) {
     const r = this.runner;
-    const dialog = r.game.ui.dialog;
     const list = options.filter((b) => this.building(b));
     if (!list.length || r.state.slot(slot)) return;
+    const panel = r.game.ui.buildPanel;
+    if (panel) {
+      const pick = await panel.open(this.panelData(list));
+      if (pick) this.begin(slot, pick);
+      return;
+    }
+    const dialog = r.game.ui.dialog;
     // what the chest holds of everything these buildings cost
     /** @type {Record<string, number>} */
     const have = {};

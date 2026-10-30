@@ -39,6 +39,8 @@ import {
 import { bossBar, bracket } from '../src/engine/ui/art/combat.js';
 import { pips } from '../src/engine/ui/art/party.js';
 import { icon as combatIcon, COMBAT_ICONS } from '../src/engine/ui/art/icons/combat.js';
+import { itemIcon, ITEM_ICONS } from '../src/engine/ui/art/icons/items.js';
+import { BUILDING_ICONS } from '../src/engine/ui/art/icons/buildings.js';
 import { icon as partyIcon, PARTY_ICONS } from '../src/engine/ui/art/icons/party.js';
 import { txt, txc, measure, cjk, UP, NAME, capMid, lang, FONT, aliasSpecs } from '../src/engine/ui/layout/type.js';
 import { group, put, win, key, keyHints, section, numPair } from '../src/engine/ui/layout/layout.js';
@@ -241,6 +243,13 @@ const PAGES = {
     const all = [...Object.keys(CORE_ICONS).map((n) => coreIcon(n)), ...Object.keys(COMBAT_ICONS).map((n) => combatIcon(n)), ...Object.keys(PARTY_ICONS).map((n) => partyIcon(n))];
     for (const c of all) {
       put(g, c, x, y);
+      x += 19;
+      if (x > 620) { x = 110; y += 19; }
+    }
+    // the item icons (the inventory) and the building icons (the build window, the plots' signs)
+    x = 110; y += 22;
+    for (const n of [...Object.keys(ITEM_ICONS), ...Object.keys(BUILDING_ICONS)]) {
+      put(g, itemIcon(n), x, y);
       x += 19;
       if (x > 620) { x = 110; y += 19; }
     }
